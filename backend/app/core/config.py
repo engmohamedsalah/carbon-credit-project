@@ -1,5 +1,6 @@
 import os
-from pydantic import BaseSettings, PostgresDsn, validator
+from typing import Optional
+from pydantic import BaseSettings, PostgresDsn, validator, AnyUrl
 
 class Settings(BaseSettings):
     # API settings
@@ -10,7 +11,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:8000"]
     
     # Database settings
-    DATABASE_URL: PostgresDsn = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/carbon_verification")
+    DATABASE_URL: Optional[str] = os.getenv("DATABASE_URL", "sqlite:///./carbon_credits.db")
     
     # Security settings
     SECRET_KEY: str = os.getenv("SECRET_KEY", "changethisinproduction")
@@ -27,6 +28,13 @@ class Settings(BaseSettings):
     
     # Environment
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    
+    # SQLite configuration
+    @validator("DATABASE_URL", pre=True)
+    def validate_database_url(cls, v: Optional[str]) -> str:
+        if v and v.startswith("sqlite"):
+            return v
+        return v or "sqlite:///./carbon_credits.db"
     
     class Config:
         case_sensitive = True
