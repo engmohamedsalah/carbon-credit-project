@@ -47,6 +47,7 @@ carbon_credit_project/
 │   ├── backend.Dockerfile # Backend Dockerfile
 │   └── frontend.Dockerfile # Frontend Dockerfile
 ├── documentation/         # Project documentation
+├── start_app.sh           # Script to start both frontend and backend
 └── start.sh               # Startup script
 ```
 
@@ -68,6 +69,8 @@ carbon_credit_project/
 
 - Docker and Docker Compose
 - Git
+- Python 3.10+
+- Node.js 16+
 
 ### Installation
 
@@ -93,6 +96,27 @@ This will:
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
 - API documentation: http://localhost:8000/docs
+
+### Local Development without Docker
+
+If you want to run the application locally without Docker:
+
+1. Set up the local development environment:
+```bash
+chmod +x local_dev_setup.sh
+./local_dev_setup.sh
+```
+
+2. Start both frontend and backend servers with a single command:
+```bash
+./start_app.sh
+```
+
+This will:
+- Initialize the SQLite database if needed
+- Start the backend server on port 8000
+- Start the frontend server on port 3000
+- Provide a convenient way to stop both servers with Ctrl+C
 
 ## Documentation
 
