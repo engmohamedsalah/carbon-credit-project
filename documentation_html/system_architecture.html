@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Architecture - Carbon Credit Verification SaaS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>Carbon Credit Verification</h1>
+            <p>Documentation</p>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search documentation...">
+            <div id="search-results" class="search-results"></div>
+        </div>
+        
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="index.html" class="nav-link">Home</a>
+            </li>
+            
+            <div class="nav-section">Business</div>
+            <li class="nav-item">
+                <a href="business_overview.html" class="nav-link">Business Overview</a>
+            </li>
+            <li class="nav-item">
+                <a href="business_value.html" class="nav-link">Value Proposition</a>
+            </li>
+            <li class="nav-item">
+                <a href="market_analysis.html" class="nav-link">Market Analysis</a>
+            </li>
+            
+            <div class="nav-section">Technical</div>
+            <li class="nav-item">
+                <a href="technical_overview.html" class="nav-link">Technical Overview</a>
+            </li>
+            <li class="nav-item">
+                <a href="system_architecture.html" class="nav-link">System Architecture</a>
+            </li>
+            <li class="nav-item">
+                <a href="data_model.html" class="nav-link">Data Model</a>
+            </li>
+            <li class="nav-item">
+                <a href="ml_pipeline.html" class="nav-link">ML Pipeline</a>
+            </li>
+            
+            <div class="nav-section">User Guides</div>
+            <li class="nav-item">
+                <a href="user_guide.html" class="nav-link">User Guide</a>
+            </li>
+            
+            <div class="nav-section">Installation</div>
+            <li class="nav-item">
+                <a href="installation_guide.html" class="nav-link">Installation Guide</a>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="main-content">
+        <div class="content-header">
+            <h1>System Architecture</h1>
+            
+            <ul class="breadcrumb">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="technical_overview.html">Technical</a></li>
+                <li>System Architecture</li>
+            </ul>
+        
+        </div>
+        
+        <div class="content-section">
+<p><code>mermaid
+graph TD
+    subgraph "System Architecture"
+        A[User Interface] --&gt; B[Backend API]
+        B --&gt; C1[Database]
+        B --&gt; C2[ML Services]
+        B --&gt; C3[Blockchain]
+        C2 --&gt; D1[Satellite Imagery]
+        C2 --&gt; D2[Reference Data]
+        C3 --&gt; E[Verification Certificates]
+    end</code></p>
+</div>
+
+        <div class="footer">
+            <p>&copy; 2025 Carbon Credit Verification SaaS. All rights reserved.</p>
+        </div>
+    </div>
+    
+    <script src="js/script.js"></script>
+</body>
+</html>

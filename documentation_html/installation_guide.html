@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installation Guide - Carbon Credit Verification SaaS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>Carbon Credit Verification</h1>
+            <p>Documentation</p>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search documentation...">
+            <div id="search-results" class="search-results"></div>
+        </div>
+        
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="index.html" class="nav-link">Home</a>
+            </li>
+            
+            <div class="nav-section">Business</div>
+            <li class="nav-item">
+                <a href="business_overview.html" class="nav-link">Business Overview</a>
+            </li>
+            <li class="nav-item">
+                <a href="business_value.html" class="nav-link">Value Proposition</a>
+            </li>
+            <li class="nav-item">
+                <a href="market_analysis.html" class="nav-link">Market Analysis</a>
+            </li>
+            
+            <div class="nav-section">Technical</div>
+            <li class="nav-item">
+                <a href="technical_overview.html" class="nav-link">Technical Overview</a>
+            </li>
+            <li class="nav-item">
+                <a href="system_architecture.html" class="nav-link">System Architecture</a>
+            </li>
+            <li class="nav-item">
+                <a href="data_model.html" class="nav-link">Data Model</a>
+            </li>
+            <li class="nav-item">
+                <a href="ml_pipeline.html" class="nav-link">ML Pipeline</a>
+            </li>
+            
+            <div class="nav-section">User Guides</div>
+            <li class="nav-item">
+                <a href="user_guide.html" class="nav-link">User Guide</a>
+            </li>
+            
+            <div class="nav-section">Installation</div>
+            <li class="nav-item">
+                <a href="installation_guide.html" class="nav-link">Installation Guide</a>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="main-content">
+        <div class="content-header">
+            <h1>Installation Guide</h1>
+            
+            <ul class="breadcrumb">
+                <li><a href="index.html">Home</a></li>
+                <li>Installation Guide</li>
+            </ul>
+        
+        </div>
+        
+        <div class="content-section">
+<h1>Carbon Credit Verification SaaS Application</h1>
+<h2>Installation Guide</h2>
+<p>This comprehensive installation guide provides step-by-step instructions for setting up and deploying the Carbon Credit Verification SaaS application in various environments.</p>
+<h2>Table of Contents</h2>
+<ol>
+<li><a href="#prerequisites">Prerequisites</a></li>
+<li><a href="#local-development-setup">Local Development Setup</a></li>
+<li><a href="#docker-deployment">Docker Deployment</a></li>
+<li><a href="#cloud-deployment">Cloud Deployment</a></li>
+<li><a href="#database-setup">Database Setup</a></li>
+<li><a href="#environment-configuration">Environment Configuration</a></li>
+<li><a href="#ml-model-setup">ML Model Setup</a></li>
+<li><a href="#blockchain-integration">Blockchain Integration</a></li>
+<li><a href="#testing-the-installation">Testing the Installation</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#upgrading">Upgrading</a></li>
+</ol>
+<h2>Prerequisites</h2>
+<p>Before installing the Carbon Credit Verification SaaS application, ensure you have the following prerequisites:</p>
+<h3>System Requirements</h3>
+<ul>
+<li><strong>CPU</strong>: 4+ cores recommended (2 cores minimum)</li>
+<li><strong>RAM</strong>: 8GB+ recommended (4GB minimum)</li>
+<li><strong>Storage</strong>: 20GB+ free space (more needed for satellite imagery)</li>
+<li><strong>Operating System</strong>: Ubuntu 20.04+, macOS 10.15+, or Windows 10+ with WSL2</li>
+</ul>
+<h3>Software Requirements</h3>
+<ul>
+<li><strong>Docker</strong>: Docker Engine 20.10+ and Docker Compose 2.0+</li>
+<li><strong>Git</strong>: Git 2.25+</li>
+<li><strong>Python</strong>: Python 3.10+ (if not using Docker)</li>
+<li><strong>Node.js</strong>: Node.js 16+ (if not using Docker)</li>
+<li><strong>PostgreSQL</strong>: PostgreSQL 14+ with PostGIS extension (if not using Docker)</li>
+</ul>
+<h3>Access Requirements</h3>
+<ul>
+<li><strong>Sentinel-2 API</strong>: Account with Copernicus Open Access Hub</li>
+<li><strong>Polygon Network</strong>: Access to Polygon network (testnet for development)</li>
+<li><strong>Cloud Provider</strong>: Account with AWS, GCP, or Azure (for cloud deployment)</li>
+</ul>
+<h2>Local Development Setup</h2>
+<h3>Step 1: Clone the Repository</h3>
+<p>```bash</p>
+<h1>Clone the repository</h1>
+<p>git clone https://github.com/yourusername/carbon-credit-verification.git</p>
+<h1>Navigate to the project directory</h1>
+<p>cd carbon-credit-verification
+```</p>
+<h3>Step 2: Set Up Environment Variables</h3>
+<p>```bash</p>
+<h1>Copy the example environment file</h1>
+<p>cp backend/.env.example backend/.env</p>
+<h1>Edit the environment file with your settings</h1>
+<p>nano backend/.env
+```</p>
+<p>Update the following variables in the <code>.env</code> file:</p>
+<p>```</p>
+<h1>Database settings</h1>
+<p>DATABASE_URL=postgresql://postgres:password@localhost:5432/carbon_verification</p>
+<h1>JWT settings</h1>
+<p>SECRET_KEY=your-secret-key
+ACCESS_TOKEN_EXPIRE_MINUTES=30</p>
+<h1>Sentinel-2 API credentials</h1>
+<p>SENTINEL_USERNAME=your-copernicus-username
+SENTINEL_PASSWORD=your-copernicus-password</p>
+<h1>Blockchain settings</h1>
+<p>POLYGON_RPC_URL=https://polygon-mumbai.infura.io/v3/your-infura-key
+POLYGON_PRIVATE_KEY=your-private-key
+```</p>
+<h3>Step 3: Install Backend Dependencies</h3>
+<p>```bash</p>
+<h1>Create a virtual environment</h1>
+<p>python -m venv venv</p>
+<h1>Activate the virtual environment</h1>
+<p>source venv/bin/activate  # On Windows: venv\Scripts\activate</p>
+<h1>Install dependencies</h1>
+<p>cd backend
+pip install -r requirements.txt
+```</p>
+<h3>Step 4: Install Frontend Dependencies</h3>
+<p>```bash</p>
+<h1>Navigate to the frontend directory</h1>
+<p>cd ../frontend</p>
+<h1>Install dependencies</h1>
+<p>npm install
+```</p>
+<h3>Step 5: Set Up the Database</h3>
+<p>```bash</p>
+<h1>Install PostgreSQL and PostGIS (if not using Docker)</h1>
+<p>sudo apt update
+sudo apt install postgresql postgresql-contrib postgis</p>
+<h1>Create the database</h1>
+<p>sudo -u postgres createdb carbon_verification</p>
+<h1>Enable PostGIS extension</h1>
+<p>sudo -u postgres psql -d carbon_verification -c "CREATE EXTENSION postgis;"</p>
+<h1>Run database migrations</h1>
+<p>cd ../backend
+alembic upgrade head
+```</p>
+<h3>Step 6: Start the Application</h3>
+<p>```bash</p>
+<h1>Start the backend (from the backend directory)</h1>
+<p>uvicorn main:app --reload</p>
+<h1>In a new terminal, start the frontend (from the frontend directory)</h1>
+<p>npm start
+```</p>
+<p>The application should now be running at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API documentation: http://localhost:8000/docs</p>
+<h2>Docker Deployment</h2>
+<p>For a simpler setup, you can use Docker to deploy the entire application stack.</p>
+<h3>Step 1: Clone the Repository</h3>
+<p>```bash</p>
+<h1>Clone the repository</h1>
+<p>git clone https://github.com/yourusername/carbon-credit-verification.git</p>
+<h1>Navigate to the project directory</h1>
+<p>cd carbon-credit-verification
+```</p>
+<h3>Step 2: Configure Environment Variables</h3>
+<p>```bash</p>
+<h1>Copy the example environment file</h1>
+<p>cp .env.example .env</p>
+<h1>Edit the environment file</h1>
+<p>nano .env
+```</p>
+<p>Update the environment variables as needed.</p>
+<h3>Step 3: Build and Start Docker Containers</h3>
+<p>```bash</p>
+<h1>Build and start the containers</h1>
+<p>docker-compose up -d</p>
+<h1>Check the status of the containers</h1>
+<p>docker-compose ps
+```</p>
+<h3>Step 4: Initialize the Database</h3>
+<p>```bash</p>
+<h1>Run database migrations</h1>
+<p>docker-compose exec backend alembic upgrade head</p>
+<h1>(Optional) Seed the database with sample data</h1>
+<p>docker-compose exec backend python -m app.scripts.seed_data
+```</p>
+<p>The application should now be running at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API documentation: http://localhost:8000/docs</p>
+<h2>Cloud Deployment</h2>
+<h3>AWS Deployment</h3>
+<h4>Step 1: Set Up AWS Resources</h4>
+<ol>
+<li>Create an AWS account if you don't have one</li>
+<li>Install the AWS CLI and configure it with your credentials</li>
+<li>Create an ECR repository for Docker images</li>
+<li>Set up an RDS PostgreSQL instance with PostGIS</li>
+<li>Create an ECS cluster for container deployment</li>
+</ol>
+<h4>Step 2: Build and Push Docker Images</h4>
+<p>```bash</p>
+<h1>Log in to ECR</h1>
+<p>aws ecr get-login-password --region your-region | docker login --username AWS --password-stdin your-account-id.dkr.ecr.your-region.amazonaws.com</p>
+<h1>Build and tag images</h1>
+<p>docker-compose build
+docker tag carbon-verification-backend:latest your-account-id.dkr.ecr.your-region.amazonaws.com/carbon-verification-backend:latest
+docker tag carbon-verification-frontend:latest your-account-id.dkr.ecr.your-region.amazonaws.com/carbon-verification-frontend:latest</p>
+<h1>Push images to ECR</h1>
+<p>docker push your-account-id.dkr.ecr.your-region.amazonaws.com/carbon-verification-backend:latest
+docker push your-account-id.dkr.ecr.your-region.amazonaws.com/carbon-verification-frontend:latest
+```</p>
+<h4>Step 3: Deploy to ECS</h4>
+<ol>
+<li>Create task definitions for backend and frontend</li>
+<li>Create ECS services using the task definitions</li>
+<li>Set up an Application Load Balancer</li>
+<li>Configure security groups and networking</li>
+<li>Set up environment variables in the task definitions</li>
+</ol>
+<h3>Google Cloud Platform Deployment</h3>
+<h4>Step 1: Set Up GCP Resources</h4>
+<ol>
+<li>Create a GCP account if you don't have one</li>
+<li>Install the Google Cloud SDK and configure it</li>
+<li>Create a Cloud SQL PostgreSQL instance with PostGIS</li>
+<li>Set up a Google Kubernetes Engine (GKE) cluster</li>
+</ol>
+<h4>Step 2: Build and Push Docker Images</h4>
+<p>```bash</p>
+<h1>Configure Docker to use Google Container Registry</h1>
+<p>gcloud auth configure-docker</p>
+<h1>Build and tag images</h1>
+<p>docker-compose build
+docker tag carbon-verification-backend:latest gcr.io/your-project-id/carbon-verification-backend:latest
+docker tag carbon-verification-frontend:latest gcr.io/your-project-id/carbon-verification-frontend:latest</p>
+<h1>Push images to GCR</h1>
+<p>docker push gcr.io/your-project-id/carbon-verification-backend:latest
+docker push gcr.io/your-project-id/carbon-verification-frontend:latest
+```</p>
+<h4>Step 3: Deploy to GKE</h4>
+<ol>
+<li>Create Kubernetes deployment files</li>
+<li>Apply the deployment files to your GKE cluster</li>
+<li>Set up a load balancer</li>
+<li>Configure environment variables as Kubernetes secrets</li>
+</ol>
+<h2>Database Setup</h2>
+<h3>PostgreSQL with PostGIS</h3>
+<p>The application requires PostgreSQL with the PostGIS extension for geospatial data handling.</p>
+<h4>Manual Setup</h4>
+<p>```bash</p>
+<h1>Install PostgreSQL and PostGIS</h1>
+<p>sudo apt update
+sudo apt install postgresql postgresql-contrib postgis</p>
+<h1>Create a database user</h1>
+<p>sudo -u postgres createuser --interactive --pwprompt</p>
+<h1>Create the database</h1>
+<p>sudo -u postgres createdb carbon_verification</p>
+<h1>Enable PostGIS extension</h1>
+<p>sudo -u postgres psql -d carbon_verification -c "CREATE EXTENSION postgis;"
+```</p>
+<h4>Docker Setup</h4>
+<p>The Docker Compose configuration includes a PostgreSQL container with PostGIS already configured.</p>
+<h2>Environment Configuration</h2>
+<p>The application uses environment variables for configuration. Key variables include:</p>
+<h3>Backend Environment Variables</h3>
+<p>```</p>
+<h1>Database</h1>
+<p>DATABASE_URL=postgresql://user:password@host:port/dbname</p>
+<h1>Authentication</h1>
+<p>SECRET_KEY=your-secret-key
+ACCESS_TOKEN_EXPIRE_MINUTES=30</p>
+<h1>Sentinel-2 API</h1>
+<p>SENTINEL_USERNAME=your-copernicus-username
+SENTINEL_PASSWORD=your-copernicus-password</p>
+<h1>Blockchain</h1>
+<p>POLYGON_RPC_URL=https://polygon-mumbai.infura.io/v3/your-infura-key
+POLYGON_PRIVATE_KEY=your-private-key
+CONTRACT_ADDRESS=your-contract-address</p>
+<h1>Storage</h1>
+<p>STORAGE_PATH=/path/to/storage
+```</p>
+<h3>Frontend Environment Variables</h3>
+<p><code>REACT_APP_API_URL=http://localhost:8000
+REACT_APP_MAPBOX_TOKEN=your-mapbox-token</code></p>
+<h2>ML Model Setup</h2>
+<p>The ML components require additional setup for training and inference.</p>
+<h3>Step 1: Install ML Dependencies</h3>
+<p>```bash</p>
+<h1>Navigate to the ML directory</h1>
+<p>cd ml</p>
+<h1>Install dependencies</h1>
+<p>pip install -r requirements.txt
+```</p>
+<h3>Step 2: Download Pre-trained Models</h3>
+<p>```bash</p>
+<h1>Create models directory</h1>
+<p>mkdir -p models</p>
+<h1>Download pre-trained model</h1>
+<p>python -c "
+import torch
+import torch.nn as nn
+import os
+from training.train_forest_change import UNet</p>
+<h1>Initialize model</h1>
+<p>model = UNet(in_channels=4, out_channels=2)</p>
+<h1>Save empty model</h1>
+<p>os.makedirs('models', exist_ok=True)
+torch.save(model.state_dict(), 'models/forest_change_unet.pth')
+print('Created empty model file. Replace with actual trained model when available.')
+"
+```</p>
+<h3>Step 3: Set Up Data Directories</h3>
+<p>```bash</p>
+<h1>Create data directories</h1>
+<p>mkdir -p data/raw/sentinel
+mkdir -p data/raw/hansen
+mkdir -p data/prepared
+mkdir -p results
+```</p>
+<h3>Step 4: Configure Sentinel-2 API Access</h3>
+<p>Ensure your Sentinel-2 API credentials are set in the environment variables:</p>
+<p><code>bash
+export SENTINEL_USERNAME=your-copernicus-username
+export SENTINEL_PASSWORD=your-copernicus-password</code></p>
+<h2>Blockchain Integration</h2>
+<p>The application integrates with the Polygon blockchain for certification.</p>
+<h3>Step 1: Set Up Polygon Connection</h3>
+<ol>
+<li>Create an account on Polygon (if you don't have one)</li>
+<li>Get testnet MATIC from a faucet for development</li>
+<li>Set up an Infura or Alchemy account for RPC access</li>
+</ol>
+<h3>Step 2: Deploy Smart Contract</h3>
+<p>```bash</p>
+<h1>Navigate to the blockchain directory</h1>
+<p>cd blockchain</p>
+<h1>Install dependencies</h1>
+<p>npm install</p>
+<h1>Compile contracts</h1>
+<p>npx hardhat compile</p>
+<h1>Deploy to Polygon Mumbai testnet</h1>
+<p>npx hardhat run scripts/deploy.js --network mumbai
+```</p>
+<h3>Step 3: Configure Contract Address</h3>
+<p>Update the <code>CONTRACT_ADDRESS</code> environment variable with the deployed contract address.</p>
+<h2>Testing the Installation</h2>
+<h3>Backend Tests</h3>
+<p>```bash</p>
+<h1>Navigate to the backend directory</h1>
+<p>cd backend</p>
+<h1>Run tests</h1>
+<p>pytest
+```</p>
+<h3>Frontend Tests</h3>
+<p>```bash</p>
+<h1>Navigate to the frontend directory</h1>
+<p>cd frontend</p>
+<h1>Run tests</h1>
+<p>npm test
+```</p>
+<h3>End-to-End Tests</h3>
+<p>```bash</p>
+<h1>Navigate to the project root</h1>
+<p>cd ..</p>
+<h1>Run end-to-end tests</h1>
+<p>npm run test:e2e
+```</p>
+<h3>Manual Testing</h3>
+<ol>
+<li>Open the application in your browser</li>
+<li>Register a new account</li>
+<li>Create a test project</li>
+<li>Upload sample satellite imagery</li>
+<li>Run a forest change detection analysis</li>
+<li>Verify the results are displayed correctly</li>
+</ol>
+<h2>Troubleshooting</h2>
+<h3>Common Installation Issues</h3>
+<h4>Database Connection Errors</h4>
+<p><strong>Problem</strong>: Unable to connect to the database.</p>
+<p><strong>Solutions</strong>:
+1. Check that PostgreSQL is running: <code>sudo systemctl status postgresql</code>
+2. Verify database credentials in the <code>.env</code> file
+3. Ensure the database and user exist: <code>sudo -u postgres psql -c "\l"</code>
+4. Check network connectivity if using a remote database</p>
+<h4>Docker Compose Errors</h4>
+<p><strong>Problem</strong>: Docker Compose fails to start containers.</p>
+<p><strong>Solutions</strong>:
+1. Check Docker and Docker Compose versions: <code>docker --version &amp;&amp; docker-compose --version</code>
+2. Verify that Docker daemon is running: <code>sudo systemctl status docker</code>
+3. Check for port conflicts: <code>netstat -tuln</code>
+4. Inspect container logs: <code>docker-compose logs</code></p>
+<h4>ML Model Loading Errors</h4>
+<p><strong>Problem</strong>: ML model fails to load.</p>
+<p><strong>Solutions</strong>:
+1. Verify the model file exists: <code>ls -la ml/models/</code>
+2. Check PyTorch version compatibility: <code>python -c "import torch; print(torch.__version__)"</code>
+3. Ensure CUDA is available if using GPU: <code>python -c "import torch; print(torch.cuda.is_available())"</code>
+4. Try downloading a pre-trained model from the project repository</p>
+<h3>Getting Help</h3>
+<p>If you encounter issues not covered in this guide:</p>
+<ol>
+<li>Check the project GitHub repository for known issues</li>
+<li>Join the developer community on Discord</li>
+<li>Submit an issue on GitHub with detailed information</li>
+<li>Contact the maintainers directly</li>
+</ol>
+<h2>Upgrading</h2>
+<h3>Upgrading from Previous Versions</h3>
+<p>```bash</p>
+<h1>Pull the latest changes</h1>
+<p>git pull origin main</p>
+<h1>Update dependencies</h1>
+<p>cd backend &amp;&amp; pip install -r requirements.txt
+cd ../frontend &amp;&amp; npm install</p>
+<h1>Run database migrations</h1>
+<p>cd ../backend &amp;&amp; alembic upgrade head</p>
+<h1>Rebuild Docker containers (if using Docker)</h1>
+<p>cd .. &amp;&amp; docker-compose build &amp;&amp; docker-compose up -d
+```</p>
+<h3>Version-Specific Upgrade Notes</h3>
+<h4>Upgrading to v1.1</h4>
+<ul>
+<li>Database schema changes require running migrations</li>
+<li>New environment variables for blockchain integration</li>
+<li>Frontend dependencies updated to React 18</li>
+</ul>
+<h4>Upgrading to v1.2</h4>
+<ul>
+<li>ML model format changed, requires redownloading pre-trained models</li>
+<li>API endpoints for verification have changed</li>
+<li>New features for carbon sequestration estimation</li>
+</ul>
+<hr />
+<p>This installation guide provides comprehensive instructions for setting up and deploying the Carbon Credit Verification SaaS application. For user instructions, please refer to the user guide documentation.</p>
+</div>
+
+        <div class="footer">
+            <p>&copy; 2025 Carbon Credit Verification SaaS. All rights reserved.</p>
+        </div>
+    </div>
+    
+    <script src="js/script.js"></script>
+</body>
+</html>

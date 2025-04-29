@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Pipeline - Carbon Credit Verification SaaS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>Carbon Credit Verification</h1>
+            <p>Documentation</p>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search documentation...">
+            <div id="search-results" class="search-results"></div>
+        </div>
+        
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="index.html" class="nav-link">Home</a>
+            </li>
+            
+            <div class="nav-section">Business</div>
+            <li class="nav-item">
+                <a href="business_overview.html" class="nav-link">Business Overview</a>
+            </li>
+            <li class="nav-item">
+                <a href="business_value.html" class="nav-link">Value Proposition</a>
+            </li>
+            <li class="nav-item">
+                <a href="market_analysis.html" class="nav-link">Market Analysis</a>
+            </li>
+            
+            <div class="nav-section">Technical</div>
+            <li class="nav-item">
+                <a href="technical_overview.html" class="nav-link">Technical Overview</a>
+            </li>
+            <li class="nav-item">
+                <a href="system_architecture.html" class="nav-link">System Architecture</a>
+            </li>
+            <li class="nav-item">
+                <a href="data_model.html" class="nav-link">Data Model</a>
+            </li>
+            <li class="nav-item">
+                <a href="ml_pipeline.html" class="nav-link">ML Pipeline</a>
+            </li>
+            
+            <div class="nav-section">User Guides</div>
+            <li class="nav-item">
+                <a href="user_guide.html" class="nav-link">User Guide</a>
+            </li>
+            
+            <div class="nav-section">Installation</div>
+            <li class="nav-item">
+                <a href="installation_guide.html" class="nav-link">Installation Guide</a>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="main-content">
+        <div class="content-header">
+            <h1>Machine Learning Pipeline</h1>
+            <ul class="breadcrumb">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="technical_overview.html">Technical</a></li>
+                <li>ML Pipeline</li>
+            </ul>
+        </div>
+        
+        <div class="content-section">
+            <h2>Complete ML Pipeline Overview</h2>
+            <p>The machine learning pipeline is a critical component of the Carbon Credit Verification system, responsible for analyzing satellite imagery and detecting forest cover changes. The pipeline consists of several key stages, as shown in the diagram below:</p>
+            
+            <div class="diagram-container">
+                <img src="images/ml_pipeline.png" alt="ML Pipeline Diagram" class="diagram">
+                <p class="diagram-caption">Figure 1: Complete Machine Learning Pipeline for Carbon Credit Verification</p>
+            </div>
+            
+            <h2>1. Data Acquisition</h2>
+            <p>The first stage of the pipeline involves acquiring the necessary satellite imagery and reference data:</p>
+            
+            <h3>Sentinel-2 Imagery</h3>
+            <p>The system downloads Sentinel-2 satellite imagery from the Copernicus Open Access Hub using their API. Sentinel-2 provides high-resolution multispectral imagery with the following characteristics:</p>
+            <ul>
+                <li>10m spatial resolution for key bands (B02, B03, B04, B08)</li>
+                <li>5-day revisit time (with two satellites)</li>
+                <li>13 spectral bands from visible to SWIR</li>
+                <li>Free and open access</li>
+            </ul>
+            
+            <h3>Hansen Global Forest Change Data</h3>
+            <p>Reference data for forest cover change is obtained from the Hansen Global Forest Change dataset, which provides:</p>
+            <ul>
+                <li>Global forest extent and change from 2000 to present</li>
+                <li>30m resolution data</li>
+                <li>Annual updates</li>
+                <li>Tree cover, forest loss, and forest gain information</li>
+            </ul>
+            
+            <h3>Implementation</h3>
+            <p>The <code>data_preparation.py</code> script handles this process automatically with functions that:</p>
+            <ul>
+                <li>Connect to the Copernicus Open Access Hub API</li>
+                <li>Download Sentinel-2 imagery for your area of interest</li>
+                <li>Download corresponding Hansen Global Forest Change data</li>
+                <li>Prepare the data for training</li>
+            </ul>
+            
+            <div class="note">
+                <strong>Note:</strong> You need to register for API access at <a href="https://scihub.copernicus.eu/" target="_blank">https://scihub.copernicus.eu/</a> and update the credentials in the code.
+            </div>
+            
+            <h2>2. Data Preprocessing</h2>
+            <p>Once the raw data is acquired, it undergoes several preprocessing steps:</p>
+            
+            <h3>Band Extraction</h3>
+            <p>The system extracts the relevant bands from Sentinel-2 imagery:</p>
+            <ul>
+                <li><strong>B02 (Blue):</strong> 490nm wavelength, useful for coastal aerosol and water penetration</li>
+                <li><strong>B03 (Green):</strong> 560nm wavelength, peak vegetation reflectance</li>
+                <li><strong>B04 (Red):</strong> 665nm wavelength, vegetation chlorophyll absorption</li>
+                <li><strong>B08 (NIR):</strong> 842nm wavelength, vegetation reflectance plateau</li>
+            </ul>
+            
+            <h3>NDVI Calculation</h3>
+            <p>The Normalized Difference Vegetation Index (NDVI) is calculated using the formula:</p>
+            <pre><code>NDVI = (NIR - Red) / (NIR + Red) = (B08 - B04) / (B08 + B04)</code></pre>
+            <p>NDVI values range from -1 to 1, with higher values indicating denser vegetation.</p>
+            
+            <h3>Data Normalization</h3>
+            <p>Pixel values are normalized to improve model training:</p>
+            <ul>
+                <li>Scaling values to the range [0, 1]</li>
+                <li>Standardizing with mean and standard deviation</li>
+                <li>Handling missing or invalid data</li>
+            </ul>
+            
+            <h3>Patch Creation</h3>
+            <p>Large satellite images are divided into 256x256 pixel patches for processing, which:</p>
+            <ul>
+                <li>Makes training more efficient</li>
+                <li>Allows for parallel processing</li>
+                <li>Provides consistent input size for the neural network</li>
+                <li>Enables effective data augmentation</li>
+            </ul>
+            
+            <h2>3. Model Training</h2>
+            <p>The model training process involves several components:</p>
+            
+            <h3>Dataset Creation</h3>
+            <p>The <code>ForestChangeDataset</code> class in <code>train_forest_change.py</code> creates a PyTorch dataset that:</p>
+            <ul>
+                <li>Loads preprocessed image patches</li>
+                <li>Pairs them with ground truth labels from Hansen data</li>
+                <li>Implements data augmentation (rotation, flipping, etc.)</li>
+                <li>Handles batching and shuffling</li>
+            </ul>
+            
+            <h3>U-Net Model</h3>
+            <p>A U-Net architecture is initialized for semantic segmentation, featuring:</p>
+            <ul>
+                <li>Encoder-decoder structure with skip connections</li>
+                <li>4 input channels (B02, B03, B04, B08)</li>
+                <li>2 output channels (forest/non-forest)</li>
+                <li>Batch normalization and dropout for regularization</li>
+            </ul>
+            
+            <h3>Training Process</h3>
+            <p>The model is trained to detect forest cover changes with:</p>
+            <ul>
+                <li>Binary cross-entropy loss function</li>
+                <li>Adam optimizer with learning rate scheduling</li>
+                <li>Early stopping to prevent overfitting</li>
+                <li>Gradient clipping for training stability</li>
+            </ul>
+            
+            <h3>Validation</h3>
+            <p>Performance is evaluated on a validation set using metrics such as:</p>
+            <ul>
+                <li>Intersection over Union (IoU)</li>
+                <li>F1 score</li>
+                <li>Precision and recall</li>
+                <li>Overall accuracy</li>
+            </ul>
+            
+            <h3>Model Saving</h3>
+            <p>The trained model is saved as a .pth file, containing:</p>
+            <ul>
+                <li>Model weights and architecture</li>
+                <li>Training metadata</li>
+                <li>Performance metrics</li>
+                <li>Preprocessing parameters</li>
+            </ul>
+            
+            <h2>4. Inference</h2>
+            <p>Once the model is trained, it can be used for inference on new satellite imagery:</p>
+            
+            <h3>New Image Processing</h3>
+            <p>New Sentinel-2 images are preprocessed the same way as training data:</p>
+            <ul>
+                <li>Band extraction</li>
+                <li>NDVI calculation</li>
+                <li>Normalization</li>
+                <li>Patch creation</li>
+            </ul>
+            
+            <h3>Model Loading</h3>
+            <p>The trained model is loaded from the saved .pth file.</p>
+            
+            <h3>Prediction</h3>
+            <p>The model predicts forest cover changes in the new imagery, generating:</p>
+            <ul>
+                <li>Segmentation maps showing forest/non-forest areas</li>
+                <li>Change detection maps showing forest gain/loss</li>
+                <li>Confidence scores for predictions</li>
+            </ul>
+            
+            <h2>5. Explainable AI</h2>
+            <p>To ensure transparency and trust, the system implements several XAI techniques:</p>
+            
+            <h3>Multiple XAI Methods</h3>
+            <p>The system implements three complementary XAI techniques:</p>
+            <ul>
+                <li><strong>Integrated Gradients:</strong> Attributes predictions to input features</li>
+                <li><strong>Gradient SHAP:</strong> Explains the impact of each feature on the output</li>
+                <li><strong>Occlusion:</strong> Measures the effect of hiding parts of the input</li>
+            </ul>
+            
+            <h3>Visualization</h3>
+            <p>Results are visualized to explain model decisions through:</p>
+            <ul>
+                <li>Heatmaps showing feature importance</li>
+                <li>Saliency maps highlighting influential regions</li>
+                <li>Comparative visualizations of different XAI methods</li>
+                <li>Interactive exploration tools</li>
+            </ul>
+            
+            <h2>6. Carbon Sequestration Estimation</h2>
+            <p>Based on the forest change detection, the system estimates carbon impact:</p>
+            
+            <h3>Before/After Comparison</h3>
+            <p>Compares imagery from different time points to identify changes.</p>
+            
+            <h3>Forest Change Calculation</h3>
+            <p>Quantifies forest cover changes in terms of:</p>
+            <ul>
+                <li>Area (hectares)</li>
+                <li>Percentage change</li>
+                <li>Change rate over time</li>
+            </ul>
+            
+            <h3>Carbon Impact</h3>
+            <p>Estimates carbon sequestration or emissions based on:</p>
+            <ul>
+                <li>Forest type and density</li>
+                <li>Biomass conversion factors</li>
+                <li>Carbon content ratios</li>
+                <li>Uncertainty analysis</li>
+            </ul>
+            
+            <h3>Visualization</h3>
+            <p>Creates visualizations of carbon impact through:</p>
+            <ul>
+                <li>Carbon stock maps</li>
+                <li>Change heatmaps</li>
+                <li>Time series graphs</li>
+                <li>Comparative analyses</li>
+            </ul>
+            
+            <h2>7. API Integration</h2>
+            <p>The ML pipeline is integrated with the backend API:</p>
+            
+            <h3>FastAPI Endpoints</h3>
+            <p>The <code>satellite.py</code> file in the backend implements API endpoints for:</p>
+            <ul>
+                <li>Uploading satellite imagery</li>
+                <li>Running forest change detection</li>
+                <li>Estimating carbon sequestration</li>
+                <li>Retrieving analysis results</li>
+                <li>Accessing explanations</li>
+            </ul>
+            
+            <h3>Blockchain Certification</h3>
+            <p>Results can be certified on the blockchain, creating:</p>
+            <ul>
+                <li>Immutable verification records</li>
+                <li>Transparent audit trails</li>
+                <li>Tamper-proof certificates</li>
+            </ul>
+            
+            <h3>Human-in-the-Loop Review</h3>
+            <p>The system allows expert verification of results through:</p>
+            <ul>
+                <li>Review interfaces</li>
+                <li>Annotation tools</li>
+                <li>Feedback mechanisms</li>
+                <li>Approval workflows</li>
+            </ul>
+            
+            <h2>8. Frontend</h2>
+            <p>The ML results are presented to users through the frontend:</p>
+            
+            <h3>Web Interface</h3>
+            <p>React-based interface for interacting with the system.</p>
+            
+            <h3>Interactive Map</h3>
+            <p>Leaflet.js for visualizing geospatial data, including:</p>
+            <ul>
+                <li>Project boundaries</li>
+                <li>Forest cover maps</li>
+                <li>Change detection results</li>
+                <li>Carbon impact visualizations</li>
+            </ul>
+            
+            <h3>Dashboard</h3>
+            <p>Charts and visualizations of results, including:</p>
+            <ul>
+                <li>Summary statistics</li>
+                <li>Time series analysis</li>
+                <li>Comparison reports</li>
+                <li>Verification status</li>
+            </ul>
+            
+            <h2>How to Train the Model</h2>
+            <p>To train the model with your own data:</p>
+            
+            <h3>1. Prepare your area of interest</h3>
+            <pre><code>python ml/utils/data_preparation.py --aoi your_area.geojson --start_date 2020-01-01 --end_date 2021-01-01 --output_dir ml/data/</code></pre>
+            
+            <h3>2. Train the model</h3>
+            <pre><code>python ml/training/train_forest_change.py</code></pre>
+            
+            <h3>3. Run inference on new images</h3>
+            <pre><code>python ml/inference/predict_forest_change.py --image_path path/to/new/image --output_dir ml/results/</code></pre>
+            
+            <h3>4. Estimate carbon sequestration</h3>
+            <pre><code>python ml/inference/estimate_carbon_sequestration.py --before_image path/to/before --after_image path/to/after --output_dir ml/results/</code></pre>
+            
+            <div class="tip">
+                <strong>Tip:</strong> For best results, use images from the same season to minimize differences due to seasonal vegetation changes.
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2025 Carbon Credit Verification SaaS. All rights reserved.</p>
+        </div>
+    </div>
+    
+    <script src="js/script.js"></script>
+</body>
+</html>

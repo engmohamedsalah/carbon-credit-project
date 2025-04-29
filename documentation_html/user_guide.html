@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Guide - Carbon Credit Verification SaaS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>Carbon Credit Verification</h1>
+            <p>Documentation</p>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search documentation...">
+            <div id="search-results" class="search-results"></div>
+        </div>
+        
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="index.html" class="nav-link">Home</a>
+            </li>
+            
+            <div class="nav-section">Business</div>
+            <li class="nav-item">
+                <a href="business_overview.html" class="nav-link">Business Overview</a>
+            </li>
+            <li class="nav-item">
+                <a href="business_value.html" class="nav-link">Value Proposition</a>
+            </li>
+            <li class="nav-item">
+                <a href="market_analysis.html" class="nav-link">Market Analysis</a>
+            </li>
+            
+            <div class="nav-section">Technical</div>
+            <li class="nav-item">
+                <a href="technical_overview.html" class="nav-link">Technical Overview</a>
+            </li>
+            <li class="nav-item">
+                <a href="system_architecture.html" class="nav-link">System Architecture</a>
+            </li>
+            <li class="nav-item">
+                <a href="data_model.html" class="nav-link">Data Model</a>
+            </li>
+            <li class="nav-item">
+                <a href="ml_pipeline.html" class="nav-link">ML Pipeline</a>
+            </li>
+            
+            <div class="nav-section">User Guides</div>
+            <li class="nav-item">
+                <a href="user_guide.html" class="nav-link">User Guide</a>
+            </li>
+            
+            <div class="nav-section">Installation</div>
+            <li class="nav-item">
+                <a href="installation_guide.html" class="nav-link">Installation Guide</a>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="main-content">
+        <div class="content-header">
+            <h1>User Guide</h1>
+            
+            <ul class="breadcrumb">
+                <li><a href="index.html">Home</a></li>
+                <li>User Guide</li>
+            </ul>
+        
+        </div>
+        
+        <div class="content-section">
+<h1>Carbon Credit Verification SaaS Application</h1>
+<h2>User Guide</h2>
+<p>This comprehensive user guide provides step-by-step instructions for using the Carbon Credit Verification SaaS application, from account creation to verification certification.</p>
+<h2>Table of Contents</h2>
+<ol>
+<li><a href="#getting-started">Getting Started</a></li>
+<li><a href="#dashboard-overview">Dashboard Overview</a></li>
+<li><a href="#creating-a-new-project">Creating a New Project</a></li>
+<li><a href="#uploading-satellite-imagery">Uploading Satellite Imagery</a></li>
+<li><a href="#running-forest-change-detection">Running Forest Change Detection</a></li>
+<li><a href="#understanding-analysis-results">Understanding Analysis Results</a></li>
+<li><a href="#carbon-sequestration-estimation">Carbon Sequestration Estimation</a></li>
+<li><a href="#verification-workflow">Verification Workflow</a></li>
+<li><a href="#blockchain-certification">Blockchain Certification</a></li>
+<li><a href="#reports-and-exports">Reports and Exports</a></li>
+<li><a href="#account-management">Account Management</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+</ol>
+<h2>Getting Started</h2>
+<h3>Creating an Account</h3>
+<ol>
+<li>Navigate to the application URL in your web browser</li>
+<li>Click the "Register" button in the top-right corner</li>
+<li>Fill in the registration form with your details:</li>
+<li>Email address</li>
+<li>Full name</li>
+<li>Password (minimum 8 characters)</li>
+<li>Organization (optional)</li>
+<li>Click "Create Account"</li>
+<li>Verify your email address by clicking the link sent to your inbox</li>
+<li>Log in with your credentials</li>
+</ol>
+<h3>Logging In</h3>
+<ol>
+<li>Navigate to the application URL</li>
+<li>Enter your email and password</li>
+<li>Click "Log In"</li>
+<li>If you've forgotten your password, click "Forgot Password" and follow the instructions</li>
+</ol>
+<h3>User Interface Overview</h3>
+<p>The application interface consists of several key areas:</p>
+<ul>
+<li><strong>Top Navigation Bar</strong>: Access to main sections and account settings</li>
+<li><strong>Side Menu</strong>: Project navigation and tools</li>
+<li><strong>Main Content Area</strong>: Primary workspace for current activity</li>
+<li><strong>Notification Center</strong>: System messages and alerts</li>
+</ul>
+<h2>Dashboard Overview</h2>
+<p>The dashboard provides a comprehensive overview of your projects and activities:</p>
+<h3>Dashboard Sections</h3>
+<ol>
+<li><strong>Project Summary</strong>: Overview of all your projects</li>
+<li>Project count by status</li>
+<li>Recent activity timeline</li>
+<li>
+<p>Quick access to active projects</p>
+</li>
+<li>
+<p><strong>Verification Status</strong>: Summary of verification processes</p>
+</li>
+<li>Pending verifications</li>
+<li>Completed verifications</li>
+<li>
+<p>Verification success rate</p>
+</li>
+<li>
+<p><strong>Carbon Impact</strong>: Visualization of carbon sequestration results</p>
+</li>
+<li>Total carbon impact across projects</li>
+<li>Carbon impact trends over time</li>
+<li>
+<p>Comparison with baseline</p>
+</li>
+<li>
+<p><strong>Quick Actions</strong>: Shortcuts to common tasks</p>
+</li>
+<li>Create new project</li>
+<li>Upload satellite imagery</li>
+<li>Start verification</li>
+<li>Generate reports</li>
+</ol>
+<h3>Filtering and Sorting</h3>
+<ul>
+<li>Use the filter dropdown to view specific project types</li>
+<li>Sort projects by name, date, status, or carbon impact</li>
+<li>Use the search bar to find specific projects</li>
+</ul>
+<h2>Creating a New Project</h2>
+<h3>Step 1: Project Setup</h3>
+<ol>
+<li>Click "New Project" on the dashboard or side menu</li>
+<li>Enter basic project information:</li>
+<li>Project name</li>
+<li>Description</li>
+<li>Project type (e.g., Reforestation, Avoided Deforestation)</li>
+<li>Start date</li>
+</ol>
+<h3>Step 2: Define Project Area</h3>
+<ol>
+<li>On the map interface, define your project area using one of these methods:</li>
+<li>Draw polygon directly on the map</li>
+<li>Upload GeoJSON file with project boundaries</li>
+<li>Enter coordinates manually</li>
+<li>
+<p>Search for a location and define radius</p>
+</li>
+<li>
+<p>Adjust the boundaries as needed using the editing tools</p>
+</li>
+<li>Click "Save Area" when finished</li>
+</ol>
+<h3>Step 3: Project Details</h3>
+<ol>
+<li>Enter additional project details:</li>
+<li>Project methodology</li>
+<li>Expected carbon impact</li>
+<li>Project timeline</li>
+<li>Stakeholders</li>
+<li>
+<p>Additional documentation (optional)</p>
+</li>
+<li>
+<p>Click "Create Project" to finalize</p>
+</li>
+</ol>
+<h2>Uploading Satellite Imagery</h2>
+<h3>Automatic Satellite Imagery Acquisition</h3>
+<p>The system can automatically acquire satellite imagery for your project area:</p>
+<ol>
+<li>Navigate to your project page</li>
+<li>Click "Acquire Satellite Imagery" tab</li>
+<li>Select date range for imagery</li>
+<li>Choose imagery source (default: Sentinel-2)</li>
+<li>Click "Acquire Images"</li>
+<li>The system will automatically download appropriate imagery</li>
+<li>Once complete, you'll receive a notification</li>
+</ol>
+<h3>Manual Satellite Imagery Upload</h3>
+<p>If you have your own satellite imagery:</p>
+<ol>
+<li>Navigate to your project page</li>
+<li>Click "Upload Satellite Imagery" tab</li>
+<li>Select imagery type (Sentinel-2, Landsat, etc.)</li>
+<li>Upload band files:</li>
+<li>For Sentinel-2: Upload B02, B03, B04, B08 band files</li>
+<li>For Landsat: Upload appropriate band files</li>
+<li>Enter imagery date and metadata</li>
+<li>Click "Upload"</li>
+</ol>
+<h3>Managing Satellite Imagery</h3>
+<ul>
+<li>View all uploaded imagery in the "Imagery" tab</li>
+<li>Filter imagery by date, type, or quality</li>
+<li>Preview imagery with different band combinations</li>
+<li>Delete or replace imagery as needed</li>
+</ul>
+<h2>Running Forest Change Detection</h2>
+<h3>Starting Analysis</h3>
+<ol>
+<li>Navigate to your project page</li>
+<li>Select the "Analysis" tab</li>
+<li>Choose the satellite images to analyze:</li>
+<li>For change detection: Select "before" and "after" images</li>
+<li>For single-point analysis: Select one image</li>
+<li>Select analysis type:</li>
+<li>Forest Cover Change Detection</li>
+<li>Carbon Stock Estimation</li>
+<li>Custom Analysis (advanced)</li>
+<li>Click "Start Analysis"</li>
+</ol>
+<h3>Monitoring Progress</h3>
+<ol>
+<li>The analysis progress is displayed in real-time</li>
+<li>You can continue using the application during processing</li>
+<li>You'll receive a notification when analysis is complete</li>
+<li>View the analysis queue for multiple running analyses</li>
+</ol>
+<h2>Understanding Analysis Results</h2>
+<h3>Forest Change Detection Results</h3>
+<p>The results page displays several key elements:</p>
+<ol>
+<li><strong>Overview Map</strong>: Visual representation of the project area with detected changes</li>
+<li>Green: Forest gain</li>
+<li>Red: Forest loss</li>
+<li>
+<p>Gray: No change</p>
+</li>
+<li>
+<p><strong>Statistics Panel</strong>:</p>
+</li>
+<li>Total area analyzed</li>
+<li>Forest cover percentage</li>
+<li>Forest loss area (hectares)</li>
+<li>Forest gain area (hectares)</li>
+<li>
+<p>Net change</p>
+</li>
+<li>
+<p><strong>Confidence Metrics</strong>:</p>
+</li>
+<li>Overall confidence score</li>
+<li>Area-specific confidence heatmap</li>
+<li>
+<p>Factors affecting confidence</p>
+</li>
+<li>
+<p><strong>Explainable AI Visualizations</strong>:</p>
+</li>
+<li>Feature importance heatmap</li>
+<li>Decision explanation for specific areas</li>
+<li>Comparison with reference data</li>
+</ol>
+<h3>Interpreting Visualizations</h3>
+<ul>
+<li><strong>RGB Composite</strong>: Natural color view of the area</li>
+<li><strong>NDVI Visualization</strong>: Vegetation health indicator</li>
+<li><strong>Change Detection Map</strong>: Areas of forest loss/gain</li>
+<li><strong>Confidence Map</strong>: Reliability of predictions</li>
+<li><strong>Explanation Map</strong>: Factors influencing predictions</li>
+</ul>
+<h3>Exploring Results</h3>
+<ol>
+<li>Use the map navigation tools to zoom and pan</li>
+<li>Click on specific areas to see detailed information</li>
+<li>Toggle different visualization layers</li>
+<li>Adjust visualization parameters as needed</li>
+<li>Export results in various formats</li>
+</ol>
+<h2>Carbon Sequestration Estimation</h2>
+<h3>Running Carbon Estimation</h3>
+<ol>
+<li>Navigate to your project's analysis results</li>
+<li>Click "Estimate Carbon Impact"</li>
+<li>Select carbon estimation methodology:</li>
+<li>Standard IPCC methodology</li>
+<li>Custom methodology</li>
+<li>Enter additional parameters if required</li>
+<li>Click "Calculate"</li>
+</ol>
+<h3>Understanding Carbon Results</h3>
+<p>The carbon estimation results include:</p>
+<ol>
+<li><strong>Carbon Stock</strong>:</li>
+<li>Total carbon stock (tons C)</li>
+<li>Carbon density (tons C/ha)</li>
+<li>
+<p>Uncertainty range</p>
+</li>
+<li>
+<p><strong>Carbon Change</strong>:</p>
+</li>
+<li>Net carbon change (tons C)</li>
+<li>CO₂ equivalent (tons CO₂e)</li>
+<li>
+<p>Annual rate of change</p>
+</li>
+<li>
+<p><strong>Visualizations</strong>:</p>
+</li>
+<li>Carbon stock distribution map</li>
+<li>Carbon change heatmap</li>
+<li>
+<p>Comparison with baseline</p>
+</li>
+<li>
+<p><strong>Uncertainty Analysis</strong>:</p>
+</li>
+<li>Confidence intervals</li>
+<li>Sensitivity analysis</li>
+<li>Comparison with ground truth (if available)</li>
+</ol>
+<h2>Verification Workflow</h2>
+<h3>Initiating Verification</h3>
+<ol>
+<li>Navigate to your project's analysis results</li>
+<li>Click "Start Verification"</li>
+<li>Select verification type:</li>
+<li>Standard verification</li>
+<li>Enhanced verification (with additional review)</li>
+<li>Custom verification</li>
+<li>Add supporting documentation (optional)</li>
+<li>Click "Submit for Verification"</li>
+</ol>
+<h3>Human-in-the-Loop Review</h3>
+<p>The verification process includes expert review:</p>
+<ol>
+<li>System performs automated checks</li>
+<li>Results are queued for expert review</li>
+<li>Expert reviewer examines:</li>
+<li>Analysis results</li>
+<li>Methodology compliance</li>
+<li>Data quality</li>
+<li>Uncertainty assessment</li>
+<li>Reviewer may request additional information</li>
+<li>Reviewer approves or rejects verification</li>
+</ol>
+<h3>Verification Status Tracking</h3>
+<p>Track verification progress in the "Verification" tab:</p>
+<ol>
+<li><strong>Pending</strong>: Initial submission</li>
+<li><strong>In Review</strong>: Under expert examination</li>
+<li><strong>Information Requested</strong>: Additional data needed</li>
+<li><strong>Approved</strong>: Verification successful</li>
+<li><strong>Rejected</strong>: Verification unsuccessful</li>
+<li><strong>Certified</strong>: Blockchain certification complete</li>
+</ol>
+<h2>Blockchain Certification</h2>
+<h3>Creating Certificates</h3>
+<p>Once verification is approved:</p>
+<ol>
+<li>Navigate to the verified project</li>
+<li>Click "Create Certificate"</li>
+<li>Review certificate details:</li>
+<li>Project information</li>
+<li>Verification results</li>
+<li>Carbon impact</li>
+<li>Methodology reference</li>
+<li>Click "Certify on Blockchain"</li>
+</ol>
+<h3>Certificate Details</h3>
+<p>Each blockchain certificate contains:</p>
+<ol>
+<li><strong>Project Identifier</strong>: Unique project reference</li>
+<li><strong>Verification Timestamp</strong>: Date and time of verification</li>
+<li><strong>Results Hash</strong>: Cryptographic hash of detailed results</li>
+<li><strong>Verifier Information</strong>: Who performed the verification</li>
+<li><strong>Methodology Reference</strong>: Standards followed</li>
+<li><strong>Carbon Impact</strong>: Quantified carbon sequestration</li>
+</ol>
+<h3>Viewing and Sharing Certificates</h3>
+<ol>
+<li>Access certificates from the "Certificates" tab</li>
+<li>View certificate details including blockchain transaction</li>
+<li>Share certificates via:</li>
+<li>Public URL</li>
+<li>PDF export</li>
+<li>Blockchain explorer link</li>
+<li>Verify certificate authenticity using the verification tool</li>
+</ol>
+<h2>Reports and Exports</h2>
+<h3>Generating Reports</h3>
+<ol>
+<li>Navigate to your project</li>
+<li>Click "Reports" tab</li>
+<li>Select report type:</li>
+<li>Project Summary</li>
+<li>Verification Report</li>
+<li>Carbon Impact Report</li>
+<li>Technical Analysis Report</li>
+<li>Custom Report</li>
+<li>Configure report parameters</li>
+<li>Click "Generate Report"</li>
+</ol>
+<h3>Export Formats</h3>
+<p>Export data in various formats:</p>
+<ol>
+<li><strong>Documents</strong>:</li>
+<li>PDF</li>
+<li>Word</li>
+<li>
+<p>HTML</p>
+</li>
+<li>
+<p><strong>Data</strong>:</p>
+</li>
+<li>CSV</li>
+<li>Excel</li>
+<li>JSON</li>
+<li>
+<p>GeoJSON</p>
+</li>
+<li>
+<p><strong>Visualizations</strong>:</p>
+</li>
+<li>PNG</li>
+<li>SVG</li>
+<li>Interactive HTML</li>
+</ol>
+<h3>Scheduling Reports</h3>
+<p>Set up automatic report generation:</p>
+<ol>
+<li>Navigate to "Reports" tab</li>
+<li>Click "Schedule Report"</li>
+<li>Select report type and parameters</li>
+<li>Set frequency (daily, weekly, monthly)</li>
+<li>Add recipients for email delivery</li>
+<li>Click "Save Schedule"</li>
+</ol>
+<h2>Account Management</h2>
+<h3>Profile Settings</h3>
+<p>Manage your account settings:</p>
+<ol>
+<li>Click your username in the top-right corner</li>
+<li>Select "Profile Settings"</li>
+<li>Update personal information</li>
+<li>Change password</li>
+<li>Configure notification preferences</li>
+<li>Manage API keys</li>
+<li>Set up two-factor authentication</li>
+</ol>
+<h3>Team Management</h3>
+<p>For organization accounts:</p>
+<ol>
+<li>Navigate to "Team" in the side menu</li>
+<li>View current team members</li>
+<li>Invite new members:</li>
+<li>Enter email address</li>
+<li>Assign role (Admin, Analyst, Viewer)</li>
+<li>Set project access</li>
+<li>Manage existing members:</li>
+<li>Change roles</li>
+<li>Adjust project access</li>
+<li>Remove members</li>
+</ol>
+<h3>Billing and Subscription</h3>
+<p>Manage your subscription:</p>
+<ol>
+<li>Navigate to "Billing" in the side menu</li>
+<li>View current plan and usage</li>
+<li>Upgrade or downgrade subscription</li>
+<li>Update payment information</li>
+<li>View invoice history</li>
+<li>Download invoices</li>
+</ol>
+<h2>Troubleshooting</h2>
+<h3>Common Issues</h3>
+<h4>Satellite Imagery Upload Failures</h4>
+<p><strong>Problem</strong>: Satellite imagery fails to upload or process.</p>
+<p><strong>Solutions</strong>:
+1. Ensure imagery is in the correct format (GeoTIFF)
+2. Check that all required bands are included
+3. Verify file size is within limits (max 500MB per file)
+4. Confirm imagery covers the project area
+5. Try processing smaller sections if the area is very large</p>
+<h4>Analysis Timeout</h4>
+<p><strong>Problem</strong>: Analysis takes too long or times out.</p>
+<p><strong>Solutions</strong>:
+1. Reduce the size of the analysis area
+2. Use lower resolution imagery for initial analysis
+3. Simplify the project boundary geometry
+4. Check for server status issues
+5. Try again during off-peak hours</p>
+<h4>Verification Rejection</h4>
+<p><strong>Problem</strong>: Verification is rejected by the reviewer.</p>
+<p><strong>Solutions</strong>:
+1. Review the rejection comments carefully
+2. Address all identified issues
+3. Provide additional documentation if requested
+4. Improve imagery quality if possible
+5. Consider adjusting project boundaries to exclude problematic areas</p>
+<h3>Getting Help</h3>
+<p>If you encounter issues not covered in this guide:</p>
+<ol>
+<li>Check the Knowledge Base for similar issues</li>
+<li>Use the in-app chat support</li>
+<li>Email support@carboncreditverification.com</li>
+<li>Schedule a consultation with our technical team</li>
+<li>Join our community forum for peer assistance</li>
+</ol>
+<hr />
+<p>This user guide provides comprehensive instructions for using the Carbon Credit Verification SaaS application. For technical details about the system architecture and implementation, please refer to the technical documentation.</p>
+</div>
+
+        <div class="footer">
+            <p>&copy; 2025 Carbon Credit Verification SaaS. All rights reserved.</p>
+        </div>
+    </div>
+    
+    <script src="js/script.js"></script>
+</body>
+</html>
