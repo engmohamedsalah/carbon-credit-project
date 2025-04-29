@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting Started Tutorial - Carbon Credit Verification SaaS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/enhanced.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body>
+    <div class="progress-tracker"></div>
+    
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>Carbon Credit Verification</h1>
+            <p>Documentation</p>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search documentation...">
+            <div id="search-results" class="search-results"></div>
+        </div>
+        
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="index.html" class="nav-link">Home</a>
+            </li>
+            
+            <div class="nav-section">Business</div>
+            <li class="nav-item">
+                <a href="business_overview.html" class="nav-link">Business Overview</a>
+            </li>
+            <li class="nav-item">
+                <a href="business_value.html" class="nav-link">Value Proposition</a>
+            </li>
+            <li class="nav-item">
+                <a href="market_analysis.html" class="nav-link">Market Analysis</a>
+            </li>
+            
+            <div class="nav-section">Technical</div>
+            <li class="nav-item">
+                <a href="technical_overview.html" class="nav-link">Technical Overview</a>
+            </li>
+            <li class="nav-item">
+                <a href="system_architecture.html" class="nav-link">System Architecture</a>
+            </li>
+            <li class="nav-item">
+                <a href="data_model.html" class="nav-link">Data Model</a>
+            </li>
+            <li class="nav-item">
+                <a href="ml_pipeline.html" class="nav-link">ML Pipeline</a>
+            </li>
+            
+            <div class="nav-section">User Guides</div>
+            <li class="nav-item">
+                <a href="user_guide.html" class="nav-link">User Guide</a>
+            </li>
+            <li class="nav-item">
+                <a href="getting_started.html" class="nav-link">Getting Started Tutorial</a>
+            </li>
+            
+            <div class="nav-section">Installation</div>
+            <li class="nav-item">
+                <a href="installation_guide.html" class="nav-link">Installation Guide</a>
+            </li>
+            
+            <div class="nav-section">Help</div>
+            <li class="nav-item">
+                <a href="faq.html" class="nav-link">FAQ</a>
+            </li>
+            <li class="nav-item">
+                <a href="glossary.html" class="nav-link">Glossary</a>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="main-content">
+        <div class="content-header">
+            <h1>Getting Started Tutorial</h1>
+            <ul class="breadcrumb">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="user_guide.html">User Guides</a></li>
+                <li>Getting Started Tutorial</li>
+            </ul>
+            <div class="reading-time"><i class="fas fa-clock"></i> 10 min read</div>
+            <button class="print-button"><i class="fas fa-print"></i> Print</button>
+        </div>
+        
+        <div class="content-section">
+            <h2>Welcome to Carbon Credit Verification</h2>
+            <p>This tutorial will guide you through the basic steps to get started with the Carbon Credit Verification SaaS application. By the end of this tutorial, you'll be able to:</p>
+            
+            <ul>
+                <li>Set up your account and project</li>
+                <li>Upload satellite imagery for analysis</li>
+                <li>Run a verification process</li>
+                <li>Review and interpret the results</li>
+                <li>Generate a verification certificate</li>
+            </ul>
+            
+            <div class="simple-explanation">
+                <h4>What is Carbon Credit Verification?</h4>
+                <p>Carbon credit verification is the process of confirming that a project (like forest conservation) is actually reducing carbon emissions or removing carbon from the atmosphere. Our application makes this process easier by using satellite images and artificial intelligence to monitor forests and calculate how much carbon they're storing.</p>
+                <p>Think of it like having a fitness tracker for forests - it measures how healthy they are and how much carbon they're capturing!</p>
+            </div>
+            
+            <h2>Step-by-Step Tutorial</h2>
+            
+            <div class="tutorial-step">
+                <div class="tutorial-image">
+                    <img src="images/tutorial_signup.png" alt="Account Creation Screen">
+                </div>
+                <div class="tutorial-content">
+                    <h3><span class="tutorial-number">1</span> Create Your Account</h3>
+                    <p>Start by creating an account on the Carbon Credit Verification platform:</p>
+                    <ol>
+                        <li>Visit the application at <a href="http://localhost:3000">http://localhost:3000</a> (or your deployed URL)</li>
+                        <li>Click the "Sign Up" button in the top-right corner</li>
+                        <li>Fill in your details: name, email, organization, and password</li>
+                        <li>Select your role (Project Developer, Verifier, or Buyer)</li>
+                        <li>Click "Create Account"</li>
+                    </ol>
+                    <p>You'll receive a confirmation email. Click the link to verify your account.</p>
+                </div>
+            </div>
+            
+            <div class="tutorial-step">
+                <div class="tutorial-image">
+                    <img src="images/tutorial_new_project.png" alt="New Project Creation Screen">
+                </div>
+                <div class="tutorial-content">
+                    <h3><span class="tutorial-number">2</span> Create a New Project</h3>
+                    <p>After logging in, you'll need to create a project for verification:</p>
+                    <ol>
+                        <li>From your dashboard, click "New Project"</li>
+                        <li>Enter a project name and description</li>
+                        <li>Select the project type (Forest Conservation, Reforestation, etc.)</li>
+                        <li>Define the project area by either:
+                            <ul>
+                                <li>Drawing on the map</li>
+                                <li>Uploading a GeoJSON file</li>
+                                <li>Entering coordinates</li>
+                            </ul>
+                        </li>
+                        <li>Set the project timeframe (start and end dates)</li>
+                        <li>Click "Create Project"</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="simple-explanation" data-technical-content="technical-satellite">
+                <h4>Understanding Satellite Imagery</h4>
+                <p>Satellite images are like photos taken from space that show us what's happening on Earth. Our system uses these images to see if forests are growing or shrinking.</p>
+                <p>The system automatically finds the right images for your project area - you don't need to be a satellite expert!</p>
+            </div>
+            
+            <div id="technical-satellite" style="display: none;">
+                <h4>Technical Details: Satellite Imagery</h4>
+                <p>The system uses Sentinel-2 multispectral imagery with 10m spatial resolution. It processes bands B02 (Blue), B03 (Green), B04 (Red), and B08 (NIR) to calculate vegetation indices like NDVI. The system automatically handles cloud masking, atmospheric correction, and temporal compositing to ensure high-quality data for analysis.</p>
+            </div>
+            
+            <div class="tutorial-step">
+                <div class="tutorial-image">
+                    <img src="images/tutorial_satellite.png" alt="Satellite Imagery Selection Screen">
+                </div>
+                <div class="tutorial-content">
+                    <h3><span class="tutorial-number">3</span> Acquire Satellite Imagery</h3>
+                    <p>The system will automatically find and download satellite imagery for your project area:</p>
+                    <ol>
+                        <li>From your project page, go to the "Imagery" tab</li>
+                        <li>Select the date range for analysis (baseline and current period)</li>
+                        <li>Click "Acquire Imagery"</li>
+                        <li>The system will search for and download cloud-free Sentinel-2 images</li>
+                        <li>Once complete, you'll see the images displayed on the map</li>
+                    </ol>
+                    <p>This process may take a few minutes depending on the size of your project area.</p>
+                </div>
+            </div>
+            
+            <div class="tutorial-step">
+                <div class="tutorial-image">
+                    <img src="images/tutorial_verification.png" alt="Verification Process Screen">
+                </div>
+                <div class="tutorial-content">
+                    <h3><span class="tutorial-number">4</span> Run Verification Analysis</h3>
+                    <p>Now you can analyze the forest cover changes and carbon impact:</p>
+                    <ol>
+                        <li>Go to the "Verification" tab in your project</li>
+                        <li>Click "Start Verification Process"</li>
+                        <li>The system will:
+                            <ul>
+                                <li>Analyze forest cover in both time periods</li>
+                                <li>Detect changes in forest cover</li>
+                                <li>Calculate carbon sequestration or emissions</li>
+                                <li>Generate verification reports</li>
+                            </ul>
+                        </li>
+                        <li>This process may take 5-15 minutes depending on project size</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="simple-explanation">
+                <h4>What's Happening During Verification?</h4>
+                <p>During verification, our AI is analyzing the satellite images to find areas where trees have grown or been cut down. It's like playing "spot the difference" between two photos, but the AI can measure exactly how much forest has changed.</p>
+                <p>The system then calculates how much carbon these changes represent, based on scientific models of how much carbon different types of forests store.</p>
+            </div>
+            
+            <div class="tutorial-step">
+                <div class="tutorial-image">
+                    <img src="images/tutorial_results.png" alt="Results Review Screen">
+                </div>
+                <div class="tutorial-content">
+                    <h3><span class="tutorial-number">5</span> Review Verification Results</h3>
+                    <p>Once the verification is complete, you can review the results:</p>
+                    <ol>
+                        <li>Examine the forest change map showing:
+                            <ul>
+                                <li>Green areas: Forest gain</li>
+                                <li>Red areas: Forest loss</li>
+                                <li>Yellow areas: No change</li>
+                            </ul>
+                        </li>
+                        <li>Review the carbon impact summary:
+                            <ul>
+                                <li>Total carbon sequestered or emitted</li>
+                                <li>Carbon credits generated</li>
+                                <li>Confidence level of the analysis</li>
+                            </ul>
+                        </li>
+                        <li>Explore the AI explanations to understand how the system made its determinations</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="tutorial-step">
+                <div class="tutorial-image">
+                    <img src="images/tutorial_human_review.png" alt="Human Review Screen">
+                </div>
+                <div class="tutorial-content">
+                    <h3><span class="tutorial-number">6</span> Human-in-the-Loop Review</h3>
+                    <p>For quality assurance, a human expert should review the AI results:</p>
+                    <ol>
+                        <li>Go to the "Human Review" tab</li>
+                        <li>Examine areas flagged for review (highlighted in purple)</li>
+                        <li>For each flagged area:
+                            <ul>
+                                <li>Review the AI's assessment</li>
+                                <li>Compare with high-resolution imagery</li>
+                                <li>Approve or correct the classification</li>
+                            </ul>
+                        </li>
+                        <li>Add comments or notes as needed</li>
+                        <li>Click "Complete Review" when finished</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="tutorial-step">
+                <div class="tutorial-image">
+                    <img src="images/tutorial_certificate.png" alt="Certificate Generation Screen">
+                </div>
+                <div class="tutorial-content">
+                    <h3><span class="tutorial-number">7</span> Generate Verification Certificate</h3>
+                    <p>Finally, generate a blockchain-backed verification certificate:</p>
+                    <ol>
+                        <li>Go to the "Certification" tab</li>
+                        <li>Review the verification summary</li>
+                        <li>Click "Generate Certificate"</li>
+                        <li>The system will:
+                            <ul>
+                                <li>Create a verification record</li>
+                                <li>Register it on the blockchain</li>
+                                <li>Generate a PDF certificate</li>
+                                <li>Provide a verification URL for sharing</li>
+                            </ul>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="simple-explanation">
+                <h4>What is Blockchain Certification?</h4>
+                <p>Blockchain certification is like creating a digital fingerprint of your verification results that can't be changed or deleted. It's stored on many computers around the world, so anyone can check that your carbon credits are real and haven't been counted twice.</p>
+                <p>Think of it as a digital notary that gives everyone confidence in your carbon credits.</p>
+            </div>
+            
+            <h2>Video Tutorial</h2>
+            <p>For a visual walkthrough of the process, watch this video tutorial:</p>
+            
+            <div class="video-tutorial">
+                <iframe src="https://www.youtube.com/embed/example" title="Carbon Credit Verification Tutorial" allowfullscreen></iframe>
+            </div>
+            
+            <h2>Interactive Diagram: Verification Process</h2>
+            <p>Explore this interactive diagram to understand the verification process:</p>
+            
+            <div class="interactive-diagram">
+                <img src="images/verification_process_diagram.png" alt="Verification Process Diagram">
+                
+                <div class="diagram-hotspot" style="top: 20%; left: 15%;" data-tooltip="<strong>Data Acquisition</strong><br>Satellite imagery is collected for the project area from multiple time points.">1</div>
+                
+                <div class="diagram-hotspot" style="top: 35%; left: 30%;" data-tooltip="<strong>Preprocessing</strong><br>Images are cleaned, aligned, and prepared for analysis.">2</div>
+                
+                <div class="diagram-hotspot" style="top: 50%; left: 45%;" data-tooltip="<strong>AI Analysis</strong><br>Machine learning models detect forest changes and calculate carbon impact.">3</div>
+                
+                <div class="diagram-hotspot" style="top: 65%; left: 60%;" data-tooltip="<strong>Human Review</strong><br>Experts verify the AI results and make corrections if needed.">4</div>
+                
+                <div class="diagram-hotspot" style="top: 80%; left: 75%;" data-tooltip="<strong>Blockchain Certification</strong><br>Results are certified on the blockchain for transparency and trust.">5</div>
+            </div>
+            
+            <h2>Frequently Asked Questions</h2>
+            
+            <div class="faq-item">
+                <div class="faq-question">How accurate is the forest change detection?</div>
+                <div class="faq-answer">
+                    <p>Our forest change detection has an accuracy of 85-95% depending on forest type and image quality. The system uses multiple verification methods:</p>
+                    <ul>
+                        <li>Cross-validation with multiple satellite sources</li>
+                        <li>Temporal consistency checks</li>
+                        <li>Human expert review of results</li>
+                    </ul>
+                    <p>For critical areas, the system flags potential issues for human review to ensure maximum accuracy.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">Do I need to be a technical expert to use this system?</div>
+                <div class="faq-answer">
+                    <p>No, the system is designed to be user-friendly for non-technical users. You don't need expertise in:</p>
+                    <ul>
+                        <li>Satellite imagery or remote sensing</li>
+                        <li>Machine learning or AI</li>
+                        <li>Carbon accounting methodologies</li>
+                        <li>Blockchain technology</li>
+                    </ul>
+                    <p>The interface guides you through each step, and simple explanations are provided throughout the application.</p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">How long does the verification process take?</div>
+                <div class="faq-answer">
+                    <p>The verification process typically takes:</p>
+                    <ul>
+                        <li><strong>Small projects (< 1,000 hectares):</strong> 5-15 minutes</li>
+                        <li><strong>Medium projects (1,000-10,000 hectares):</strong> 15-60 minutes</li>
+                        <li><strong>Large projects (> 10,000 hectares):</strong> 1-3 hours</li>
+                    </ul>
+                    <p>These times include data acquisition, processing, and analysis. Human review time is additional and depends on the complexity of the project.</p>
+                </div>
+            </div>
+            
+            <h2>Next Steps</h2>
+            <p>Now that you've completed the getting started tutorial, you might want to explore:</p>
+            
+            <ul>
+                <li><a href="user_guide.html">Complete User Guide</a> - For detailed information on all features</li>
+                <li><a href="technical_overview.html">Technical Overview</a> - To understand the technology behind the system</li>
+                <li><a href="business_overview.html">Business Overview</a> - To learn about the business context and value proposition</li>
+            </ul>
+            
+            <div class="tip">
+                <strong>Tip:</strong> For your first project, we recommend starting with a smaller area (less than 1,000 hectares) to get familiar with the system before scaling up to larger projects.
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2025 Carbon Credit Verification SaaS. All rights reserved.</p>
+        </div>
+    </div>
+    
+    <div class="dark-mode-toggle"><i class="fas fa-moon"></i></div>
+    
+    <script src="js/script.js"></script>
+    <script src="js/enhanced.js"></script>
+</body>
+</html>

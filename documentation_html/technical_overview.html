@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Overview - Carbon Credit Verification SaaS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>Carbon Credit Verification</h1>
+            <p>Documentation</p>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search documentation...">
+            <div id="search-results" class="search-results"></div>
+        </div>
+        
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="index.html" class="nav-link">Home</a>
+            </li>
+            
+            <div class="nav-section">Business</div>
+            <li class="nav-item">
+                <a href="business_overview.html" class="nav-link">Business Overview</a>
+            </li>
+            <li class="nav-item">
+                <a href="business_value.html" class="nav-link">Value Proposition</a>
+            </li>
+            <li class="nav-item">
+                <a href="market_analysis.html" class="nav-link">Market Analysis</a>
+            </li>
+            
+            <div class="nav-section">Technical</div>
+            <li class="nav-item">
+                <a href="technical_overview.html" class="nav-link">Technical Overview</a>
+            </li>
+            <li class="nav-item">
+                <a href="system_architecture.html" class="nav-link">System Architecture</a>
+            </li>
+            <li class="nav-item">
+                <a href="data_model.html" class="nav-link">Data Model</a>
+            </li>
+            <li class="nav-item">
+                <a href="ml_pipeline.html" class="nav-link">ML Pipeline</a>
+            </li>
+            
+            <div class="nav-section">User Guides</div>
+            <li class="nav-item">
+                <a href="user_guide.html" class="nav-link">User Guide</a>
+            </li>
+            
+            <div class="nav-section">Installation</div>
+            <li class="nav-item">
+                <a href="installation_guide.html" class="nav-link">Installation Guide</a>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="main-content">
+        <div class="content-header">
+            <h1>Technical Overview</h1>
+            
+            <ul class="breadcrumb">
+                <li><a href="index.html">Home</a></li>
+                <li>Technical Overview</li>
+            </ul>
+        
+        </div>
+        
+        <div class="content-section">
+<h1>Carbon Credit Verification SaaS Application</h1>
+<h2>Technical Architecture Overview</h2>
+<p>This document provides a comprehensive technical overview of the Carbon Credit Verification SaaS application, including architecture, components, data flow, and implementation details.</p>
+<h2>Table of Contents</h2>
+<ol>
+<li><a href="#system-architecture">System Architecture</a></li>
+<li><a href="#technology-stack">Technology Stack</a></li>
+<li><a href="#backend-components">Backend Components</a></li>
+<li><a href="#frontend-components">Frontend Components</a></li>
+<li><a href="#machine-learning-pipeline">Machine Learning Pipeline</a></li>
+<li><a href="#blockchain-integration">Blockchain Integration</a></li>
+<li><a href="#data-storage">Data Storage</a></li>
+<li><a href="#api-documentation">API Documentation</a></li>
+<li><a href="#security-considerations">Security Considerations</a></li>
+<li><a href="#scalability-and-performance">Scalability and Performance</a></li>
+</ol>
+<h2>System Architecture</h2>
+<p>The Carbon Credit Verification SaaS application follows a modern, microservices-oriented architecture designed for scalability, maintainability, and performance. The system is composed of several key components:</p>
+<p><img alt="System Architecture" src="../images/ml_pipeline.png" /></p>
+<h3>High-Level Architecture</h3>
+<p>The application is built using a hybrid architecture:</p>
+<ul>
+<li><strong>Backend</strong>: FastAPI (Python) for core services and ML model integration</li>
+<li><strong>Frontend</strong>: React with TypeScript for the user interface</li>
+<li><strong>Database</strong>: PostgreSQL with PostGIS extension for geospatial data</li>
+<li><strong>ML Pipeline</strong>: PyTorch-based models for satellite imagery analysis</li>
+<li><strong>Blockchain</strong>: Polygon (Ethereum L2) for verification certification</li>
+<li><strong>Containerization</strong>: Docker for consistent deployment</li>
+</ul>
+<h3>Component Interaction</h3>
+<p>The components interact through well-defined APIs:</p>
+<ol>
+<li><strong>User Interface</strong> → <strong>Backend API</strong>: Frontend communicates with backend services via RESTful APIs</li>
+<li><strong>Backend API</strong> → <strong>ML Services</strong>: Backend requests predictions and analysis from ML services</li>
+<li><strong>ML Services</strong> → <strong>Data Sources</strong>: ML services access satellite imagery and reference data</li>
+<li><strong>Backend API</strong> → <strong>Blockchain</strong>: Verification results are certified on the blockchain</li>
+<li><strong>Backend API</strong> → <strong>Database</strong>: Persistent storage of project data and verification results</li>
+</ol>
+<h2>Technology Stack</h2>
+<h3>Backend</h3>
+<ul>
+<li><strong>Framework</strong>: FastAPI</li>
+<li><strong>Language</strong>: Python 3.10+</li>
+<li><strong>Database</strong>: PostgreSQL 14+ with PostGIS extension</li>
+<li><strong>ORM</strong>: SQLAlchemy</li>
+<li><strong>Authentication</strong>: JWT with OAuth2</li>
+<li><strong>API Documentation</strong>: OpenAPI (Swagger)</li>
+</ul>
+<h3>Frontend</h3>
+<ul>
+<li><strong>Framework</strong>: React 18+</li>
+<li><strong>Language</strong>: TypeScript</li>
+<li><strong>State Management</strong>: Redux Toolkit</li>
+<li><strong>UI Components</strong>: Material-UI</li>
+<li><strong>Mapping</strong>: Leaflet.js</li>
+<li><strong>Data Visualization</strong>: D3.js, Recharts</li>
+</ul>
+<h3>Machine Learning</h3>
+<ul>
+<li><strong>Framework</strong>: PyTorch</li>
+<li><strong>Data Processing</strong>: NumPy, Pandas, GDAL, Rasterio</li>
+<li><strong>Model Architecture</strong>: U-Net for semantic segmentation</li>
+<li><strong>Explainability</strong>: Captum (Integrated Gradients, SHAP, Occlusion)</li>
+<li><strong>Visualization</strong>: Matplotlib, OpenCV</li>
+</ul>
+<h3>Blockchain</h3>
+<ul>
+<li><strong>Platform</strong>: Polygon (Ethereum L2)</li>
+<li><strong>Smart Contracts</strong>: Solidity</li>
+<li><strong>Client Library</strong>: ethers.js</li>
+<li><strong>Standards</strong>: ERC-721 for NFT certification</li>
+</ul>
+<h3>DevOps</h3>
+<ul>
+<li><strong>Containerization</strong>: Docker</li>
+<li><strong>Orchestration</strong>: Docker Compose</li>
+<li><strong>CI/CD</strong>: GitHub Actions</li>
+<li><strong>Monitoring</strong>: Prometheus, Grafana</li>
+<li><strong>Logging</strong>: ELK Stack (Elasticsearch, Logstash, Kibana)</li>
+</ul>
+<h2>Backend Components</h2>
+<p>The backend is structured as a modular FastAPI application with the following components:</p>
+<h3>Core Modules</h3>
+<ul>
+<li><strong>app/core/</strong>: Core functionality and configuration</li>
+<li><code>config.py</code>: Application configuration</li>
+<li><code>database.py</code>: Database connection and session management</li>
+<li><code>security.py</code>: Authentication and authorization</li>
+</ul>
+<h3>API Endpoints</h3>
+<ul>
+<li><strong>app/api/</strong>: API route definitions</li>
+<li><code>auth.py</code>: Authentication endpoints</li>
+<li><code>projects.py</code>: Project management endpoints</li>
+<li><code>satellite.py</code>: Satellite imagery analysis endpoints</li>
+<li><code>verification.py</code>: Verification workflow endpoints</li>
+<li><code>blockchain.py</code>: Blockchain certification endpoints</li>
+</ul>
+<h3>Data Models</h3>
+<ul>
+<li><strong>app/models/</strong>: Database models</li>
+<li><code>user.py</code>: User and role models</li>
+<li><code>project.py</code>: Project and location models</li>
+<li><code>verification.py</code>: Verification and certification models</li>
+<li><code>satellite.py</code>: Satellite imagery and analysis models</li>
+</ul>
+<h3>Service Layer</h3>
+<ul>
+<li><strong>app/services/</strong>: Business logic</li>
+<li><code>auth_service.py</code>: Authentication and user management</li>
+<li><code>project_service.py</code>: Project operations</li>
+<li><code>satellite_service.py</code>: Satellite imagery processing</li>
+<li><code>verification_service.py</code>: Verification workflow</li>
+<li><code>blockchain_service.py</code>: Blockchain integration</li>
+</ul>
+<h3>Schemas</h3>
+<ul>
+<li><strong>app/schemas/</strong>: Pydantic schemas for request/response validation</li>
+<li><code>user.py</code>: User-related schemas</li>
+<li><code>project.py</code>: Project-related schemas</li>
+<li><code>verification.py</code>: Verification-related schemas</li>
+<li><code>satellite.py</code>: Satellite imagery-related schemas</li>
+</ul>
+<h2>Frontend Components</h2>
+<p>The frontend is a React application with TypeScript, organized as follows:</p>
+<h3>Core Components</h3>
+<ul>
+<li><strong>src/App.js</strong>: Main application component</li>
+<li><strong>src/index.js</strong>: Application entry point</li>
+<li><strong>src/components/</strong>: Reusable UI components</li>
+<li><code>Layout.js</code>: Page layout component</li>
+<li><code>MapComponent.js</code>: Interactive map component</li>
+<li><code>ProtectedRoute.js</code>: Route protection for authentication</li>
+</ul>
+<h3>Pages</h3>
+<ul>
+<li><strong>src/pages/</strong>: Page components</li>
+<li><code>Login.js</code>: User login page</li>
+<li><code>Register.js</code>: User registration page</li>
+<li><code>Dashboard.js</code>: Main dashboard</li>
+<li><code>NewProject.js</code>: Project creation page</li>
+<li><code>ProjectDetail.js</code>: Project details page</li>
+<li><code>Verification.js</code>: Verification workflow page</li>
+</ul>
+<h3>State Management</h3>
+<ul>
+<li><strong>src/store/</strong>: Redux store configuration</li>
+<li><code>index.js</code>: Store configuration</li>
+<li><code>authSlice.js</code>: Authentication state</li>
+<li><code>projectSlice.js</code>: Project state</li>
+<li><code>verificationSlice.js</code>: Verification state</li>
+</ul>
+<h3>Services</h3>
+<ul>
+<li><strong>src/services/</strong>: API service integration</li>
+<li><code>api.js</code>: API client configuration</li>
+</ul>
+<h2>Machine Learning Pipeline</h2>
+<p>The ML pipeline is a critical component of the system, responsible for analyzing satellite imagery and detecting forest cover changes:</p>
+<h3>Data Acquisition</h3>
+<ul>
+<li><strong>ml/utils/data_preparation.py</strong>: Downloads and prepares satellite imagery and reference data</li>
+<li>Connects to Sentinel-2 API (Copernicus Open Access Hub)</li>
+<li>Downloads Hansen Global Forest Change data</li>
+<li>Prepares training datasets</li>
+</ul>
+<h3>Model Training</h3>
+<ul>
+<li><strong>ml/training/train_forest_change.py</strong>: Trains the forest change detection model</li>
+<li>Implements a U-Net architecture for semantic segmentation</li>
+<li>Processes Sentinel-2 imagery (bands B02, B03, B04, B08)</li>
+<li>Calculates NDVI (Normalized Difference Vegetation Index)</li>
+<li>Trains on forest change data from Hansen dataset</li>
+</ul>
+<h3>Inference</h3>
+<ul>
+<li><strong>ml/inference/predict_forest_change.py</strong>: Performs inference on new satellite imagery</li>
+<li>Preprocesses imagery</li>
+<li>Runs prediction using trained model</li>
+<li>Generates explanations using XAI techniques</li>
+<li>Outputs prediction maps and confidence scores</li>
+</ul>
+<h3>Carbon Estimation</h3>
+<ul>
+<li><strong>ml/inference/estimate_carbon_sequestration.py</strong>: Estimates carbon impact</li>
+<li>Compares imagery from different time points</li>
+<li>Calculates forest cover changes</li>
+<li>Estimates carbon sequestration or emissions</li>
+<li>Generates visualizations and reports</li>
+</ul>
+<h3>Visualization</h3>
+<ul>
+<li><strong>ml/utils/visualization.py</strong>: Creates visualizations of satellite imagery and results</li>
+<li><strong>ml/utils/xai_visualization.py</strong>: Creates explainable AI visualizations</li>
+</ul>
+<h2>Blockchain Integration</h2>
+<p>The blockchain component provides immutable certification of verification results:</p>
+<h3>Smart Contracts</h3>
+<ul>
+<li><strong>blockchain/contracts/VerificationCertificate.sol</strong>: Smart contract for verification certificates</li>
+<li>Implements ERC-721 standard for NFT certificates</li>
+<li>Stores verification metadata and results hash</li>
+<li>Includes ownership and transfer functionality</li>
+</ul>
+<h3>Integration</h3>
+<ul>
+<li><strong>app/services/blockchain_service.py</strong>: Backend integration with blockchain</li>
+<li>Connects to Polygon network</li>
+<li>Deploys and interacts with smart contracts</li>
+<li>Creates and verifies certificates</li>
+</ul>
+<h3>Certificate Structure</h3>
+<p>Each certificate contains:
+- Project identifier
+- Verification timestamp
+- Results hash (IPFS CID of detailed results)
+- Verifier information
+- Methodology reference
+- Carbon impact estimation</p>
+<h2>Data Storage</h2>
+<p>The application uses several data storage mechanisms:</p>
+<h3>Relational Database</h3>
+<ul>
+<li>PostgreSQL with PostGIS extension for geospatial data</li>
+<li>Stores user accounts, projects, verification records</li>
+<li>Maintains relationships between entities</li>
+<li>Supports spatial queries for location-based analysis</li>
+</ul>
+<h3>File Storage</h3>
+<ul>
+<li>Satellite imagery stored in efficient formats (GeoTIFF)</li>
+<li>ML models saved as PyTorch .pth files</li>
+<li>Verification results stored as JSON and GeoJSON</li>
+<li>Visualizations saved as PNG files</li>
+</ul>
+<h3>Blockchain Storage</h3>
+<ul>
+<li>Verification certificates stored on Polygon blockchain</li>
+<li>Detailed results stored off-chain with hash reference</li>
+<li>Smart contract events for audit trail</li>
+</ul>
+<h2>API Documentation</h2>
+<p>The application provides comprehensive API documentation:</p>
+<h3>Authentication Endpoints</h3>
+<ul>
+<li><code>POST /api/auth/login</code>: User login</li>
+<li><code>POST /api/auth/register</code>: User registration</li>
+<li><code>POST /api/auth/refresh</code>: Refresh access token</li>
+</ul>
+<h3>Project Endpoints</h3>
+<ul>
+<li><code>GET /api/projects</code>: List projects</li>
+<li><code>POST /api/projects</code>: Create new project</li>
+<li><code>GET /api/projects/{id}</code>: Get project details</li>
+<li><code>PUT /api/projects/{id}</code>: Update project</li>
+<li><code>DELETE /api/projects/{id}</code>: Delete project</li>
+</ul>
+<h3>Satellite Analysis Endpoints</h3>
+<ul>
+<li><code>POST /api/satellite/upload-satellite-bands</code>: Upload satellite imagery</li>
+<li><code>GET /api/satellite/forest-change/{task_id}</code>: Get forest change results</li>
+<li><code>POST /api/satellite/estimate-carbon-sequestration</code>: Estimate carbon sequestration</li>
+<li><code>GET /api/satellite/carbon-sequestration/{task_id}</code>: Get carbon estimation results</li>
+<li><code>GET /api/satellite/explanation/{task_id}</code>: Get explanation for prediction</li>
+</ul>
+<h3>Verification Endpoints</h3>
+<ul>
+<li><code>POST /api/verification/start</code>: Start verification process</li>
+<li><code>GET /api/verification/{id}</code>: Get verification status</li>
+<li><code>PUT /api/verification/{id}/review</code>: Submit human review</li>
+<li><code>POST /api/verification/{id}/certify</code>: Create blockchain certificate</li>
+<li><code>GET /api/verification/{id}/certificate</code>: Get certificate details</li>
+</ul>
+<h2>Security Considerations</h2>
+<p>The application implements several security measures:</p>
+<h3>Authentication and Authorization</h3>
+<ul>
+<li>JWT-based authentication</li>
+<li>Role-based access control</li>
+<li>Password hashing with bcrypt</li>
+<li>Token refresh mechanism</li>
+</ul>
+<h3>Data Protection</h3>
+<ul>
+<li>HTTPS for all communications</li>
+<li>Database encryption for sensitive data</li>
+<li>Input validation with Pydantic schemas</li>
+<li>CORS configuration</li>
+</ul>
+<h3>API Security</h3>
+<ul>
+<li>Rate limiting</li>
+<li>Request validation</li>
+<li>Error handling without sensitive information</li>
+<li>Audit logging</li>
+</ul>
+<h3>ML Model Security</h3>
+<ul>
+<li>Model versioning</li>
+<li>Input sanitization</li>
+<li>Explainability for transparency</li>
+<li>Human review for critical decisions</li>
+</ul>
+<h2>Scalability and Performance</h2>
+<p>The application is designed for scalability and performance:</p>
+<h3>Horizontal Scaling</h3>
+<ul>
+<li>Stateless API design</li>
+<li>Containerization for easy deployment</li>
+<li>Database connection pooling</li>
+<li>Caching for frequent queries</li>
+</ul>
+<h3>Performance Optimization</h3>
+<ul>
+<li>Asynchronous processing for long-running tasks</li>
+<li>Efficient satellite imagery processing</li>
+<li>Optimized ML model inference</li>
+<li>Background task processing</li>
+</ul>
+<h3>Monitoring and Metrics</h3>
+<ul>
+<li>Performance monitoring</li>
+<li>Error tracking</li>
+<li>Usage metrics</li>
+<li>Resource utilization</li>
+</ul>
+<hr />
+<p>This technical overview provides a comprehensive understanding of the Carbon Credit Verification SaaS application architecture and components. For detailed implementation instructions, please refer to the installation guides and user documentation.</p>
+</div>
+
+        <div class="footer">
+            <p>&copy; 2025 Carbon Credit Verification SaaS. All rights reserved.</p>
+        </div>
+    </div>
+    
+    <script src="js/script.js"></script>
+</body>
+</html>
