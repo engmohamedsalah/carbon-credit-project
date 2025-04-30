@@ -6,7 +6,16 @@ export const login = createAsyncThunk(
   'auth/login',
   async ({ email, password }, { rejectWithValue }) => {
     try {
-      const response = await api.post('/auth/login', { username: email, password });
+      // Use URLSearchParams to send form data instead of JSON
+      const formData = new URLSearchParams();
+      formData.append('username', email);
+      formData.append('password', password);
+      
+      const response = await api.post('/auth/login', formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
       localStorage.setItem('token', response.data.access_token);
       return response.data;
     } catch (error) {

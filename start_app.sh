@@ -27,12 +27,10 @@ if [ ! -f ./data/carbon_credits.db ]; then
     python3 simple_init_db.py
 fi
 
-# Start the backend server
-echo "Starting backend server..."
-cd backend
-python3 -m uvicorn main:app --reload --host 0.0.0.0 --port 8000 &
+# Start the auth server
+echo "Starting auth server..."
+python3 auth_server.py &
 BACKEND_PID=$!
-cd ..
 
 # Wait a bit for the backend to initialize
 sleep 2
@@ -46,8 +44,7 @@ cd ..
 
 echo ""
 echo "Carbon Credit Verification SaaS application is now running!"
-echo "Backend API: http://localhost:8000"
-echo "API Documentation: http://localhost:8000/docs"
+echo "Auth API: http://localhost:8000"
 echo "Frontend: http://localhost:3000"
 echo ""
 echo "Press Ctrl+C to stop both servers"
