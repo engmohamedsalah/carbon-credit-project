@@ -2,7 +2,6 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Box } from '@mui/material';
 import Dashboard from './pages/Dashboard';
-import Projects from './pages/Projects';
 import ProjectDetail from './pages/ProjectDetail';
 import Verification from './pages/Verification';
 import Login from './pages/Login';
@@ -26,7 +25,6 @@ function App() {
         }>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="projects" element={<Projects />} />
           <Route path="projects/:id" element={<ProjectDetail />} />
           <Route path="verification/:id" element={<Verification />} />
         </Route>

@@ -14,11 +14,6 @@ class Settings(BaseSettings):
     # Database settings
     DATABASE_URL: Optional[str] = os.getenv("DATABASE_URL", "sqlite:///./carbon_credits.db")
     
-    # PostgreSQL settings
-    POSTGRES_USER: Optional[str] = os.getenv("POSTGRES_USER", "postgres")
-    POSTGRES_PASSWORD: Optional[str] = os.getenv("POSTGRES_PASSWORD", "postgres")
-    POSTGRES_DB: Optional[str] = os.getenv("POSTGRES_DB", "carbon_credits")
-    
     # Security settings
     SECRET_KEY: str = os.getenv("SECRET_KEY", "changethisinproduction")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
@@ -46,4 +41,4 @@ class Settings(BaseSettings):
         case_sensitive = True
         env_file = ".env"
 
-settings = Settings()
+settings = Settings() 
