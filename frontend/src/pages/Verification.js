@@ -20,78 +20,43 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams, useNavigate } from 'react-router-dom';
-import { fetchVerificationById } from '../store/verificationSlice';
-import { submitHumanReview, certifyVerification } from '../store/verificationSlice';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { verifyProject } from '../store/projectSlice';
 import MapComponent from '../components/MapComponent';
 
 const Verification = () => {
-  const { id } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   
-  const { currentVerification, loading, error, certificationResult } = useSelector(state => state.verifications);
+  // Get project_id from query params
+  const query = new URLSearchParams(location.search);
+  const projectId = query.get('project_id');
+  
+  const { verificationResults, loading, error } = useSelector(state => state.projects);
   const { user } = useSelector(state => state.auth);
   
   const [reviewNotes, setReviewNotes] = useState('');
-  const [reviewDecision, setReviewDecision] = useState(null);
   
   useEffect(() => {
-    dispatch(fetchVerificationById(id));
-  }, [dispatch, id]);
-  
-  const handleSubmitReview = async () => {
-    await dispatch(submitHumanReview({
-      id,
-      approved: reviewDecision === 'approve',
-      notes: reviewNotes
-    }));
-  };
-  
-  const handleCertify = async () => {
-    await dispatch(certifyVerification(id));
-  };
+    if (projectId) {
+      dispatch(verifyProject(projectId));
+    }
+  }, [dispatch, projectId]);
   
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'pending':
         return 'default';
-      case 'in_progress':
+      case 'in progress':
         return 'primary';
-      case 'human_review':
-        return 'warning';
-      case 'approved':
+      case 'verified':
         return 'success';
       case 'rejected':
         return 'error';
       default:
         return 'default';
     }
-  };
-  
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Not set';
-    return new Date(dateString).toLocaleDateString();
-  };
-  
-  const canReview = () => {
-    if (!currentVerification || !user) return false;
-    
-    // Only verifiers and admins can review
-    if (user.role !== 'verifier' && user.role !== 'admin') return false;
-    
-    // Can only review if status is human_review or if the user is an admin
-    return currentVerification.status === 'human_review' || user.role === 'admin';
-  };
-  
-  const canCertify = () => {
-    if (!currentVerification || !user) return false;
-    
-    // Only verifiers and admins can certify
-    if (user.role !== 'verifier' && user.role !== 'admin') return false;
-    
-    // Can only certify if status is approved and not already certified
-    return currentVerification.status === 'approved' && !currentVerification.blockchain_transaction_hash;
   };
   
   if (loading) {
@@ -110,7 +75,7 @@ const Verification = () => {
     );
   }
   
-  if (!currentVerification) {
+  if (!verificationResults) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         <Alert severity="info">Verification not found</Alert>
@@ -122,45 +87,31 @@ const Verification = () => {
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4" gutterBottom>
-          Verification #{id}
+          Project Verification
         </Typography>
         
         <Chip 
-          label={currentVerification.status.replace('_', ' ').toUpperCase()} 
-          color={getStatusColor(currentVerification.status)}
+          label={verificationResults.status} 
+          color={getStatusColor(verificationResults.status)}
           sx={{ textTransform: 'capitalize' }}
         />
       </Box>
-      
-      {certificationResult && (
-        <Alert severity="success" sx={{ mb: 3 }}>
-          <Typography variant="subtitle1">
-            Successfully certified on blockchain!
-          </Typography>
-          <Typography variant="body2">
-            Transaction Hash: {certificationResult.transaction_hash}
-          </Typography>
-          <Typography variant="body2">
-            Token ID: {certificationResult.token_id}
-          </Typography>
-        </Alert>
-      )}
       
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom>
-              Verification Details
+              Verification Results
             </Typography>
             
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" color="text.secondary">
-                    Project
+                    Project ID
                   </Typography>
                   <Typography variant="body1">
-                    {currentVerification.project?.name || 'Unknown Project'}
+                    {verificationResults.project_id}
                   </Typography>
                 </Box>
               </Grid>
@@ -168,227 +119,102 @@ const Verification = () => {
               <Grid item xs={12} sm={6}>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" color="text.secondary">
-                    Verification Date
+                    Status
                   </Typography>
                   <Typography variant="body1">
-                    {formatDate(currentVerification.verification_date || currentVerification.created_at)}
+                    {verificationResults.status}
                   </Typography>
                 </Box>
               </Grid>
               
-              <Grid item xs={12} sm={6}>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Verified Carbon Credits
-                  </Typography>
-                  <Typography variant="body1">
-                    {currentVerification.verified_carbon_credits ? `${currentVerification.verified_carbon_credits} tonnes CO₂e` : 'Not specified'}
-                  </Typography>
-                </Box>
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Confidence Score
-                  </Typography>
-                  <Typography variant="body1">
-                    {currentVerification.confidence_score ? `${(currentVerification.confidence_score * 100).toFixed(1)}%` : 'Not specified'}
-                  </Typography>
-                </Box>
-              </Grid>
-              
-              <Grid item xs={12}>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Verification Notes
-                  </Typography>
-                  <Typography variant="body1">
-                    {currentVerification.verification_notes || 'No notes provided.'}
-                  </Typography>
-                </Box>
-              </Grid>
-              
-              {currentVerification.human_reviewed && (
+              {verificationResults.satellite_imagery && (
                 <Grid item xs={12}>
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Human Review Notes
+                    <Typography variant="subtitle1" color="text.primary">
+                      Satellite Imagery
                     </Typography>
-                    <Typography variant="body1">
-                      {currentVerification.human_review_notes || 'No review notes provided.'}
+                    <Typography variant="body2">
+                      Provider: {verificationResults.satellite_imagery.provider}
+                    </Typography>
+                    <Typography variant="body2">
+                      Resolution: {verificationResults.satellite_imagery.resolution}
+                    </Typography>
+                    <Typography variant="body2">
+                      Status: {verificationResults.satellite_imagery.status}
                     </Typography>
                   </Box>
                 </Grid>
               )}
               
-              {currentVerification.blockchain_transaction_hash && (
+              {verificationResults.analysis_results && (
                 <Grid item xs={12}>
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Blockchain Transaction
-                    </Typography>
-                    <Typography variant="body1">
-                      {currentVerification.blockchain_transaction_hash}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Timestamp
-                    </Typography>
-                    <Typography variant="body1">
-                      {formatDate(currentVerification.blockchain_timestamp)}
-                    </Typography>
-                  </Box>
-                </Grid>
-              )}
-            </Grid>
-          </Paper>
-          
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Satellite Analysis
-            </Typography>
-            
-            {currentVerification.satellite_analyses && currentVerification.satellite_analyses.length > 0 ? (
-              currentVerification.satellite_analyses.map((analysis) => (
-                <Accordion key={analysis.id}>
+                  <Accordion defaultExpanded>
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography>{analysis.analysis_type.replace('_', ' ')}</Typography>
+                      <Typography variant="subtitle1">Land Cover Analysis</Typography>
                   </AccordionSummary>
                   <AccordionDetails>
                     <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" color="text.secondary">
-                          Analysis Date
+                        <Grid item xs={12}>
+                          <Typography variant="body2" gutterBottom>
+                            Total Area: {verificationResults.analysis_results.total_area_hectares} hectares
                         </Typography>
-                        <Typography variant="body1">
-                          {formatDate(analysis.analysis_date)}
+                          <Typography variant="body2" gutterBottom>
+                            Total Carbon Estimate: {verificationResults.analysis_results.total_carbon_estimate_tonnes} tonnes
                         </Typography>
-                      </Grid>
-                      
-                      <Grid item xs={12} sm={6}>
-                        <Typography variant="body2" color="text.secondary">
-                          Confidence Score
-                        </Typography>
-                        <Typography variant="body1">
-                          {analysis.confidence_score ? `${(analysis.confidence_score * 100).toFixed(1)}%` : 'Not specified'}
+                          <Typography variant="body2" gutterBottom>
+                            Confidence Level: {(verificationResults.analysis_results.confidence_level * 100).toFixed(1)}%
                         </Typography>
                       </Grid>
                       
                       <Grid item xs={12}>
-                        <Typography variant="body2" color="text.secondary">
-                          Results
+                          <Typography variant="subtitle2" gutterBottom>
+                            Land Cover Distribution
                         </Typography>
-                        <pre>
-                          {JSON.stringify(analysis.result_data, null, 2)}
-                        </pre>
+                          {verificationResults.analysis_results.land_cover_distribution && 
+                            Object.entries(verificationResults.analysis_results.land_cover_distribution).map(([type, area]) => (
+                              <Box key={type} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                <Typography variant="body2">{type}</Typography>
+                                <Typography variant="body2">{area} ha</Typography>
+                              </Box>
+                            ))
+                          }
                       </Grid>
                     </Grid>
                   </AccordionDetails>
                 </Accordion>
-              ))
-            ) : (
-              <Alert severity="info">No satellite analyses available for this verification.</Alert>
+                </Grid>
             )}
+            </Grid>
           </Paper>
         </Grid>
         
         <Grid item xs={12} md={4}>
-          {canReview() && (
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
+          <Paper sx={{ p: 3, mb: 3 }}>
                 <Typography variant="h6" gutterBottom>
-                  Human Review
+              Actions
                 </Typography>
                 
-                <TextField
-                  fullWidth
-                  label="Review Notes"
-                  multiline
-                  rows={4}
-                  value={reviewNotes}
-                  onChange={(e) => setReviewNotes(e.target.value)}
-                  sx={{ mb: 2 }}
-                />
-                
-                <Box sx={{ display: 'flex', gap: 1 }}>
                   <Button 
                     variant="contained" 
-                    color="success"
-                    onClick={() => setReviewDecision('approve')}
-                    sx={{ flex: 1 }}
-                  >
-                    Approve
+              color="primary" 
+              fullWidth 
+              sx={{ mb: 2 }}
+              onClick={() => navigate('/dashboard')}
+            >
+              Back to Dashboard
                   </Button>
                   
+            {projectId !== 'new' && (
                   <Button 
-                    variant="contained" 
-                    color="error"
-                    onClick={() => setReviewDecision('reject')}
-                    sx={{ flex: 1 }}
-                  >
-                    Reject
-                  </Button>
-                </Box>
-              </CardContent>
-              
-              {reviewDecision && (
-                <CardActions>
-                  <Button 
+                variant="outlined" 
+                color="secondary" 
                     fullWidth
-                    variant="contained"
-                    onClick={handleSubmitReview}
-                    disabled={loading}
+                onClick={() => navigate(`/projects/${projectId}`)}
                   >
-                    {loading ? <CircularProgress size={24} /> : `Submit ${reviewDecision === 'approve' ? 'Approval' : 'Rejection'}`}
+                View Project Details
                   </Button>
-                </CardActions>
               )}
-            </Card>
-          )}
-          
-          {canCertify() && (
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Blockchain Certification
-                </Typography>
-                
-                <Typography variant="body2" paragraph>
-                  This verification has been approved and is ready to be certified on the blockchain.
-                </Typography>
-              </CardContent>
-              
-              <CardActions>
-                <Button 
-                  fullWidth
-                  variant="contained"
-                  color="primary"
-                  onClick={handleCertify}
-                  disabled={loading}
-                >
-                  {loading ? <CircularProgress size={24} /> : 'Certify on Blockchain'}
-                </Button>
-              </CardActions>
-            </Card>
-          )}
-          
-          {currentVerification.explanation_data && (
-            <Card sx={{ mt: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  AI Explanation
-                </Typography>
-                
-                <Typography variant="body2" paragraph>
-                  The AI model has provided the following explanation for its verification decision:
-                </Typography>
-                
-                <pre>
-                  {JSON.stringify(currentVerification.explanation_data, null, 2)}
-                </pre>
-              </CardContent>
-            </Card>
-          )}
+          </Paper>
         </Grid>
       </Grid>
     </Container>

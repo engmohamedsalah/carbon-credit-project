@@ -1,0 +1,178 @@
+digraph CarbonCreditML {
+    // Graph settings
+    rankdir=TB;
+    node [shape=box, style="rounded,filled", fillcolor=lightblue, fontname="Arial"];
+    edge [fontname="Arial"];
+    compound=true; // Allow edges to clusters
+
+    // Data Acquisition
+    subgraph cluster_data_acquisition {
+        label="Data Acquisition";
+        style=filled;
+        color=lightgrey;
+
+        sentinel2_api [label="Sentinel-2 API\n(Copernicus)", fillcolor=lightgreen];
+        sentinel1_api [label="Sentinel-1 API\n(Copernicus)", fillcolor=lightgreen];
+        hansen_api [label="Hansen GFC\nData API", fillcolor=lightgreen];
+        data_download [label="Data Download\n(data_preparation.py)"];
+
+        sentinel2_api -> data_download;
+        sentinel1_api -> data_download;
+        hansen_api -> data_download;
+    }
+
+    // Data Preprocessing
+    subgraph cluster_preprocessing {
+        label="Data Preprocessing";
+        style=filled;
+        color=lightgrey;
+
+        s2_prep [label="Sentinel-2 Prep\n(Band Extraction, Stack)"];
+        s1_prep [label="Sentinel-1 Prep\n(Orbit, Calib, Speckle, TC)", tooltip="Requires SNAP GPT"];
+        hansen_prep [label="Hansen Prep\n(Merge, Clip)"];
+        alignment [label="Data Alignment\n(S1/Hansen to S2 Grid)"];
+        pair_sequence_prep [label="Pair/Sequence Creation"];
+        patch_creation [label="Patch Creation"];
+
+        data_download -> s2_prep;
+        data_download -> s1_prep;
+        data_download -> hansen_prep;
+        s2_prep -> alignment;
+        s1_prep -> alignment;
+        hansen_prep -> alignment;
+        alignment -> pair_sequence_prep;
+        pair_sequence_prep -> patch_creation;
+    }
+
+    // Model Training
+    subgraph cluster_training {
+        label="Model Training";
+        style=filled;
+        color=lightgrey;
+
+        // Change Detection Path
+        subgraph cluster_cd_train {
+            label = "Change Detection";
+            style=dashed;
+            cd_dataset [label="Pair Dataset"];
+            siamese_unet [label="Siamese UNet\n(siamese_unet.py)", fillcolor=lightyellow];
+            cd_training [label="Train Change Detection\n(train_change_detection.py)"];
+            cd_model_saving [label="Save CD Model\n(cd_model.pth)"];
+            pair_sequence_prep -> cd_dataset [lhead=cluster_cd_train];
+            cd_dataset -> cd_training;
+            siamese_unet -> cd_training;
+            cd_training -> cd_model_saving;
+        }
+
+        // Time Series Path
+        subgraph cluster_ts_train {
+            label = "Time Series Analysis";
+            style=dashed;
+            ts_dataset [label="Sequence Dataset"];
+            convlstm [label="ConvLSTM Model\n(convlstm_model.py)", fillcolor=lightyellow];
+            ts_training [label="Train Time Series\n(train_time_series.py)"];
+            ts_model_saving [label="Save TS Model\n(ts_model.pth)"];
+            pair_sequence_prep -> ts_dataset [lhead=cluster_ts_train];
+            ts_dataset -> ts_training;
+            convlstm -> ts_training;
+            ts_training -> ts_model_saving;
+        }
+
+        // Original Forest Cover Path (Optional/Alternative)
+        subgraph cluster_fc_train {
+             label = "Forest Cover (Optional)";
+             style=dashed;
+             fc_dataset [label="Single Image Dataset"];
+             unet_model [label="U-Net Model\n(unet_model.py)", fillcolor=lightyellow];
+             fc_training [label="Train Forest Cover\n(train_forest_change.py)"];
+             fc_model_saving [label="Save FC Model\n(fc_model.pth)"];
+             patch_creation -> fc_dataset [lhead=cluster_fc_train];
+             fc_dataset -> fc_training;
+             unet_model -> fc_training;
+             fc_training -> fc_model_saving;
+        }
+    }
+
+    // Inference
+    subgraph cluster_inference {
+        label="Inference";
+        style=filled;
+        color=lightgrey;
+
+        new_data [label="New S1/S2 Data Pair/Sequence"];
+        inference_preprocessing [label="Preprocessing & Patching"];
+        cd_model_loading [label="Load CD Model"];
+        ts_model_loading [label="Load TS Model"];
+        fc_model_loading [label="Load FC Model (Optional)"];
+        cd_prediction [label="Change Detection\nPrediction"];
+        ts_prediction [label="Time Series\nPrediction"];
+        fc_prediction [label="Forest Cover\nPrediction (Optional)"];
+        combined_analysis [label="Combined Analysis / Fusion"];
+
+        new_data -> inference_preprocessing;
+        inference_preprocessing -> cd_prediction;
+        inference_preprocessing -> ts_prediction;
+        inference_preprocessing -> fc_prediction;
+
+        cd_model_saving -> cd_model_loading [style=dashed];
+        ts_model_saving -> ts_model_loading [style=dashed];
+        fc_model_saving -> fc_model_loading [style=dashed];
+
+        cd_model_loading -> cd_prediction;
+        ts_model_loading -> ts_prediction;
+        fc_model_loading -> fc_prediction;
+
+        cd_prediction -> combined_analysis;
+        ts_prediction -> combined_analysis;
+        fc_prediction -> combined_analysis;
+    }
+
+    // Explainable AI
+    subgraph cluster_xai {
+        label="Explainable AI";
+        style=filled;
+        color=lightgrey;
+
+        xai_methods [label="XAI Methods\n(SHAP, LIME, Gradients)", fillcolor=lightsalmon];
+        explanation_viz [label="Explanation\nVisualization"];
+
+        combined_analysis -> xai_methods;
+        xai_methods -> explanation_viz;
+    }
+
+    // Carbon Estimation
+    subgraph cluster_carbon {
+        label="Carbon Sequestration Estimation";
+        style=filled;
+        color=lightgrey;
+
+        change_analysis [label="Change Area\nCalculation"];
+        biomass_model [label="Biomass/Carbon Model\n(e.g., Random Forest)", fillcolor=lightyellow];
+        carbon_calculation [label="Carbon Impact\nCalculation"];
+        carbon_viz [label="Carbon Impact\nVisualization"];
+
+        combined_analysis -> change_analysis;
+        change_analysis -> biomass_model; // Or combined_analysis -> biomass_model
+        biomass_model -> carbon_calculation;
+        carbon_calculation -> carbon_viz;
+    }
+
+    // API Integration & Frontend (Simplified)
+    subgraph cluster_app {
+        label="Application Layer";
+        style=filled;
+        color=lightgrey;
+
+        api_endpoints [label="FastAPI Backend"];
+        frontend [label="React Frontend"];
+        blockchain_cert [label="Blockchain\nCertification"];
+        human_review [label="Human Review"];
+
+        explanation_viz -> api_endpoints;
+        carbon_viz -> api_endpoints;
+        api_endpoints -> frontend;
+        api_endpoints -> blockchain_cert;
+        api_endpoints -> human_review;
+    }
+}
+

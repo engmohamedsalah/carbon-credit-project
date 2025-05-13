@@ -219,6 +219,234 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 async def health_check():
     return {"status": "healthy", "message": "Auth API is running"}
 
+# Import the mock satellite module
+try:
+    from mock_satellite import SatelliteImageProcessor
+    satellite_processor = SatelliteImageProcessor()
+except ImportError:
+    print("Warning: mock_satellite module not found. Verification functionality will be limited.")
+    satellite_processor = None
+
+# Project Models
+class ProjectBase(BaseModel):
+    name: str
+    location: str
+    area_size: float
+    description: str
+    project_type: str = "Reforestation"
+    
+class Project(ProjectBase):
+    id: int
+    user_id: int
+    created_at: str
+    status: str = "Pending"
+    
+class ProjectCreate(ProjectBase):
+    pass
+
+# Initialize projects table
+def init_projects_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        location TEXT NOT NULL,
+        area_size REAL NOT NULL,
+        description TEXT NOT NULL,
+        project_type TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'Pending',
+        FOREIGN KEY (user_id) REFERENCES users (id)
+    )
+    ''')
+    conn.commit()
+    conn.close()
+
+# Initialize projects table
+init_projects_db()
+
+# Project routes
+@app.post("/projects/new", response_model=Project)
+async def create_project(project: ProjectCreate, token: str = Depends(oauth2_scheme)):
+    # In a real implementation, we would validate the token
+    # For simplicity, we'll just extract the user ID
+    user_id = 1  # Mock user ID
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    created_at = datetime.now().isoformat()
+    
+    cursor.execute(
+        "INSERT INTO projects (user_id, name, location, area_size, description, project_type, created_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (user_id, project.name, project.location, project.area_size, project.description, project.project_type, created_at, "Pending")
+    )
+    
+    project_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    
+    return {
+        "id": project_id,
+        "user_id": user_id,
+        "name": project.name,
+        "location": project.location,
+        "area_size": project.area_size,
+        "description": project.description,
+        "project_type": project.project_type,
+        "created_at": created_at,
+        "status": "Pending"
+    }
+
+@app.get("/projects")
+async def get_projects(token: str = Depends(oauth2_scheme)):
+    """Get a list of projects for the current user"""
+    # In a real implementation, we would extract the user ID from the token
+    user_id = 1  # Mock user ID
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM projects WHERE user_id = ?", (user_id,))
+    projects = cursor.fetchall()
+    conn.close()
+    
+    # Convert to a list of dictionaries
+    result = []
+    for project in projects:
+        result.append({
+            "id": project["id"],
+            "user_id": project["user_id"],
+            "name": project["name"],
+            "location": project["location"],
+            "area_size": project["area_size"],
+            "description": project["description"],
+            "project_type": project["project_type"],
+            "created_at": project["created_at"],
+            "status": project["status"]
+        })
+    
+    return result
+
+@app.get("/projects/{project_id}")
+async def get_project(project_id: int, token: str = Depends(oauth2_scheme)):
+    """Get a specific project by ID"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+    project = cursor.fetchone()
+    conn.close()
+    
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Project with ID {project_id} not found"
+        )
+    
+    # Return the project
+    return {
+        "id": project["id"],
+        "user_id": project["user_id"],
+        "name": project["name"],
+        "location": project["location"],
+        "area_size": project["area_size"],
+        "description": project["description"],
+        "project_type": project["project_type"],
+        "created_at": project["created_at"],
+        "status": project["status"]
+    }
+
+@app.get("/projects/new")
+async def get_new_project_form():
+    # This endpoint serves the form for creating a new project
+    return {
+        "message": "New project form endpoint",
+        "project_types": ["Reforestation", "Afforestation", "Forest Conservation", "Improved Forest Management"]
+    }
+
+@app.get("/verification")
+async def get_verification(project_id: str, token: str = Depends(oauth2_scheme)):
+    # Try to find the project in the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    if project_id == "new":
+        # Just return a mock response for the form
+        verification_data = {
+            "message": "Verification process form",
+            "project_id": "new",
+            "status": "Form",
+            "providers": ["Sentinel-2", "Landsat-8", "PlanetScope"],
+            "models": {
+                "land_cover": ["U-Net", "Random Forest"],
+                "carbon_estimation": ["Random Forest", "Gradient Boosting"]
+            }
+        }
+    else:
+        try:
+            project_id_int = int(project_id)
+            cursor.execute("SELECT * FROM projects WHERE id = ?", (project_id_int,))
+            project = cursor.fetchone()
+            
+            if not project:
+                conn.close()
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Project with ID {project_id} not found"
+                )
+            
+            # Use the mock satellite processor if available
+            if satellite_processor:
+                # Process the project location to get imagery and analysis
+                location = project["location"]
+                imagery_info = satellite_processor.acquire_imagery(location)
+                analysis_results = satellite_processor.process_imagery(location)
+                
+                # Update the project status to "Verified" in the database
+                cursor.execute(
+                    "UPDATE projects SET status = ? WHERE id = ?",
+                    ("Verified", project_id_int)
+                )
+                conn.commit()
+                
+                verification_data = {
+                    "message": "Verification process completed",
+                    "project_id": project_id,
+                    "project_name": project["name"],
+                    "status": "Verified",
+                    "satellite_imagery": imagery_info,
+                    "analysis_results": analysis_results
+                }
+            else:
+                # Fallback to mock data if satellite processor is not available
+                verification_data = {
+                    "message": "Verification process started (mock)",
+                    "project_id": project_id,
+                    "project_name": project["name"],
+                    "status": "In Progress",
+                    "satellite_imagery": {
+                        "status": "Acquiring",
+                        "provider": "Sentinel-2",
+                        "resolution": "10m"
+                    },
+                    "ml_models": {
+                        "land_cover": "U-Net",
+                        "carbon_estimation": "Random Forest"
+                    }
+                }
+        except ValueError:
+            verification_data = {
+                "message": "Invalid project ID",
+                "project_id": project_id,
+                "status": "Error"
+            }
+    
+    conn.close()
+    return verification_data
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000) 
