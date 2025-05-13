@@ -1,28 +1,25 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Box, Typography, Container, Grid, Paper, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchProjects } from '../store/projectSlice';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user } = useSelector(state => state.auth);
-  const { projects } = useSelector(state => state.projects);
-  const { verifications } = useSelector(state => state.verifications);
+  const { projects, loading } = useSelector(state => state.projects);
+
+  useEffect(() => {
+    dispatch(fetchProjects());
+  }, [dispatch]);
 
   // Count projects by status
   const projectStats = {
     total: projects.length,
-    active: projects.filter(p => p.status === 'active').length,
-    verified: projects.filter(p => p.status === 'verified').length,
-    underVerification: projects.filter(p => p.status === 'under_verification').length,
-  };
-
-  // Count verifications by status
-  const verificationStats = {
-    total: verifications.length,
-    pending: verifications.filter(v => v.status === 'pending').length,
-    humanReview: verifications.filter(v => v.status === 'human_review').length,
-    approved: verifications.filter(v => v.status === 'approved').length,
+    pending: projects.filter(p => p.status === 'Pending').length,
+    verified: projects.filter(p => p.status === 'Verified').length,
+    inProgress: projects.filter(p => p.status === 'In Progress').length,
   };
 
   return (
@@ -58,13 +55,13 @@ const Dashboard = () => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Box>
                 <Typography variant="body2" color="text.secondary">
-                  Active: {projectStats.active}
+                  Pending: {projectStats.pending}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Verified: {projectStats.verified}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Under Verification: {projectStats.underVerification}
+                  In Progress: {projectStats.inProgress}
                 </Typography>
               </Box>
               <Button 
@@ -78,7 +75,7 @@ const Dashboard = () => {
           </Paper>
         </Grid>
         
-        {/* Verification Stats */}
+        {/* Satellite Stats */}
         <Grid item xs={12} md={6}>
           <Paper
             sx={{
@@ -89,35 +86,33 @@ const Dashboard = () => {
             }}
           >
             <Typography component="h2" variant="h6" color="primary" gutterBottom>
-              Verifications
+              Satellite Imagery
             </Typography>
             <Typography component="p" variant="h4">
-              {verificationStats.total}
+              {projectStats.verified}
             </Typography>
             <Typography color="text.secondary" sx={{ flex: 1 }}>
-              Total Verifications
+              Verified Projects
             </Typography>
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Box>
                 <Typography variant="body2" color="text.secondary">
-                  Pending: {verificationStats.pending}
+                  Land Cover Analysis
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Needs Human Review: {verificationStats.humanReview}
+                  Carbon Estimation
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Approved: {verificationStats.approved}
+                  Sentinel-2 Imagery
                 </Typography>
               </Box>
-              {user?.role === 'verifier' || user?.role === 'admin' ? (
                 <Button 
                   variant="contained" 
                   color="secondary"
-                  onClick={() => navigate('/verifications')}
+                onClick={() => navigate('/verification?project_id=new')}
                 >
-                  Review Verifications
+                New Verification
                 </Button>
-              ) : null}
             </Box>
           </Paper>
         </Grid>
@@ -137,21 +132,19 @@ const Dashboard = () => {
                 New Project
               </Button>
               
-              {user?.role === 'verifier' || user?.role === 'admin' ? (
                 <Button 
                   variant="outlined" 
                   color="secondary"
-                  onClick={() => navigate('/verification/new')}
+                onClick={() => navigate('/verification?project_id=new')}
                 >
-                  New Verification
+                Verify Project
                 </Button>
-              ) : null}
               
               <Button 
                 variant="outlined"
-                onClick={() => navigate('/blockchain/explorer')}
+                onClick={() => navigate('/dashboard')}
               >
-                Blockchain Explorer
+                View Reports
               </Button>
             </Box>
           </Paper>

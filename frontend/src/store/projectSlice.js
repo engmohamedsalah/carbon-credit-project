@@ -30,10 +30,16 @@ export const createProject = createAsyncThunk(
   'projects/createProject',
   async (projectData, { rejectWithValue }) => {
     try {
-      const response = await api.post('/projects', projectData);
+      const response = await api.post('/projects/new', {
+        name: projectData.name,
+        location: projectData.location_name || '0,0',
+        area_size: parseFloat(projectData.area_hectares) || 0,
+        description: projectData.description || '',
+        project_type: projectData.project_type || 'Reforestation'
+      });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || { detail: 'Network error' });
     }
   }
 );
@@ -70,11 +76,24 @@ export const uploadSatelliteImage = createAsyncThunk(
   }
 );
 
+export const verifyProject = createAsyncThunk(
+  'projects/verifyProject',
+  async (projectId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/verification?project_id=${projectId}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || { detail: 'Network error' });
+    }
+  }
+);
+
 // Initial state
 const initialState = {
   projects: [],
   currentProject: null,
   satelliteImages: [],
+  verificationResults: null,
   loading: false,
   error: null,
 };
@@ -165,6 +184,22 @@ const projectSlice = createSlice({
       .addCase(uploadSatelliteImage.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.detail || 'Failed to upload satellite image';
+      })
+      // Verify project
+      .addCase(verifyProject.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyProject.fulfilled, (state, action) => {
+        state.loading = false;
+        state.verificationResults = action.payload;
+        if (state.currentProject && action.payload.project_id == state.currentProject.id) {
+          state.currentProject.status = action.payload.status;
+        }
+      })
+      .addCase(verifyProject.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.detail || 'Failed to verify project';
       });
   },
 });
