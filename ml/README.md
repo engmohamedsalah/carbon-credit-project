@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This Machine Learning (ML) module is a core component of the Carbon Credit Verification SaaS platform. Its primary purpose is to analyze satellite imagery (primarily Sentinel-2 and optionally Sentinel-1 SAR data) to:
+This Machine Learning (ML) module is a core component of the Carbon Credit Verification SaaS platform. Its primary purpose is to analyze Sentinel-2 satellite imagery to:
 
 *   **Map Forest Cover:** Accurately identify and delineate forested areas.
 *   **Detect Forest Change:** Identify and quantify changes in forest cover over time, such as deforestation (loss) or afforestation/reforestation (gain) using advanced techniques like Siamese Networks.
@@ -17,9 +17,9 @@ The outputs of this module provide data-driven, auditable evidence to support th
 The ML pipeline within this streamlined package involves several key stages:
 
 1.  **Data Acquisition & Preparation (`ml/utils/data_preparation.py`):
-    *   Downloads Sentinel-2 (optical) and Sentinel-1 (SAR, optional) satellite imagery for a user-defined Area of Interest (AOI) and time range using `sentinelsat`.
+    *   Downloads Sentinel-2 (optical) satellite imagery for a user-defined Area of Interest (AOI) and time range using `sentinelsat`.
     *   Downloads Hansen Global Forest Change (GFC) data for training labels.
-    *   Performs preprocessing: cloud masking, atmospheric correction (assumed for L2A products), SAR data processing (if included, orchestrated via ESA SNAP), and alignment of all data sources.
+    *   Performs preprocessing: cloud masking (typically part of S2 L2A products or can be added), atmospheric correction (inherent in L2A products), and alignment of all data sources.
     *   Generates analysis-ready data patches (e.g., image tiles, image pairs for change detection, image sequences for time-series analysis).
 
 2.  **Model Training (`ml/training/`):
@@ -52,10 +52,10 @@ The ML pipeline within this streamlined package involves several key stages:
 │   │   ├── train_change_detection.py
 │   │   └── train_time_series.py
 │   └── utils/                  # Utility scripts
-│   │   ├── data_preparation.py # Data download and preprocessing
+│   │   ├── data_preparation.py # Data download and preprocessing (S2, Hansen)
 │   │   ├── visualization.py    # Visualization utilities
 │   │   └── xai_visualization.py# XAI utilities
-│   └── diagrams/                  # Utility scripts
+│   └── diagrams/                  # Diagram files (if any)
 │       ├── ml_pipeline.dot             # Overall ML pipeline diagram (DOT format)
         ├── ml_pipeline.png             # Overall ML pipeline diagram (PNG image)
         └── revised_ml_section.md     # Detailed documentation of the ML enhancements
@@ -76,8 +76,6 @@ The ML pipeline within this streamlined package involves several key stages:
     *   *Rationale:* Extends pandas for spatial operations.
 *   **Sentinelsat:** For programmatic download of Sentinel satellite imagery.
     *   *Rationale:* Convenient API for accessing Sentinel data.
-*   **ESA SNAP (via `gpt` command-line):** (Optional, if using Sentinel-1) For preprocessing SAR data.
-    *   *Rationale:* Official ESA toolbox for Sentinel data processing.
 *   **NumPy:** For numerical operations.
     *   *Rationale:* Fundamental for scientific computing.
 *   **Scikit-learn:** For traditional ML tasks (e.g., carbon estimation model if Random Forest is used) and evaluation metrics.
@@ -93,7 +91,7 @@ The ML pipeline within this streamlined package involves several key stages:
 
 For detailed step-by-step instructions on setting up the environment, acquiring data, training models, and evaluating them using this package, please refer to the `cursor_implementation_plan.md` document provided previously. The core scripts to execute will be:
 
-1.  `ml/utils/data_preparation.py` (for data acquisition and preprocessing).
+1.  `ml/utils/data_preparation.py` (for Sentinel-2 and Hansen GFC data acquisition and preprocessing).
 2.  Scripts within `ml/training/` (for model training).
 3.  Scripts within `ml/inference/` (for prediction and carbon estimation).
 
