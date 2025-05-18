@@ -5,6 +5,7 @@ __pycache__/
 *.so
 .Python
 env/
+.venv/
 build/
 develop-eggs/
 dist/
@@ -53,3 +54,6 @@ Thumbs.db
 
 # Jupyter Notebook
 .ipynb_checkpoints 
+
+# Downloaded Sentinel-2 imagery
+sentinel2_downloads/ 
