@@ -63,10 +63,17 @@ sentinel2_downloads/
 **/raw/
 **/tiles/
 **/hansen/
+**/sentinel*/
 
 # Satellite and GIS data files
 **/*.tif
 **/*.tiff
+**/*.TIF
+**/*.TIFF
+**/*.tif.*
+**/*.tiff.*
+**/*.TIF.*
+**/*.TIFF.*
 **/*.hdf*
 **/*.nc
 **/*.grd
