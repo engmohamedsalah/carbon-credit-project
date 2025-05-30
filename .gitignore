@@ -58,25 +58,26 @@ Thumbs.db
 # Downloaded Sentinel-2 imagery
 sentinel2_downloads/ 
 
-# Data directories
-ml/data/
-ml/data/sentinel1_downloads/
-ml/data/sentinel2_downloads/
-ml/data/hansen_data/
+# Data directories and files
 **/data/
+**/raw/
+**/tiles/
+**/hansen/
 
-# Satellite data specific files
-*.SAFE/
-*.zip
-*.tif
-*.tiff
-*.jp2
-*.hdf
-*.h5
-*.nc
-*.grd
-*.img
-*.dat
+# Satellite and GIS data files
+**/*.tif
+**/*.tiff
+**/*.hdf*
+**/*.nc
+**/*.grd
+**/*.img
+**/*.dat
+
+# Documentation and archive files
+**/*.tar.gz
+**/*.zip
+**/*.rar
+**/*.7z
 
 # Processed data
 *.npy
@@ -100,4 +101,40 @@ ml/data/hansen_data/
 *.raw
 *.dat
 *.img
-*.hdr 
+*.hdr
+
+# Hansen GFC Data
+data/raw/hansen/
+data/raw/hansen/raw_tiles/
+**/hansen/
+**/hansen/raw_tiles/
+*.tif
+*.tiff
+*.hdf
+*.hdf5
+*.h5
+*.nc
+*.grd
+*.img
+*.dat
+
+# Documentation archives
+*.tar.gz
+*.zip
+*.rar
+*.7z
+
+# Log files
+**/*.log
+**/logs/
+**/log/
+*.log.*
+
+# Temporary files
+**/*.tmp
+**/*.temp
+**/*.swp
+**/*.swo
+**/*~
+**/tmp/
+**/temp/ 
