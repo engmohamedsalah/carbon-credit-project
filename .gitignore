@@ -57,3 +57,47 @@ Thumbs.db
 
 # Downloaded Sentinel-2 imagery
 sentinel2_downloads/ 
+
+# Data directories
+ml/data/
+ml/data/sentinel1_downloads/
+ml/data/sentinel2_downloads/
+ml/data/hansen_data/
+**/data/
+
+# Satellite data specific files
+*.SAFE/
+*.zip
+*.tif
+*.tiff
+*.jp2
+*.hdf
+*.h5
+*.nc
+*.grd
+*.img
+*.dat
+
+# Processed data
+*.npy
+*.npz
+*.pkl
+*.hdf5
+*.h5
+*.geotiff
+*.tif
+*.tiff
+
+# Temporary data files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Large binary files
+*.bin
+*.raw
+*.dat
+*.img
+*.hdr 
