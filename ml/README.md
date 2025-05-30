@@ -41,6 +41,9 @@ The ML pipeline within this streamlined package involves several key stages:
 ./
 ├── ml/                           # Main directory for all ML code
 │   ├── data/                   # Placeholder; data preparation logic is in utils/
+│   │   ├── sentinel1_downloads/    # Sentinel-1 data
+│   │   ├── sentinel2_downloads/    # Sentinel-2 data
+│   │   └── hansen_data/           # Hansen GFC data
 │   ├── inference/              # Scripts for running predictions
 │   │   ├── predict_forest_change.py
 │   │   └── estimate_carbon_sequestration.py
@@ -52,18 +55,16 @@ The ML pipeline within this streamlined package involves several key stages:
 │   │   ├── train_change_detection.py
 │   │   └── train_time_series.py
 │   └── utils/                  # Utility scripts
+│   │   ├── sentinel1_preprocessing.py  # SAR data processing
+│   │   ├── sentinel2_preprocessing.py  # Optical data processing
+│   │   └── data_fusion.py         # Combine SAR and optical data
 │   │   ├── data_preparation.py # Data download and preprocessing (S2, Hansen)
 │   │   ├── visualization.py    # Visualization utilities
 │   │   └── xai_visualization.py# XAI utilities
 │   └── diagrams/                  # Diagram files (if any)
 │       ├── ml_pipeline.dot             # Overall ML pipeline diagram (DOT format)
-        ├── ml_pipeline.png             # Overall ML pipeline diagram (PNG image)
-        └── revised_ml_section.md     # Detailed documentation of the ML enhancements
-
-
-
-
-```
+│       ├── ml_pipeline.png             # Overall ML pipeline diagram (PNG image)
+│       └── revised_ml_section.md     # Detailed documentation of the ML enhancements
 
 ## 4. Libraries and Technologies
 
@@ -96,3 +97,305 @@ For detailed step-by-step instructions on setting up the environment, acquiring 
 3.  Scripts within `ml/inference/` (for prediction and carbon estimation).
 
 This README provides an overview of the streamlined ML module. For more in-depth information, consult the specific scripts and the `revised_ml_section.md` and `cursor_implementation_plan.md` documents.
+
+## 6. Sentinel-2 Image Download
+
+This section outlines the steps to download Sentinel-2 satellite imagery using the provided Python script.
+
+### Prerequisites
+
+- Python 3.x installed.
+- Required Python packages (e.g., `requests`, `pystac-client`). Ensure these are installed in your environment (e.g., via pip).
+- A Copernicus Data Space Ecosystem account.
+
+### Download Steps
+
+1.  **Set Environment Variables**:
+    Before running the script, you need to set your Copernicus Data Space Ecosystem credentials as environment variables. Open your terminal and execute the following commands, replacing `your_username` and `your_password` with your actual credentials:
+
+    ```bash
+    export COPERNICUS_USERNAME="your_username"
+    export COPERNICUS_PASSWORD="your_password"
+    ```
+
+    **Note**: Ensure your password is correctly quoted if it contains special characters.
+
+2.  **Navigate to the Project Directory**:
+    Open your terminal and change to the root directory of this project if you are not already there.
+
+    ```bash
+    cd /path/to/your/carbon_credit_project
+    ```
+
+3.  **Run the Download Script**:
+    Execute the Python script `ml/download_sentinel2_stac.py` from the project's root directory:
+
+    ```bash
+    python ml/download_sentinel2_stac.py
+    ```
+
+4.  **Check Downloaded Files**:
+    The script will download the Sentinel-2 product files (usually as `.zip` archives containing `.SAFE` directories) into the `ml/data/sentinel2_downloads` directory within your project.
+
+### Script Configuration
+
+- The Area of Interest (AOI), date range, and other search parameters are defined at the beginning of the `ml/download_sentinel2_stac.py` script. You can modify these parameters as needed.
+- The script currently attempts to download a maximum of 5 products per run (defined by the `limit=5` parameter in the script). This can also be adjusted.
+
+## 7. Satellite Data Sources
+
+### Sentinel-1 (SAR) and Sentinel-2 (Optical) Data
+
+Our project utilizes both Sentinel-1 (SAR) and Sentinel-2 (optical) satellite data for comprehensive forest monitoring and carbon credit verification. Each data source provides unique advantages:
+
+#### Sentinel-1 (SAR) Data
+- **Type**: Synthetic Aperture Radar (SAR)
+- **Key Advantages**:
+  - All-weather operation (works through clouds)
+  - Day/night operation
+  - Penetrates vegetation to detect structural changes
+  - Better for biomass estimation
+  - Ideal for continuous monitoring
+- **Use Cases**:
+  - Detecting logging roads and infrastructure
+  - Monitoring forest structure changes
+  - Identifying selective logging
+  - Biomass estimation
+  - Continuous monitoring in cloudy conditions
+
+#### Sentinel-2 (Optical) Data
+- **Type**: Multispectral optical imagery
+- **Key Advantages**:
+  - High spectral resolution
+  - Better for vegetation classification
+  - Detailed land cover information
+  - Species identification capabilities
+  - Better for detecting forest types
+- **Use Cases**:
+  - Vegetation health monitoring
+  - Land cover classification
+  - Forest type identification
+  - Detailed change detection in clear conditions
+
+### Why We Use Both
+
+The combination of Sentinel-1 and Sentinel-2 data provides:
+1. **More Reliable Monitoring**:
+   - Continuous coverage even in cloudy conditions
+   - Reduced false positives in change detection
+   - Better temporal coverage
+
+2. **Comprehensive Information**:
+   - Structural changes (Sentinel-1)
+   - Vegetation types and health (Sentinel-2)
+   - Complete picture of forest changes
+
+3. **Higher Accuracy**:
+   - Cross-validation between data sources
+   - Better change detection
+   - More reliable carbon stock estimates
+
+### Data Processing Pipeline
+
+1. **Data Acquisition**:
+   - Sentinel-1 data download via Copernicus API
+   - Sentinel-2 data download via Copernicus API
+   - Hansen Global Forest Change data for validation
+
+2. **Preprocessing**:
+   - Sentinel-1:
+     - Orbit correction
+     - Radiometric calibration
+     - Speckle filtering
+     - Terrain correction
+   - Sentinel-2:
+     - Atmospheric correction
+     - Cloud masking
+     - Band stacking
+   - Data alignment to common grid
+   - Pair/sequence creation for change detection
+
+3. **Analysis**:
+   - Combined analysis of both data sources
+   - Change detection using both SAR and optical data
+   - Biomass estimation using SAR data
+   - Vegetation classification using optical data
+   - Carbon stock calculation
+
+### File Structure Updates
+
+```
+./
+├── ml/
+│   ├── data/
+│   │   ├── sentinel1_downloads/    # Sentinel-1 data
+│   │   ├── sentinel2_downloads/    # Sentinel-2 data
+│   │   └── hansen_data/           # Hansen GFC data
+│   ├── utils/
+│   │   ├── sentinel1_preprocessing.py  # SAR data processing
+│   │   ├── sentinel2_preprocessing.py  # Optical data processing
+│   │   └── data_fusion.py         # Combine SAR and optical data
+│   │   ├── data_preparation.py # Data download and preprocessing (S2, Hansen)
+│   │   ├── visualization.py    # Visualization utilities
+│   │   └── xai_visualization.py# XAI utilities
+│   └── ... (rest of the structure remains the same)
+```
+
+### Next Steps
+
+1. Set up Sentinel-1 data processing pipeline
+2. Implement data fusion techniques
+3. Update change detection models to use both data sources
+4. Enhance carbon stock estimation using combined data
+5. Implement quality control checks for both data types
+
+## 8. Data Sources and Their Roles
+
+### Overview of Data Sources
+
+Our project relies on three key data sources, each providing unique and complementary information for carbon credit verification:
+
+1. **Sentinel-1 (SAR)**
+2. **Sentinel-2 (Optical)**
+3. **Hansen Global Forest Change (GFC)**
+
+### Detailed Data Source Analysis
+
+#### 1. Sentinel-1 (SAR)
+- **Data Type**: Synthetic Aperture Radar
+- **Frequency**: 6-day revisit time
+- **Resolution**: 5-20m
+- **Key Features**:
+  - All-weather capability
+  - Day/night operation
+  - Penetrates vegetation
+  - Sensitive to structure
+
+- **Project Applications**:
+  - **Continuous Monitoring**:
+    - Works through clouds
+    - Provides consistent data coverage
+    - Essential for tropical regions
+  
+  - **Structural Analysis**:
+    - Detects logging roads
+    - Identifies forest structure changes
+    - Monitors selective logging
+  
+  - **Biomass Estimation**:
+    - SAR backscatter correlates with biomass
+    - Helps estimate carbon stocks
+    - Validates optical-based estimates
+
+#### 2. Sentinel-2 (Optical)
+- **Data Type**: Multispectral optical imagery
+- **Frequency**: 5-day revisit time
+- **Resolution**: 10-20m
+- **Key Features**:
+  - 13 spectral bands
+  - High spectral resolution
+  - Detailed land cover information
+  - Vegetation indices (NDVI, etc.)
+
+- **Project Applications**:
+  - **Vegetation Analysis**:
+    - Species identification
+    - Forest type classification
+    - Vegetation health monitoring
+  
+  - **Land Cover Mapping**:
+    - Detailed land use classification
+    - Forest/non-forest mapping
+    - Change detection in clear conditions
+  
+  - **Carbon Stock Assessment**:
+    - Vegetation density estimation
+    - Forest health indicators
+    - Species-specific biomass factors
+
+#### 3. Hansen Global Forest Change (GFC)
+- **Data Type**: Global forest cover and change dataset
+- **Frequency**: Annual updates
+- **Resolution**: 30m
+- **Key Features**:
+  - Historical forest cover (2000-present)
+  - Annual forest loss/gain data
+  - Tree cover percentage
+  - Global coverage
+
+- **Project Applications**:
+  - **Historical Baseline**:
+    - Establishes forest cover baseline
+    - Tracks long-term changes
+    - Validates project boundaries
+  
+  - **Validation**:
+    - Cross-validates our change detection
+    - Provides reference data
+    - Helps calibrate models
+  
+  - **Carbon Accounting**:
+    - Historical carbon stock changes
+    - Long-term trend analysis
+    - Project additionality assessment
+
+### Integration and Synergy
+
+The three data sources work together to provide a robust monitoring system:
+
+1. **Complementary Strengths**:
+   ```
+   Data Source          Primary Strength          Secondary Role
+   Sentinel-1          All-weather monitoring    Structure analysis
+   Sentinel-2          Detailed classification   Health monitoring
+   Hansen GFC          Historical baseline       Validation
+   ```
+
+2. **Data Fusion Benefits**:
+   - **Higher Accuracy**:
+     - Cross-validation between sources
+     - Reduced false positives
+     - More reliable change detection
+   
+   - **Comprehensive Coverage**:
+     - Temporal (historical to present)
+     - Spatial (local to global)
+     - Thematic (structure to species)
+   
+   - **Robust Verification**:
+     - Multiple data sources
+     - Independent validation
+     - Higher confidence in results
+
+3. **Carbon Credit Project Value**:
+   - **Better Monitoring**:
+     - Continuous coverage
+     - Multiple validation sources
+     - Reliable change detection
+   
+   - **Enhanced Credibility**:
+     - Multiple data sources
+     - Independent verification
+     - Scientific rigor
+   
+   - **Improved Accuracy**:
+     - Better carbon stock estimates
+     - More reliable change detection
+     - Higher quality verification
+
+### Implementation Strategy
+
+1. **Data Acquisition**:
+   - Automated downloads from all sources
+   - Regular updates and monitoring
+   - Quality control checks
+
+2. **Processing Pipeline**:
+   - Individual preprocessing for each source
+   - Data fusion and integration
+   - Combined analysis
+
+3. **Quality Assurance**:
+   - Cross-validation between sources
+   - Regular accuracy assessment
+   - Continuous improvement
