@@ -4,11 +4,11 @@ Simplified database initialization script for SQLite.
 import os
 import sqlite3
 
-# Create db directory if it doesn't exist
-os.makedirs('data', exist_ok=True)
+# Create database directory if it doesn't exist
+os.makedirs('database', exist_ok=True)
 
 # Create SQLite database
-db_path = 'data/carbon_credits.db'
+db_path = 'database/carbon_credits.db'
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 

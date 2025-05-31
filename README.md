@@ -36,11 +36,19 @@ carbon_credit_project/
 │   │   └── store/         # Redux store
 │   └── package.json       # Node.js dependencies
 ├── ml/                    # Machine learning components
-│   ├── data/              # Data storage
+│   ├── data/              # ML data storage
+│   │   ├── sentinel2_downloads/  # Raw Sentinel-2 imagery
+│   │   ├── hansen_downloads/     # Hansen forest data
+│   │   └── prepared/            # Processed data
+│   │       ├── change_labels/   # Change detection outputs
+│   │       ├── s2_stacks/       # Processed Sentinel-2 stacks
+│   │       └── quicklooks/      # Visualization outputs
 │   ├── inference/         # Inference scripts
 │   ├── models/            # Trained models
 │   ├── training/          # Training scripts
 │   └── utils/             # Utility functions
+├── database/              # Database files
+│   └── carbon_credits.db  # SQLite database
 ├── blockchain/            # Blockchain integration
 ├── docker/                # Docker configuration
 │   ├── docker-compose.yml # Docker Compose configuration
