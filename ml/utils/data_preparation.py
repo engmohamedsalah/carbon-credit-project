@@ -237,9 +237,15 @@ def prepare_scene_bands(scene_path, bands, output_dir):
 
 # --- Hansen Data Functions ---
 
-def download_hansen_data(aoi_geojson, output_dir):
+def download_hansen_data(aoi_geojson, output_dir, layers=None):
     """
-    Download Hansen GFC data (treecover2000, lossyear) for AOI, merge tiles, clip.
+    Download Hansen GFC data (treecover2000, lossyear, gain, loss, datamask) for AOI, merge tiles, clip.
+    Args:
+        aoi_geojson (str): Path to AOI GeoJSON
+        output_dir (str): Output directory
+        layers (list): List of layers to download (default: all)
+    Returns:
+        dict: {layer_name: clipped_file_path}
     """
     try:
         import geopandas as gpd
@@ -251,6 +257,9 @@ def download_hansen_data(aoi_geojson, output_dir):
         logger.error("Required packages not installed. Install: pip install geopandas requests gdal")
         return None
 
+    if layers is None:
+        layers = ["treecover2000", "lossyear", "gain", "loss", "datamask"]
+
     os.makedirs(output_dir, exist_ok=True)
     raw_tile_dir = os.path.join(output_dir, "raw_tiles")
     os.makedirs(raw_tile_dir, exist_ok=True)
@@ -258,152 +267,100 @@ def download_hansen_data(aoi_geojson, output_dir):
     aoi = gpd.read_file(aoi_geojson)
     minx, miny, maxx, maxy = aoi.total_bounds
 
-    # Ensure longitude is within -180 to 180 and latitude within -90 to 90
     minx = max(-180, min(180, minx))
     maxx = max(-180, min(180, maxx))
     miny = max(-90, min(90, miny))
     maxy = max(-90, min(90, maxy))
 
-    # Determine the tile coordinates. Tiles are 10x10 degrees.
-    # Longitude: Origin is 180W. Tiles are 000W, 010W, ..., 170W, 170E, ..., 000E
-    # Latitude: Origin is 90N. Tiles are 90N, 80N, ..., 00N, 00S, ..., 80S
-    
-    # Calculate the bottom-left corner of the tiles
-    # For longitude, tiles are named by their westernmost edge.
-    # For latitude, tiles are named by their northernmost edge.
     start_lon_tile = int(np.floor(minx / 10.0)) * 10
     end_lon_tile = int(np.floor(maxx / 10.0)) * 10
-    
-    start_lat_tile = int(np.ceil(maxy / 10.0)) * 10 
-    end_lat_tile = int(np.ceil(miny / 10.0)) * 10 # This will go towards south
+    start_lat_tile = int(np.ceil(maxy / 10.0)) * 10
+    end_lat_tile = int(np.ceil(miny / 10.0)) * 10
 
-    # Hansen data versioning - use a recent, fixed version for reproducibility
-    # As of early 2024, GFC-2022-v1.10 is the latest. Check for updates if needed.
-    # https://developers.google.com/earth-engine/datasets/catalog/UMD_hansen_global_forest_change
-    hansen_year_str = "2023" # Data is GFC-YYYY-vX.Y - this refers to the last year of the period
-    hansen_version = "1.11" # Example: "v1.11" corresponds to GFC 2000-2023
-    
+    hansen_year_str = "2023"
+    hansen_version = "1.11"
     base_url = f"https://storage.googleapis.com/earthenginepartners-hansen/GFC-{hansen_year_str}-v{hansen_version}/"
     logger.info(f"Using Hansen GFC base URL: {base_url}")
 
-    # Ensure tqdm is available for the download_file function
     try:
         from tqdm import tqdm
     except ImportError:
         logger.warning("tqdm package not found. Progress bars will not be shown. Install with: pip install tqdm")
-        # Define a dummy tqdm if not found so download_file doesn't break
         class tqdm:
             def __init__(self, *args, **kwargs): pass
             def __enter__(self): return self
             def __exit__(self, *args): pass
             def update(self, n=1): pass
 
-
-    required_tile_files = {'treecover2000': [], 'lossyear': [], 'datamask': []}
+    required_tile_files = {layer: [] for layer in layers}
     all_downloads_successful = True
 
-    # Iterate over longitude from West to East, and latitude from North to South
     for lon_base in range(start_lon_tile, end_lon_tile + 10, 10):
-        for lat_base in range(start_lat_tile, end_lat_tile -10 , -10): # Iterate from North towards South
-            # Format latitude string (e.g., 50N, 10S)
+        for lat_base in range(start_lat_tile, end_lat_tile -10 , -10):
             lat_str = f"{abs(lat_base):02d}{'N' if lat_base >= 0 else 'S'}"
-            # Format longitude string (e.g., 100W, 020E)
-            lon_str = f"{abs(lon_base):03d}{'W' if lon_base < 0 else 'E'}" # Corrected lon_base >=0 to lon_base < 0 for W
-            
+            lon_str = f"{abs(lon_base):03d}{'W' if lon_base < 0 else 'E'}"
             tile_id = f"{lat_str}_{lon_str}"
-            # logger.debug(f"Processing tile ID: {tile_id} for lon_base: {lon_base}, lat_base: {lat_base}")
-
-            # Define filenames for different Hansen products
-            # Note: "treecover2000" is the baseline tree cover for the year 2000.
-            # "lossyear" indicates the year of loss (0 for no loss, 1-23 for year 2001-2023 for v1.11).
-            # "datamask" indicates areas with no data, water, etc. (0: No data, 1: Mapped land surface, 2: Water)
-            
-            filenames_data = {
-                "treecover2000": f"Hansen_GFC-{hansen_year_str}-v{hansen_version}_treecover2000_{tile_id}.tif",
-                "lossyear": f"Hansen_GFC-{hansen_year_str}-v{hansen_version}_lossyear_{tile_id}.tif",
-                "datamask": f"Hansen_GFC-{hansen_year_str}-v{hansen_version}_datamask_{tile_id}.tif"
-                # Other potentially useful layers: "gain", "first", "last"
-            }
-
+            filenames_data = {}
+            if "treecover2000" in layers:
+                filenames_data["treecover2000"] = f"Hansen_GFC-{hansen_year_str}-v{hansen_version}_treecover2000_{tile_id}.tif"
+            if "lossyear" in layers:
+                filenames_data["lossyear"] = f"Hansen_GFC-{hansen_year_str}-v{hansen_version}_lossyear_{tile_id}.tif"
+            if "gain" in layers:
+                filenames_data["gain"] = f"Hansen_GFC-{hansen_year_str}-v{hansen_version}_gain_{tile_id}.tif"
+            if "loss" in layers:
+                filenames_data["loss"] = f"Hansen_GFC-{hansen_year_str}-v{hansen_version}_loss_{tile_id}.tif"
+            if "datamask" in layers:
+                filenames_data["datamask"] = f"Hansen_GFC-{hansen_year_str}-v{hansen_version}_datamask_{tile_id}.tif"
             for layer_name, filename in filenames_data.items():
                 file_url = base_url + filename
                 file_path = os.path.join(raw_tile_dir, filename)
-                
                 if not os.path.exists(file_path):
                     logger.info(f"Attempting to download {filename} for tile {tile_id}...")
                     if not download_file(file_url, file_path):
                         logger.warning(f"Failed to download {filename}. It might not exist or an error occurred.")
-                        all_downloads_successful = False # Mark that at least one download failed
-                        # Depending on policy, we might want to break or continue
+                        all_downloads_successful = False
                     else:
                         required_tile_files[layer_name].append(file_path)
                 else:
                     logger.info(f"File {filename} already exists, skipping download.")
                     required_tile_files[layer_name].append(file_path)
-    
+
     if not all_downloads_successful:
         logger.warning("One or more Hansen GFC tiles failed to download. Subsequent processing might be affected.")
-    
-    if not required_tile_files['treecover2000'] and not required_tile_files['lossyear']: # Check if any essential tiles were found/downloaded
-        logger.error("No Hansen GFC treecover or lossyear tiles were successfully downloaded or found for the AOI.")
-        return None, None, None # Return None for all expected outputs
 
     # --- Merging and Clipping ---
-    # For each layer type (treecover, lossyear, datamask), merge the downloaded tiles
-    # Then clip the merged raster to the AOI.
-    
     merged_files = {}
     clipped_files = {}
-
-    for layer_name in ['treecover2000', 'lossyear', 'datamask']:
+    for layer_name in layers:
         tiles_to_merge = required_tile_files[layer_name]
         if not tiles_to_merge:
             logger.warning(f"No tiles found/downloaded for layer: {layer_name}. Skipping merge and clip for this layer.")
             merged_files[layer_name] = None
             clipped_files[layer_name] = None
             continue
-
-        # 1. Merge tiles for the current layer
         merged_vrt_path = os.path.join(output_dir, f"hansen_merged_{layer_name}.vrt")
         merged_tif_path = os.path.join(output_dir, f"hansen_merged_{layer_name}.tif")
-
-        # Use gdalbuildvrt for merging (creates a virtual raster)
         cmd_buildvrt = ["gdalbuildvrt", merged_vrt_path] + tiles_to_merge
         try:
             logger.info(f"Merging {len(tiles_to_merge)} tiles for {layer_name} into {merged_vrt_path}...")
-            subprocess.run(cmd_buildvrt, check=True, capture_output=True, text=True) # Added text=True for better error messages
+            subprocess.run(cmd_buildvrt, check=True, capture_output=True, text=True)
             logger.info(f"Successfully created VRT: {merged_vrt_path}")
-            merged_files[layer_name] = merged_vrt_path # Store VRT, can be used directly by GDAL
-            
-            # Optionally convert VRT to a single TIF if preferred (can be large)
-            # logger.info(f"Converting VRT {merged_vrt_path} to TIF {merged_tif_path}...")
-            # cmd_translate = ["gdal_translate", merged_vrt_path, merged_tif_path, "-co", "COMPRESS=LZW", "-co", "TILED=YES"]
-            # subprocess.run(cmd_translate, check=True, capture_output=True, text=True)
-            # logger.info(f"Successfully created merged TIF: {merged_tif_path}")
-            # merged_files[layer_name] = merged_tif_path # If converted to TIF
-            
+            merged_files[layer_name] = merged_vrt_path
         except subprocess.CalledProcessError as e:
             logger.error(f"Error merging {layer_name} tiles with gdalbuildvrt: {e.stderr}")
-            # Clean up failed VRT
             if os.path.exists(merged_vrt_path): os.remove(merged_vrt_path)
-            return None, None, None # Critical failure
-
-        # 2. Clip the merged raster to the AOI
+            continue
         clipped_path = os.path.join(output_dir, f"hansen_clipped_{layer_name}.tif")
-        # Use gdalwarp for clipping. Ensure AOI CRS matches raster CRS or specify transformations.
-        # Hansen data is typically EPSG:4326.
-        # We need the bounds of the AOI in minx, miny, maxx, maxy format for gdalwarp's -te option.
-        # The aoi_geojson file itself can also be used as a cutline.
         cmd_clip = [
             "gdalwarp",
-            "-cutline", aoi_geojson,  # Use the GeoJSON file as the cutline
-            "-crop_to_cutline",      # Crop the raster to the extent of the cutline
-            "-dstalpha",             # Add an alpha band for no-data areas outside the cutline
-            merged_files[layer_name], # Input merged raster (VRT or TIF)
-            clipped_path,            # Output clipped raster
-            "-overwrite",            # Overwrite if exists
-            "-co", "COMPRESS=LZW",   # Apply compression
-            "-co", "TILED=YES"       # Use tiled format for efficiency
+            "-cutline", aoi_geojson,
+            "-crop_to_cutline",
+            "-dstalpha",
+            merged_files[layer_name],
+            clipped_path,
+            "-overwrite",
+            "-co", "COMPRESS=LZW",
+            "-co", "TILED=YES"
         ]
         try:
             logger.info(f"Clipping {merged_files[layer_name]} to AOI {aoi_geojson} for {layer_name}...")
@@ -412,24 +369,15 @@ def download_hansen_data(aoi_geojson, output_dir):
             clipped_files[layer_name] = clipped_path
         except subprocess.CalledProcessError as e:
             logger.error(f"Error clipping {layer_name} raster: {e.stderr}")
-            # Clean up failed clipped file
             if os.path.exists(clipped_path): os.remove(clipped_path)
-            return None, None, None # Critical failure
+            continue
         finally:
-            # Clean up the merged VRT/TIF if it's different from the final clipped path and still exists
             if merged_files[layer_name] and merged_files[layer_name] != clipped_path and os.path.exists(merged_files[layer_name]):
-                # Only remove VRT if we successfully created a TIF from it or if clipping was successful from VRT
-                # If we decided to keep merged_files[layer_name] as a TIF, then it might be the same as clipped_path if AOI covers everything
-                 if merged_files[layer_name].endswith(".vrt"): # Typically remove VRTs after use
+                if merged_files[layer_name].endswith(".vrt"):
                     logger.debug(f"Removing temporary merged VRT: {merged_files[layer_name]}")
                     os.remove(merged_files[layer_name])
-                 # elif os.path.exists(clipped_path): # If we converted VRT to TIF and then clipped TIF
-                      # os.remove(merged_files[layer_name])
-
-
     logger.info("Hansen GFC data download, merge, and clip process completed.")
-    # Return paths to the clipped treecover2000, lossyear, and datamask files
-    return clipped_files.get('treecover2000'), clipped_files.get('lossyear'), clipped_files.get('datamask')
+    return clipped_files
 
 # --- Sentinel-1 (SAR) Data Functions ---
 
