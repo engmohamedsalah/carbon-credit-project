@@ -40,7 +40,7 @@ ml/
 
 2. **Sentinel-2 Data (Optical)**
    - **Purpose**: Provides high-resolution optical imagery with multiple spectral bands (including visible, near-infrared, and short-wave infrared)
-   - **Key Advantages**:
+- **Key Advantages**:
      - Excellent for vegetation analysis through indices like NDVI
      - High spectral resolution for detailed land cover classification
      - Regular coverage (5-day revisit time)
@@ -51,7 +51,7 @@ ml/
 
 3. **Hansen Global Forest Change Data**
    - **Purpose**: Provides pre-analyzed global forest cover and forest loss/gain information
-   - **Key Advantages**:
+- **Key Advantages**:
      - Already processed dataset with tree cover percentage
      - Annual forest loss data
      - Historical baseline from 2000
@@ -98,7 +98,7 @@ ml/
    - **Features**: 
      - Temporal pattern recognition
      - Seasonal variation handling
-     - Long-term trend analysis
+    - Long-term trend analysis
 
 4. **Carbon Estimation**
    - **Type**: Regression
@@ -214,3 +214,25 @@ ml/
 - GDAL
 - scikit-learn
 - Other dependencies listed in requirements.txt
+
+## Data Summary
+
+- **Data Sources Summary:**
+  - See `ml/data/data_sources_summary.csv` for a list of all months/years with Sentinel-1 and Sentinel-2 data, and a reference to the Hansen Global Forest Change dataset.
+  - This CSV serves as a unified reference for all three data sources used in the project.
+
+## Hansen Global Forest Change Data
+
+The Hansen Global Forest Change (GFC) dataset provides global, high-resolution (30m) maps of forest cover and change. The following layers are used in this project and are clipped to the AOI:
+
+- **treecover2000**: Percent tree canopy cover for the year 2000 (0–100). Used as a baseline for forest extent.
+- **lossyear**: Year of forest loss per pixel (0 = no loss, 1 = loss in 2001, 2 = loss in 2002, ..., 23 = loss in 2023).
+- **gain**: Forest gain (2000–2012), binary (1 = gain, 0 = no gain).
+- **datamask**: Data quality mask (1 = mapped land, 2 = water, 0 = no data).
+
+All layers are stored as GeoTIFFs in `ml/data/hansen_downloads/` and are spatially aligned to the project AOI. These layers are used for:
+- Generating training labels for change detection
+- Providing ground truth for model validation
+- Establishing historical forest baselines
+
+For more details, see: https://earthenginepartners.appspot.com/science-2013-global-forest/download_v1.10.html
