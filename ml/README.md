@@ -236,3 +236,21 @@ All layers are stored as GeoTIFFs in `ml/data/hansen_downloads/` and are spatial
 - Establishing historical forest baselines
 
 For more details, see: https://earthenginepartners.appspot.com/science-2013-global-forest/download_v1.10.html
+
+## Model Types and Outputs
+
+The recommended order for training and development is from the easiest to the most complex model:
+
+| Step | Task                    | Model Type             | Output Type      | Data Source(s)         | Description |
+|------|-------------------------|------------------------|------------------|------------------------|-------------|
+| 1    | Forest Cover Mapping    | U-Net (Segmentation)   | Classification   | Sentinel-2, Hansen     | Pixel-wise classification of forest vs. non-forest |
+| 2    | Change Detection        | Siamese U-Net / Segmentation | Classification   | Sentinel-2, Hansen     | Pixel-wise classification of change vs. no change between two dates |
+| 3    | Time-Series Analysis    | ConvLSTM (Temporal Segmentation) | Classification   | Sentinel-2, Sentinel-1 | Pixel-wise classification of change/no change, accounting for seasonal trends |
+| 4    | Carbon Estimation       | Regression Model       | Regression       | Sentinel-2, Sentinel-1, Hansen | Continuous value (e.g., tons of CO₂ per pixel or region) based on detected changes |
+
+- **Start with Step 1 (Forest Cover Mapping)**: This is the easiest and most direct model to train and validate.
+- **Proceed to Step 2 (Change Detection)**: Once you have reliable forest masks, move to detecting changes between dates.
+- **Step 3 (Time-Series Analysis)**: Add temporal context to distinguish real change from seasonal variation.
+- **Step 4 (Carbon Estimation)**: Use the outputs of previous models to estimate carbon impact (regression).
+
+Each model is trained separately, and their outputs are combined in the pipeline to provide robust, interpretable results for carbon credit verification.

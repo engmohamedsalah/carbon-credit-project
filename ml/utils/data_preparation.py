@@ -17,6 +17,7 @@ import geopandas as gpd
 from shapely.geometry import box
 from tqdm import tqdm
 from rasterio.enums import Resampling
+import re
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -491,150 +492,232 @@ def create_change_label(hansen_treecover_path, hansen_lossyear_path, target_year
         for f in temp_files:
             if os.path.exists(f): os.remove(f)
 
+def create_change_label_from_stack(stack_path, hansen_treecover_path, hansen_lossyear_path, hansen_datamask_path, output_dir, tree_cover_threshold=30):
+    """
+    Create a change label for a given stack .tif file, aligning Hansen rasters to the stack grid.
+    """
+    # Extract date from stack filename
+    stack_name = os.path.basename(stack_path)
+    try:
+        # Handles both .SAFE_stack.tif and _stack.tif
+        date_str = stack_name.split("_")[2].split("T")[0]
+        scene_date = datetime.strptime(date_str, "%Y%m%d").date()
+    except Exception:
+        logger.warning(f"Could not parse date from stack {stack_name}. Skipping.")
+        return None
+    label_name = stack_name.replace(".SAFE_stack.tif", "_change_label.tif").replace("_stack.tif", "_change_label.tif")
+    label_output_path = os.path.join(output_dir, label_name)
+    return create_change_label(
+        hansen_treecover_path,
+        hansen_lossyear_path,
+        target_year=scene_date.year,
+        output_path=label_output_path,
+        reference_raster_path=stack_path,
+        hansen_datamask_path=hansen_datamask_path,
+        tree_cover_threshold=tree_cover_threshold
+    )
+
 # --- Main Preparation Function --- #
 
-def prepare_data_for_ml(s2_scene_dirs, 
+def prepare_data_for_ml(s2_scene_dirs,
                         hansen_treecover_path, hansen_lossyear_path, hansen_datamask_path,
                         output_dir, s2_bands=["B02", "B03", "B04", "B08"]):
     """
     Prepares aligned Sentinel-2 stacks and change labels for ML training.
-    Sentinel-1 processing has been removed.
+    Now supports both .SAFE folders and stack .tif files as input.
     """
     prepared_s2_stacks_dir = os.path.join(output_dir, "s2_stacks")
-    # prepared_s1_stacks_dir = os.path.join(output_dir, "s1_stacks") # Removed S1
     prepared_labels_dir = os.path.join(output_dir, "change_labels")
     os.makedirs(prepared_s2_stacks_dir, exist_ok=True)
-    # os.makedirs(prepared_s1_stacks_dir, exist_ok=True) # Removed S1
     os.makedirs(prepared_labels_dir, exist_ok=True)
 
     processed_s2_scenes = {}
-    # processed_s1_scenes = {} # Removed S1
     scene_dates = set()
+    scene_labels = {}
 
-    # 1. Process Sentinel-2 scenes
     logger.info("--- Processing Sentinel-2 Scenes ---")
     for scene_dir in s2_scene_dirs:
-        scene_name = os.path.basename(scene_dir).replace(".SAFE", "")
-        try:
-            date_str = scene_name.split("_")[2].split("T")[0]
-            scene_date = datetime.strptime(date_str, "%Y%m%d").date()
-        except Exception: logger.warning(f"Could not parse date from S2 {scene_name}. Skipping."); continue
-
-        logger.info(f"Processing S2: {scene_name}")
-        stacked_s2_path, cloud_mask_path = prepare_scene_bands(scene_dir, s2_bands, prepared_s2_stacks_dir)
-        if stacked_s2_path:
-            processed_s2_scenes[scene_date] = stacked_s2_path
+        if scene_dir.endswith("_stack.tif") or scene_dir.endswith(".SAFE_stack.tif"):
+            # Already a stack .tif file, skip stacking, just create label
+            stack_path = scene_dir
+            stack_name = os.path.basename(stack_path)
+            try:
+                date_str = stack_name.split("_")[2].split("T")[0]
+                scene_date = datetime.strptime(date_str, "%Y%m%d").date()
+            except Exception:
+                logger.warning(f"Could not parse date from stack {stack_name}. Skipping.")
+                continue
+            processed_s2_scenes[scene_date] = stack_path
             scene_dates.add(scene_date)
-        else: logger.warning(f"Failed to process S2 bands for {scene_name}.")
+        else:
+            # Assume .SAFE folder, do stacking
+            scene_name = os.path.basename(scene_dir).replace(".SAFE", "")
+            try:
+                date_str = scene_name.split("_")[2].split("T")[0]
+                scene_date = datetime.strptime(date_str, "%Y%m%d").date()
+            except Exception:
+                logger.warning(f"Could not parse date from S2 {scene_name}. Skipping.")
+                continue
+            logger.info(f"Processing S2: {scene_name}")
+            stacked_s2_path, cloud_mask_path = prepare_scene_bands(scene_dir, s2_bands, prepared_s2_stacks_dir)
+            if stacked_s2_path:
+                processed_s2_scenes[scene_date] = stacked_s2_path
+                scene_dates.add(scene_date)
+            else:
+                logger.warning(f"Failed to process S2 bands for {scene_name}.")
 
     if not processed_s2_scenes:
         logger.error("No Sentinel-2 scenes processed successfully. Cannot proceed.")
         return None
 
-    # 2. Process Sentinel-1 scenes (if requested) # Section Removed
-    # if include_s1 and s1_scene_dirs:
-    #    ... (S1 processing logic removed)
-
-    # 3. Align S1 data to S2 grid and create labels
-    logger.info("--- Creating Labels ---") # Simplified title
-    sorted_dates = sorted(list(scene_dates))
-    # aligned_s1_scenes = {} # Removed S1
-    scene_labels = {}
-
-    # Use the first S2 scene as the reference grid (still relevant for consistency if multiple S2 scenes processed, though labels are aligned per-scene)
-    if not sorted_dates: # Should be caught by processed_s2_scenes check, but defensive
-        logger.error("No dates found from processed S2 scenes.")
-        return None
-    ref_s2_date = min(processed_s2_scenes.keys()) #This is min date, so first S2 scene chronologically
-    # reference_grid_path = processed_s2_scenes[ref_s2_date] # This was for S1 alignment, less critical now but good for a common grid concept.
-
-    for scene_date in sorted_dates:
-        scene_name_base = scene_date.strftime("%Y%m%d") # Base name for aligned files
-
-        # Align S1 if available for this date (or nearest) # Section removed
-        # if include_s1 and scene_date in processed_s1_scenes:
-        #    ... (S1 alignment logic removed)
-
-        # Create change label aligned to the S2 grid for this date
-        if scene_date in processed_s2_scenes:
-            s2_path = processed_s2_scenes[scene_date]
+    logger.info("--- Creating Labels ---")
+    for scene_date in sorted(scene_dates):
+        s2_path = processed_s2_scenes[scene_date]
+        if s2_path.endswith("_stack.tif") or s2_path.endswith(".SAFE_stack.tif"):
+            # Use new function for stack .tif
+            created_label_path = create_change_label_from_stack(
+                s2_path, hansen_treecover_path, hansen_lossyear_path, hansen_datamask_path, prepared_labels_dir
+            )
+        else:
+            # Use original logic for .SAFE
+            scene_name_base = scene_date.strftime("%Y%m%d")
             label_output_path = os.path.join(prepared_labels_dir, f"{scene_name_base}_change_label.tif")
             created_label_path = create_change_label(
                 hansen_treecover_path,
                 hansen_lossyear_path,
                 target_year=scene_date.year,
                 output_path=label_output_path,
-                reference_raster_path=s2_path, # Align label to this S2 scene
-                hansen_datamask_path=hansen_datamask_path # Pass datamask path
+                reference_raster_path=s2_path,
+                hansen_datamask_path=hansen_datamask_path
             )
-            if created_label_path:
-                scene_labels[scene_date] = created_label_path
-            else:
-                logger.warning(f"Failed to create label for {scene_date}")
+        if created_label_path:
+            scene_labels[scene_date] = created_label_path
+        else:
+            logger.warning(f"Failed to create label for {scene_date}")
 
     logger.info(f"Prepared {len(processed_s2_scenes)} S2 stacks.")
-    # logger.info(f"Prepared {len(aligned_s1_scenes)} aligned S1 stacks.") # Removed S1
     logger.info(f"Prepared {len(scene_labels)} change labels.")
 
     if not processed_s2_scenes or not scene_labels:
         logger.error("Failed to prepare necessary S2 stacks or labels.")
         return None
 
-    return output_dir # Return base directory
+    return output_dir
 
 # --- Main Execution Logic --- #
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Download and prepare S2 & Hansen data for ML.") # Updated description
-    parser.add_argument("--aoi", type=str, required=True, help="Path to GeoJSON AOI file.")
-    parser.add_argument("--start_date", type=str, required=True, help="Start date (YYYY-MM-DD).")
-    parser.add_argument("--end_date", type=str, required=True, help="End date (YYYY-MM-DD).")
-    parser.add_argument("--output_dir", type=str, required=True, help="Base output directory.")
+    parser = argparse.ArgumentParser(description="Data preparation pipeline for Sentinel-2, Sentinel-1, and Hansen data.")
+    parser.add_argument("--aoi", type=str, help="Path to GeoJSON AOI file.")
+    parser.add_argument("--start_date", type=str, help="Start date (YYYY-MM-DD).")
+    parser.add_argument("--end_date", type=str, help="End date (YYYY-MM-DD).")
+    parser.add_argument("--output_dir", type=str, help="Base output directory.")
     parser.add_argument("--s2_bands", nargs="+", default=["B02", "B03", "B04", "B08"])
-    # parser.add_argument("--include_s1", action="store_true", help="Include Sentinel-1 data processing.") # Removed S1 arg
-    # parser.add_argument("--s1_orbit", default="ASCENDING") # Removed S1 arg
-    # parser.add_argument("--s1_polarization", default="VV VH") # Removed S1 arg
+    parser.add_argument("--s1_dir", type=str, help="Path to Sentinel-1 .SAFE downloads.")
+    parser.add_argument("--s2_dir", type=str, help="Path to prepared Sentinel-2 stacks.")
+    parser.add_argument("--out_dir", type=str, help="Output directory for S1 stacks.")
     args = parser.parse_args()
 
-    raw_s2_dir = os.path.join(args.output_dir, "raw", "sentinel2")
-    # raw_s1_dir = os.path.join(args.output_dir, "raw", "sentinel1") # Removed S1
-    raw_hansen_dir = os.path.join(args.output_dir, "raw", "hansen")
-    prepared_data_dir = os.path.join(args.output_dir, "prepared")
-
-    # --- Download --- #
-    logger.info("--- Starting Data Download ---")
-    s2_scene_dirs = download_sentinel2_data(args.aoi, args.start_date, args.end_date, raw_s2_dir)
-    hansen_paths = download_hansen_data(args.aoi, raw_hansen_dir)
-    # s1_scene_dirs = [] # Removed S1
-    # if args.include_s1: # Removed S1
-        # s1_scene_dirs = download_sentinel1_data(args.aoi, args.start_date, args.end_date, raw_s1_dir, args.s1_orbit, args.s1_polarization)
-
-    if not s2_scene_dirs or not hansen_paths or len(hansen_paths) < 3 or not all(hansen_paths):
-        logger.error("S2 or Hansen data (treecover, lossyear, datamask) download failed or incomplete. Exiting.")
-        sys.exit(1)
-    # if args.include_s1 and not s1_scene_dirs: # Removed S1
-        # logger.warning("S1 download specified but no scenes found/downloaded.")
-
-    # --- Prepare --- #
-    logger.info("--- Starting Data Preparation ---")
-    hansen_tc_path, hansen_ly_path, hansen_dm_path = hansen_paths
-    result_dir = prepare_data_for_ml(
-        s2_scene_dirs,
-        # s1_scene_dirs, # Removed S1
-        hansen_tc_path, 
-        hansen_ly_path,
-        hansen_dm_path, # Pass the datamask path
-        prepared_data_dir,
-        s2_bands=args.s2_bands
-        # include_s1=args.include_s1 # Removed S1
-    )
-
-    if result_dir:
-        logger.info(f"Data preparation completed. Results in {result_dir}")
+    # If --s1_dir is provided, run Sentinel-1 batch preparation
+    if args.s1_dir and args.s2_dir and args.out_dir:
+        prepare_sentinel1_stacks(args.s1_dir, args.s2_dir, args.out_dir)
     else:
-        logger.error("Data preparation failed.")
-        sys.exit(1)
+        # Otherwise, run the default main pipeline (Sentinel-2/Hansen)
+        if not (args.aoi and args.start_date and args.end_date and args.output_dir):
+            parser.error("For Sentinel-2/Hansen pipeline, --aoi, --start_date, --end_date, and --output_dir are required.")
+        main()
+
+def prepare_sentinel1_stacks(s1_download_dir, s2_stacks_dir, output_dir, bands=["VV", "VH"]):
+    """
+    Batch process all Sentinel-1 .SAFE folders:
+    - Extracts and stacks specified bands (VV, VH)
+    - Aligns to matching Sentinel-2 stack (by date) if available
+    - Saves to output_dir
+    """
+    import glob
+    import rasterio
+    import numpy as np
+    import os
+    import re
+    os.makedirs(output_dir, exist_ok=True)
+    s1_scenes = sorted(glob.glob(os.path.join(s1_download_dir, "*.SAFE")))
+    s2_stacks = sorted(glob.glob(os.path.join(s2_stacks_dir, "*.tif")))
+    # Build a dict of S2 stacks by date
+    def extract_date(fname):
+        match = re.search(r"(\d{8})", os.path.basename(fname))
+        return match.group(1) if match else None
+    s2_by_date = {extract_date(f): f for f in s2_stacks}
+    processed = 0
+    for s1_scene in s1_scenes:
+        scene_name = os.path.basename(s1_scene).replace(".SAFE", "")
+        date_match = re.search(r"(\d{8})", scene_name)
+        if not date_match:
+            logger.warning(f"Could not extract date from {scene_name}, skipping.")
+            continue
+        date_str = date_match.group(1)
+        # Find measurement folder
+        meas_dir = os.path.join(s1_scene, "measurement")
+        if not os.path.isdir(meas_dir):
+            logger.warning(f"No measurement dir in {scene_name}, skipping.")
+            continue
+        # Find band files (case-insensitive, .tif or .tiff)
+        band_files = {}
+        for band in bands:
+            pattern = f"*{band.lower()}*.tif*"
+            files = glob.glob(os.path.join(meas_dir, pattern))
+            if not files:
+                # Try upper case
+                pattern_uc = f"*{band.upper()}*.tif*"
+                files = glob.glob(os.path.join(meas_dir, pattern_uc))
+            if not files:
+                logger.warning(f"Band {band} not found in {meas_dir} for {scene_name}, skipping.")
+                break
+            band_files[band] = files[0]
+        if len(band_files) != len(bands):
+            continue
+        # Read and stack bands
+        arrays = []
+        meta = None
+        for band in bands:
+            with rasterio.open(band_files[band]) as src:
+                arr = src.read(1)
+                arrays.append(arr)
+                if meta is None:
+                    meta = src.meta.copy()
+        stack = np.stack(arrays)
+        meta.update({"count": len(bands)})
+        out_stack_path = os.path.join(output_dir, f"{scene_name}_S1_stack.tif")
+        # Align to S2 stack if available
+        ref_s2_path = s2_by_date.get(date_str)
+        if ref_s2_path:
+            aligned_stack_path = os.path.join(output_dir, f"{scene_name}_S1_stack_aligned.tif")
+            # Use gdalwarp to align
+            cmd = [
+                "gdalwarp",
+                "-t_srs", "EPSG:4326",
+                "-r", "bilinear",
+                "-overwrite",
+                "-te", str(rasterio.open(ref_s2_path).bounds.left), str(rasterio.open(ref_s2_path).bounds.bottom), str(rasterio.open(ref_s2_path).bounds.right), str(rasterio.open(ref_s2_path).bounds.top),
+                "-ts", str(rasterio.open(ref_s2_path).width), str(rasterio.open(ref_s2_path).height),
+                out_stack_path,
+                aligned_stack_path
+            ]
+            # Save unaligned stack first
+            with rasterio.open(out_stack_path, "w", **meta) as dst:
+                for i in range(len(bands)):
+                    dst.write(stack[i], i + 1)
+            import subprocess
+            subprocess.run(cmd, check=True)
+            logger.info(f"Aligned S1 stack saved to {aligned_stack_path}")
+            os.remove(out_stack_path)  # Remove unaligned
+        else:
+            with rasterio.open(out_stack_path, "w", **meta) as dst:
+                for i in range(len(bands)):
+                    dst.write(stack[i], i + 1)
+            logger.info(f"S1 stack saved to {out_stack_path}")
+        processed += 1
+    logger.info(f"Processed {processed} Sentinel-1 scenes.")
 
 if __name__ == "__main__":
     # Example Usage:
