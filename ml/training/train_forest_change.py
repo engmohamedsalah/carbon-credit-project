@@ -5,133 +5,77 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 import numpy as np
-from PIL import Image
 import rasterio
 from rasterio.windows import Window
-import matplotlib.pyplot as plt
-from tqdm import tqdm
 import glob
-import pandas as pd
-from sklearn.model_selection import train_test_split
 import logging
+from sklearn.model_selection import train_test_split
+import re
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Constants
-SENTINEL_BANDS = ['B02', 'B03', 'B04', 'B08']  # Blue, Green, Red, NIR
 PATCH_SIZE = 256
 BATCH_SIZE = 16
 LEARNING_RATE = 0.001
 NUM_EPOCHS = 50
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-class ForestChangeDataset(Dataset):
-    """Dataset for forest cover change detection using Sentinel-2 imagery."""
-    
-    def __init__(self, data_dir, transform=None, mode='train'):
-        """
-        Args:
-            data_dir (str): Directory with Sentinel-2 images and Hansen data
-            transform (callable, optional): Optional transform to be applied on a sample
-            mode (str): 'train', 'val', or 'test'
-        """
-        self.data_dir = data_dir
+class ForestChangePreparedDataset(Dataset):
+    """Dataset for forest cover change detection using prepared Sentinel-2 stacks and change labels."""
+    def __init__(self, stacks_dir, labels_dir, transform=None, mode='train', val_split=0.2, random_seed=42):
+        self.stacks_dir = stacks_dir
+        self.labels_dir = labels_dir
         self.transform = transform
         self.mode = mode
-        
-        # Get list of all available scenes
-        self.scenes = self._get_scenes()
-        
-        # Split data for train/val/test
+
+        # Find all stack and label files
+        stack_files = sorted(glob.glob(os.path.join(stacks_dir, '*.tif')))
+        label_files = sorted(glob.glob(os.path.join(labels_dir, '*.tif')))
+
+        print('Stack files:', stack_files)
+        print('Label files:', label_files)
+        def extract_key(f):
+            base = os.path.basename(f)
+            match = re.search(r'(\d{8})', base)
+            if match:
+                print(f"Extracted key from {base}: {match.group(1)}")
+                return match.group(1)
+            print(f"No date found in {base}, fallback to {base.split('_')[0]}")
+            return base.split('_')[0]
+        stack_keys = {extract_key(f): f for f in stack_files}
+        label_keys = {extract_key(f): f for f in label_files}
+        print('Stack keys:', list(stack_keys.keys()))
+        print('Label keys:', list(label_keys.keys()))
+        common_keys = sorted(set(stack_keys.keys()) & set(label_keys.keys()))
+        print('Common keys:', common_keys)
+        self.pairs = [(stack_keys[k], label_keys[k], k) for k in common_keys]
+
+        # Split into train/val
         if mode != 'test':
-            train_scenes, val_scenes = train_test_split(self.scenes, test_size=0.2, random_state=42)
-            self.scenes = train_scenes if mode == 'train' else val_scenes
-        
-        logger.info(f"Loaded {len(self.scenes)} scenes for {mode}")
-    
-    def _get_scenes(self):
-        """Get list of all available scenes with both Sentinel-2 and Hansen data."""
-        # This is a placeholder - in a real implementation, you would scan your data directory
-        # and match Sentinel-2 scenes with corresponding Hansen data
-        
-        # For demonstration, we'll assume a directory structure like:
-        # data_dir/
-        #   sentinel/
-        #     scene1/
-        #       B02.tif, B03.tif, B04.tif, B08.tif
-        #     scene2/
-        #       ...
-        #   hansen/
-        #     scene1_forest_change.tif
-        #     scene2_forest_change.tif
-        
-        sentinel_scenes = glob.glob(os.path.join(self.data_dir, 'sentinel', '*'))
-        hansen_files = glob.glob(os.path.join(self.data_dir, 'hansen', '*_forest_change.tif'))
-        
-        # Match scenes with labels
-        scenes = []
-        for scene_path in sentinel_scenes:
-            scene_id = os.path.basename(scene_path)
-            hansen_path = os.path.join(self.data_dir, 'hansen', f"{scene_id}_forest_change.tif")
-            
-            if os.path.exists(hansen_path):
-                scenes.append({
-                    'sentinel_path': scene_path,
-                    'hansen_path': hansen_path,
-                    'scene_id': scene_id
-                })
-        
-        return scenes
-    
+            train_pairs, val_pairs = train_test_split(self.pairs, test_size=val_split, random_state=random_seed)
+            self.pairs = train_pairs if mode == 'train' else val_pairs
+        logger.info(f"Loaded {len(self.pairs)} stack/label pairs for {mode}")
+
     def __len__(self):
-        return len(self.scenes) * 10  # Each scene will generate multiple patches
-    
+        return len(self.pairs)
+
     def __getitem__(self, idx):
-        # Determine which scene and which patch within the scene
-        scene_idx = idx // 10
-        patch_idx = idx % 10
-        
-        scene = self.scenes[scene_idx]
-        
-        # Load Sentinel-2 bands
-        bands = []
-        for band in SENTINEL_BANDS:
-            band_path = os.path.join(scene['sentinel_path'], f"{band}.tif")
-            with rasterio.open(band_path) as src:
-                # For simplicity, we'll just take a fixed window for each patch
-                # In a real implementation, you would use a more sophisticated approach
-                height, width = src.height, src.width
-                row_offset = (patch_idx // 3) * PATCH_SIZE
-                col_offset = (patch_idx % 3) * PATCH_SIZE
-                
-                # Ensure we don't go out of bounds
-                if row_offset + PATCH_SIZE > height or col_offset + PATCH_SIZE > width:
-                    row_offset = max(0, height - PATCH_SIZE)
-                    col_offset = max(0, width - PATCH_SIZE)
-                
-                window = Window(col_offset, row_offset, PATCH_SIZE, PATCH_SIZE)
-                band_data = src.read(1, window=window)
-                bands.append(band_data)
-        
-        # Stack bands to create a multi-channel image
-        image = np.stack(bands, axis=0)
-        
-        # Load Hansen forest change data for the same patch
-        with rasterio.open(scene['hansen_path']) as src:
-            window = Window(col_offset, row_offset, PATCH_SIZE, PATCH_SIZE)
-            label = src.read(1, window=window)
-        
-        # Convert to PyTorch tensors
-        image = torch.from_numpy(image).float()
-        label = torch.from_numpy(label).long()
-        
-        # Apply transformations if any
+        stack_path, label_path, key = self.pairs[idx]
+        # Read stack (assume shape: bands, H, W)
+        with rasterio.open(stack_path) as src:
+            image = src.read().astype(np.float32)
+            # Optionally normalize here if needed
+        # Read label (assume shape: H, W)
+        with rasterio.open(label_path) as src:
+            label = src.read(1).astype(np.int64)
+        image = torch.from_numpy(image)
+        label = torch.from_numpy(label)
         if self.transform:
             image = self.transform(image)
-        
-        return {'image': image, 'label': label, 'scene_id': scene['scene_id']}
+        return {'image': image, 'label': label, 'scene_id': key}
 
 class UNet(nn.Module):
     """U-Net architecture for semantic segmentation of satellite imagery."""
@@ -317,36 +261,36 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
             logger.info(f"Saved best model with validation loss: {val_loss:.4f}")
 
 def main():
-    """Main function to train the forest change detection model."""
+    """Main function to train the forest change detection model with prepared data."""
     # Set up data directories
-    data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
+    base_dir = os.path.join(os.path.dirname(__file__), '..', 'data', 'prepared')
+    stacks_dir = os.path.join(base_dir, 's2_stacks')
+    labels_dir = os.path.join(base_dir, 'change_labels')
     model_dir = os.path.join(os.path.dirname(__file__), '..', 'models')
-    
-    # Create directories if they don't exist
-    os.makedirs(data_dir, exist_ok=True)
     os.makedirs(model_dir, exist_ok=True)
-    
-    # Define transformations
+
+    # Define transformations (optional: update mean/std if needed)
     transform = transforms.Compose([
         transforms.Normalize(mean=[0.485, 0.456, 0.406, 0.5], std=[0.229, 0.224, 0.225, 0.2])
     ])
-    
+
     # Create datasets and data loaders
-    train_dataset = ForestChangeDataset(data_dir, transform=transform, mode='train')
-    val_dataset = ForestChangeDataset(data_dir, transform=transform, mode='val')
-    
+    train_dataset = ForestChangePreparedDataset(stacks_dir, labels_dir, transform=transform, mode='train')
+    val_dataset = ForestChangePreparedDataset(stacks_dir, labels_dir, transform=transform, mode='val')
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
-    
+
     # Initialize model, loss function, and optimizer
-    model = UNet(in_channels=4, out_channels=2).to(DEVICE)
+    # Infer number of bands from a sample stack
+    sample_stack = next(iter(train_dataset))['image']
+    in_channels = sample_stack.shape[0]
+    model = UNet(in_channels=in_channels, out_channels=2).to(DEVICE)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
-    
+
     # Train the model
     model_save_path = os.path.join(model_dir, 'forest_change_unet.pth')
     train_model(model, train_loader, val_loader, criterion, optimizer, NUM_EPOCHS, model_save_path)
-    
     logger.info("Training completed!")
 
 if __name__ == "__main__":
