@@ -1,0 +1,19 @@
+digraph DataPreparationFlow {
+    rankdir=LR;
+    node [shape=box, style=filled, fillcolor="#e0e0ff"];
+
+    S2Download [label="Sentinel-2 Download (zips)"];
+    S2Unzip [label="Unzip .SAFE folders (S2)"];
+    S2Stack [label="Prepare S2 Stacks"];
+    ChangeLabel [label="Change Label Creation (with Hansen)", fillcolor="#bfffbf"];
+    S1Download [label="Sentinel-1 Download (zips)"];
+    S1Unzip [label="Unzip .SAFE folders (S1)"];
+    S1Stack [label="Prepare S1 Stacks"];
+    S1Align [label="Align S1 to S2 Grid"];
+    Hansen [label="Hansen Data Download", fillcolor="#ffffbf"];
+    Prepared [label="Prepared Data for ML", fillcolor="#bbf"];
+
+    S2Download -> S2Unzip -> S2Stack -> ChangeLabel -> Prepared;
+    S1Download -> S1Unzip -> S1Stack -> S1Align -> Prepared;
+    Hansen -> ChangeLabel;
+} 
