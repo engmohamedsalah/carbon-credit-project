@@ -126,11 +126,11 @@ class ForestChangePredictor:
         """
         image_tensor = image_tensor.to(DEVICE)
         baseline = torch.zeros_like(image_tensor).to(DEVICE)
-
+        
         def custom_forward(x):
             output = self.model(x)
             return output[:, 1, :, :].mean(dim=(1, 2))
-
+        
         if method == 'integrated_gradients':
             integrated_gradients = IntegratedGradients(custom_forward)
             attributions = integrated_gradients.attribute(image_tensor, baseline, target=None)
@@ -140,8 +140,8 @@ class ForestChangePredictor:
         elif method == 'occlusion':
             occlusion = Occlusion(custom_forward)
             attributions = occlusion.attribute(image_tensor,
-                                               sliding_window_shapes=(1, 16, 16),
-                                               strides=(1, 8, 8),
+                                                   sliding_window_shapes=(1, 16, 16),
+                                                   strides=(1, 8, 8),
                                                target=None)
         else:
             raise ValueError(f"Unknown explanation method: {method}")

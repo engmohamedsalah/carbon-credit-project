@@ -118,7 +118,7 @@ class UNet(nn.Module):
         self.dec1 = self._double_conv(128, 64)
         # Final layer
         self.final = nn.Conv2d(64, out_channels, kernel_size=1)
-
+    
     def _double_conv(self, in_channels, out_channels):
         return nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
@@ -128,14 +128,14 @@ class UNet(nn.Module):
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
-
+    
     def center_crop(self, enc_feat, target_shape):
         _, _, h, w = enc_feat.shape
         target_h, target_w = target_shape
         crop_h = max((h - target_h) // 2, 0)
         crop_w = max((w - target_w) // 2, 0)
         return enc_feat[:, :, crop_h:crop_h+target_h, crop_w:crop_w+target_w]
-
+    
     def forward(self, x):
         # Encoder
         enc1 = self.enc1_conv(x)
