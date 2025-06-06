@@ -13,7 +13,10 @@ import cv2
 
 # Add parent directory to path to import from training
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from training.train_forest_change import UNet, calculate_ndvi, SENTINEL_BANDS, PATCH_SIZE
+from training.train_forest_change import UNet, calculate_ndvi, PATCH_SIZE
+
+# Sentinel-2 bands to use for inference
+SENTINEL_BANDS = ['B02', 'B03', 'B04', 'B08']
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -62,7 +65,7 @@ class ForestChangePredictor:
         # Load bands
         bands = []
         for band in SENTINEL_BANDS:
-            band_path = os.path.join(image_path, f"{band}.tif")
+            band_path = os.path.join(image_path, f"{band}.jp2")
             with rasterio.open(band_path) as src:
                 band_data = src.read(1)
                 bands.append(band_data)
@@ -122,19 +125,24 @@ class ForestChangePredictor:
             np.ndarray: Attribution map highlighting important regions for prediction
         """
         image_tensor = image_tensor.to(DEVICE)
-        
-        # Get baseline (black image)
         baseline = torch.zeros_like(image_tensor).to(DEVICE)
-        
+
+        def custom_forward(x):
+            output = self.model(x)
+            return output[:, 1, :, :].mean(dim=(1, 2))
+
         if method == 'integrated_gradients':
-            attributions = self.integrated_gradients.attribute(image_tensor, baseline, target=1)
+            integrated_gradients = IntegratedGradients(custom_forward)
+            attributions = integrated_gradients.attribute(image_tensor, baseline, target=None)
         elif method == 'gradient_shap':
-            attributions = self.gradient_shap.attribute(image_tensor, baseline, target=1)
+            gradient_shap = GradientShap(custom_forward)
+            attributions = gradient_shap.attribute(image_tensor, baseline, target=None)
         elif method == 'occlusion':
-            attributions = self.occlusion.attribute(image_tensor,
-                                                   sliding_window_shapes=(1, 16, 16),
-                                                   strides=(1, 8, 8),
-                                                   target=1)
+            occlusion = Occlusion(custom_forward)
+            attributions = occlusion.attribute(image_tensor,
+                                               sliding_window_shapes=(1, 16, 16),
+                                               strides=(1, 8, 8),
+                                               target=None)
         else:
             raise ValueError(f"Unknown explanation method: {method}")
         
@@ -165,51 +173,51 @@ class ForestChangePredictor:
         os.makedirs(output_dir, exist_ok=True)
         
         # Get image dimensions from first band
-        with rasterio.open(os.path.join(image_path, f"{SENTINEL_BANDS[0]}.tif")) as src:
+        with rasterio.open(os.path.join(image_path, f"{SENTINEL_BANDS[0]}.jp2")) as src:
             height, width = src.height, src.width
             profile = src.profile
+        print(f"[DEBUG] Image size: {height}x{width}")
+        print(f"[DEBUG] Patch size: {patch_size}, Overlap: {overlap}")
+        stride = patch_size - overlap
+        n_patches_y = (height - patch_size) // stride + 1
+        n_patches_x = (width - patch_size) // stride + 1
+        print(f"[DEBUG] Stride: {stride}, Expected patches: {n_patches_y} x {n_patches_x} = {n_patches_y * n_patches_x}")
         
         # Initialize full-size prediction and confidence maps
-        prediction_map = np.zeros((height, width), dtype=np.uint8)
+        prediction_map = np.zeros((height, width), dtype=np.float32)
         confidence_map = np.zeros((height, width), dtype=np.float32)
         explanation_map = np.zeros((height, width), dtype=np.float32)
         
         # Process image in patches
-        stride = patch_size - overlap
         for y in range(0, height - patch_size + 1, stride):
             for x in range(0, width - patch_size + 1, stride):
+                print(f"[DEBUG] Processing patch at (x={x}, y={y})")
                 # Extract patch
                 patch_bands = []
                 for band in SENTINEL_BANDS:
-                    with rasterio.open(os.path.join(image_path, f"{band}.tif")) as src:
+                    with rasterio.open(os.path.join(image_path, f"{band}.jp2")) as src:
                         window = Window(x, y, patch_size, patch_size)
                         patch_bands.append(src.read(1, window=window))
-                
                 # Stack and normalize patch
                 patch = np.stack(patch_bands, axis=0)
                 for i in range(len(patch_bands)):
                     band_min, band_max = patch[i].min(), patch[i].max()
                     patch[i] = (patch[i] - band_min) / (band_max - band_min + 1e-8)
-                
                 # Convert to tensor
                 patch_tensor = torch.from_numpy(patch).float().unsqueeze(0)
-                
                 # Make prediction
                 patch_prediction, patch_confidence = self.predict(patch_tensor)
-                
-                # Generate explanation
-                patch_explanation = self.explain_prediction(patch_tensor)
-                
+                # Generate explanation (SKIPPED FOR SPEED)
+                # patch_explanation = self.explain_prediction(patch_tensor)
                 # Create weight mask for blending (higher weight in center, lower at edges)
                 y_grid, x_grid = np.mgrid[0:patch_size, 0:patch_size]
                 center_y, center_x = patch_size // 2, patch_size // 2
                 dist_from_center = np.sqrt((y_grid - center_y)**2 + (x_grid - center_x)**2)
                 weight_mask = np.clip(1 - dist_from_center / (patch_size // 2), 0, 1)
-                
                 # Update prediction, confidence, and explanation maps with weighted values
                 prediction_map[y:y+patch_size, x:x+patch_size] += patch_prediction * weight_mask
                 confidence_map[y:y+patch_size, x:x+patch_size] += patch_confidence * weight_mask
-                explanation_map[y:y+patch_size, x:x+patch_size] += patch_explanation * weight_mask
+                # explanation_map[y:y+patch_size, x:x+patch_size] += patch_explanation * weight_mask
         
         # Normalize maps
         prediction_map = (prediction_map > 0.5).astype(np.uint8)
@@ -217,29 +225,36 @@ class ForestChangePredictor:
         # Save results
         prediction_path = os.path.join(output_dir, 'forest_change_prediction.tif')
         confidence_path = os.path.join(output_dir, 'confidence.tif')
-        explanation_path = os.path.join(output_dir, 'explanation.tif')
+        # explanation_path = os.path.join(output_dir, 'explanation.tif')
         visualization_path = os.path.join(output_dir, 'visualization.png')
-        
+        print(f"[DEBUG] Writing prediction map to {prediction_path}")
         # Update profile for output files
         profile.update(count=1, dtype=rasterio.uint8)
         
         # Save prediction map
-        with rasterio.open(prediction_path, 'w', **profile) as dst:
+        with rasterio.open(prediction_path, 'w', driver='GTiff', **profile) as dst:
             dst.write(prediction_map, 1)
+        print(f"[DEBUG] Prediction map written.")
         
         # Update profile for floating point data
         profile.update(dtype=rasterio.float32)
+        print(f"[DEBUG] Writing confidence map to {confidence_path}")
         
         # Save confidence map
-        with rasterio.open(confidence_path, 'w', **profile) as dst:
+        with rasterio.open(confidence_path, 'w', driver='GTiff', **profile) as dst:
             dst.write(confidence_map, 1)
+        print(f"[DEBUG] Confidence map written.")
         
-        # Save explanation map
-        with rasterio.open(explanation_path, 'w', **profile) as dst:
-            dst.write(explanation_map, 1)
+        # Save explanation map (SKIPPED)
+        # print(f"[DEBUG] Writing explanation map to {explanation_path}")
+        # with rasterio.open(explanation_path, 'w', **profile) as dst:
+        #     dst.write(explanation_map, 1)
+        # print(f"[DEBUG] Explanation map written.")
         
-        # Create visualization
-        self._create_visualization(image_path, prediction_map, explanation_map, visualization_path)
+        print(f"[DEBUG] Writing visualization to {visualization_path}")
+        # Create visualization (skip explanation)
+        self._create_visualization(image_path, prediction_map, None, visualization_path)
+        print(f"[DEBUG] Visualization written.")
         
         # Calculate statistics
         forest_loss_area = np.sum(prediction_map) * 10 * 10 / 10000  # Convert pixels to hectares (assuming 10m resolution)
@@ -249,7 +264,7 @@ class ForestChangePredictor:
         results = {
             'prediction_path': prediction_path,
             'confidence_path': confidence_path,
-            'explanation_path': explanation_path,
+            # 'explanation_path': explanation_path,
             'visualization_path': visualization_path,
             'forest_loss_area_ha': float(forest_loss_area),
             'average_confidence': float(average_confidence),
@@ -266,8 +281,8 @@ class ForestChangePredictor:
         """Create a visualization of the prediction and explanation."""
         # Load RGB bands
         rgb_bands = []
-        for band in ['B04', 'B03', 'B02']:  # Red, Green, Blue
-            with rasterio.open(os.path.join(image_path, f"{band}.tif")) as src:
+        for band in ['B04', 'B03', 'B02']:
+            with rasterio.open(os.path.join(image_path, f"{band}.jp2")) as src:
                 rgb_bands.append(src.read(1))
         
         # Stack and normalize RGB image
@@ -304,10 +319,10 @@ class ForestChangePredictor:
         axes[1].set_title('Forest Loss Prediction')
         axes[1].axis('off')
         
-        # Plot explanation heatmap
-        axes[2].imshow(heatmap)
-        axes[2].set_title('Explanation (Feature Importance)')
-        axes[2].axis('off')
+        # Plot explanation heatmap (SKIPPED)
+        # axes[2].imshow(heatmap)
+        # axes[2].set_title('Explanation (Feature Importance)')
+        # axes[2].axis('off')
         
         # Save figure
         plt.tight_layout()

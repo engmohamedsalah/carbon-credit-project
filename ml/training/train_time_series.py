@@ -19,9 +19,8 @@ import itertools
 # sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from ml.models.convlstm_model import ConvLSTM
-
 # Configure logging
-logging.basicConfig(level=logging.INFO, format=\"%(asctime)s - %(name)s - %(levelname)s - %(message)s\")
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # --- Configuration ---
@@ -46,13 +45,13 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # --- Dataset Definition ---
 class SatelliteTimeSeriesDataset(Dataset):
     """Dataset for loading sequences of satellite image patches and corresponding labels."""
-    def __init__(self, data_dir, seq_length=5, patch_size=64, bands=[\"B02\", \"B03\", \"B04\", \"B08\"]):
+    def __init__(self, data_dir, seq_length=5, patch_size=64, bands=["B02", "B03", "B04", "B08"]):
         self.data_dir = data_dir
         self.seq_length = seq_length
         self.patch_size = patch_size
         self.bands = bands
-        self.image_stack_dir = os.path.join(data_dir, \"image_stacks\")
-        self.label_dir = os.path.join(data_dir, \"change_labels\") # Using change labels for now
+        self.image_stack_dir = os.path.join(data_dir, "image_stacks")
+        self.label_dir = os.path.join(data_dir, "change_labels") # Using change labels for now
 
         self.image_files = sorted(glob.glob(os.path.join(self.image_stack_dir, "*_stack.tif")))
         self.label_files = sorted(glob.glob(os.path.join(self.label_dir, "*_change_label.tif")))
@@ -138,8 +137,8 @@ class SatelliteTimeSeriesDataset(Dataset):
 # --- Training Function ---
 def train_convlstm_model(model, dataloader, criterion, optimizer, num_epochs, device):
     """Trains the ConvLSTM model."""
-    model.train() # Set model to training mode
-    best_loss = float(\"inf\")
+    model.train()  # Set model to training mode
+    best_loss = float('inf')
 
     logger.info(f"Starting training on {device} for {num_epochs} epochs...")
 
@@ -166,9 +165,8 @@ def train_convlstm_model(model, dataloader, criterion, optimizer, num_epochs, de
             # Backward pass and optimize
             loss.backward()
             optimizer.step()
-
             running_loss += loss.item()
-            progress_bar.set_postfix({\"loss\": running_loss / (i + 1)})
+            progress_bar.set_postfix({"loss": running_loss / (i + 1)})
 
         epoch_loss = running_loss / len(dataloader)
         logger.info(f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}")
