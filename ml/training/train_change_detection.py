@@ -12,6 +12,7 @@ import numpy as np
 import torch.nn.functional as F
 import random
 import pandas as pd
+import argparse
 
 from ml.models.siamese_unet import SiameseUNet
 from ml.training.dataset_patch_pairs import PatchPairDataset
@@ -39,17 +40,8 @@ transform = transforms.Compose([
 ])
 
 
-def dice_loss(pred, target, smooth=1.0):
-    pred = torch.sigmoid(pred)
-    target = target.float()
-    intersection = (pred * target).sum(dim=(1,2,3))
-    union = pred.sum(dim=(1,2,3)) + target.sum(dim=(1,2,3))
-    dice = (2. * intersection + smooth) / (union + smooth)
-    return 1 - dice.mean()
-
-
 class FocalLoss(nn.Module):
-    def __init__(self, alpha=0.25, gamma=2, reduction='mean'):
+    def __init__(self, alpha=0.5, gamma=3, reduction='mean'):
         super(FocalLoss, self).__init__()
         self.alpha = alpha
         self.gamma = gamma
@@ -113,10 +105,15 @@ def train_change_model(model, train_loader, val_loader, criterion, optimizer, nu
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             torch.save(model.state_dict(), model_save_path)
-            logger.info(f"Saved best model with validation loss: {val_loss:.4f}")
+            logger.info(f"New best model saved to {model_save_path} with validation loss: {val_loss:.4f}")
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Train a Siamese U-Net for change detection.")
+    parser.add_argument('--model_save_path', type=str, default=MODEL_SAVE_PATH,
+                        help=f"Path to save the best model. Defaults to {MODEL_SAVE_PATH}")
+    args = parser.parse_args()
+
     logger.info(f"Using device: {DEVICE}")
 
     # --- Data Loading and Balancing ---
@@ -172,13 +169,13 @@ def main():
 
     # Model, loss, optimizer
     model = SiameseUNet(in_channels=4, out_channels=1).to(DEVICE)
-    criterion = FocalLoss(alpha=0.5, gamma=2)
+    criterion = FocalLoss(alpha=0.5, gamma=3)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     logger.info("Starting training...")
     print("Starting training loop...", flush=True)
-    train_change_model(model, train_loader, val_loader, criterion, optimizer, NUM_EPOCHS, MODEL_SAVE_PATH)
-    logger.info(f"Training finished. Best model saved to {MODEL_SAVE_PATH}")
+    train_change_model(model, train_loader, val_loader, criterion, optimizer, NUM_EPOCHS, args.model_save_path)
+    logger.info(f"Training finished. Best model saved to {args.model_save_path}")
 
 
 if __name__ == "__main__":
