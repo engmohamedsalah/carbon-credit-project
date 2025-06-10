@@ -144,4 +144,10 @@ data/raw/hansen/raw_tiles/
 **/*.swo
 **/*~
 **/tmp/
-**/temp/ 
+**/temp/
+
+# NxhcM9asB2/vy5T8d/3x7A==
+#
+*.png
+*.pth
+debug_patches/ 
