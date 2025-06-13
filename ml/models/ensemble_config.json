@@ -1,0 +1,14 @@
+{
+  "ensemble_weights": {
+    "forest_cover": 0.3,
+    "change_detection": 0.4,
+    "convlstm": 0.3
+  },
+  "device": "cpu",
+  "timestamp": "2025-06-14T01:59:25.118885",
+  "model_info": {
+    "forest_cover": "U-Net (F1=0.49)",
+    "change_detection": "Siamese U-Net (F1=0.60)",
+    "convlstm": "ConvLSTM (Temporal Analysis)"
+  }
+}
