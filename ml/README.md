@@ -306,3 +306,7 @@ The recommended order for training and development is from the easiest to the mo
 4. **Scale to production** with cloud deployment and API endpoints
 
 Each model is trained separately, and their outputs are combined in the pipeline to provide robust, interpretable results for carbon credit verification.
+
+Satellite Imagery → Forest Mapping → Change Detection → Temporal Validation → Carbon Quantification
+     ↓                    ↓               ↓                ↓                    ↓
+   Raw Data         Baseline Forest    Forest Changes   Seasonal Filter    Carbon Credits
