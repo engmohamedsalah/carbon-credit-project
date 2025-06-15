@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../services/api';
+import apiService from '../services/apiService';
+import { formatApiError } from '../utils/errorUtils';
 
 // Async thunks
 export const login = createAsyncThunk(
@@ -11,11 +12,7 @@ export const login = createAsyncThunk(
       formData.append('username', email);
       formData.append('password', password);
       
-      const response = await api.post('/auth/login', formData, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      });
+      const response = await apiService.auth.login(formData);
       localStorage.setItem('token', response.data.access_token);
       return response.data;
     } catch (error) {
@@ -28,7 +25,7 @@ export const register = createAsyncThunk(
   'auth/register',
   async ({ email, password, fullName, role }, { rejectWithValue }) => {
     try {
-      const response = await api.post('/auth/register', { 
+      const response = await apiService.auth.register({ 
         email, 
         password, 
         full_name: fullName,
@@ -45,7 +42,7 @@ export const getCurrentUser = createAsyncThunk(
   'auth/getCurrentUser',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/users/me');
+      const response = await apiService.auth.getCurrentUser();
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -88,7 +85,7 @@ const authSlice = createSlice({
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.detail || 'Login failed';
+        state.error = formatApiError(action, 'Login failed');
       })
       // Register
       .addCase(register.pending, (state) => {
@@ -100,7 +97,7 @@ const authSlice = createSlice({
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.detail || 'Registration failed';
+        state.error = formatApiError(action, 'Registration failed');
       })
       // Get current user
       .addCase(getCurrentUser.pending, (state) => {
@@ -116,7 +113,7 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = null;
         state.isAuthenticated = false;
-        state.error = action.payload?.detail || 'Failed to get user data';
+        state.error = formatApiError(action, 'Failed to get user data');
       });
   },
 });

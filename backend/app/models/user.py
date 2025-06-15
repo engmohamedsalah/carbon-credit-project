@@ -1,28 +1,80 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Float, Text, Enum
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-import enum
+"""
+User models and schemas
+"""
+from typing import Optional
+from pydantic import BaseModel, validator
+from datetime import datetime
 
-from app.core.database import Base
 
-class UserRole(str, enum.Enum):
-    ADMIN = "admin"
-    VERIFIER = "verifier"
-    PROJECT_DEVELOPER = "project_developer"
-    VIEWER = "viewer"
+class UserBase(BaseModel):
+    """Base user model"""
+    email: str
+    full_name: str
+    role: str = "Project Developer"
+    is_active: bool = True
 
-class User(Base):
-    __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    full_name = Column(String)
-    role = Column(Enum(UserRole), default=UserRole.VIEWER)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+class UserCreate(UserBase):
+    """User creation model"""
+    password: str
+    
+    @validator('password')
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        if not any(c.isupper() for c in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not any(c.islower() for c in v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('Password must contain at least one digit')
+        return v
+    
+    @validator('role')
+    def validate_role(cls, v):
+        allowed_roles = ["Project Developer", "Verifier", "Admin"]
+        if v not in allowed_roles:
+            raise ValueError(f'Role must be one of: {", ".join(allowed_roles)}')
+        return v
 
-    # Relationships
-    projects = relationship("Project", back_populates="owner")
-    verifications = relationship("Verification", back_populates="verifier")
+
+class UserUpdate(BaseModel):
+    """User update model"""
+    full_name: Optional[str] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+    
+    @validator('role')
+    def validate_role(cls, v):
+        if v is not None:
+            allowed_roles = ["Project Developer", "Verifier", "Admin"]
+            if v not in allowed_roles:
+                raise ValueError(f'Role must be one of: {", ".join(allowed_roles)}')
+        return v
+
+
+class UserResponse(UserBase):
+    """User response model"""
+    id: int
+    created_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class UserLogin(BaseModel):
+    """User login model"""
+    email: str
+    password: str
+
+
+class Token(BaseModel):
+    """Token response model"""
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+
+
+class TokenData(BaseModel):
+    """Token data model"""
+    email: Optional[str] = None

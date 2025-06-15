@@ -1,13 +1,14 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../services/api';
+import apiService from '../services/apiService';
 
 // Async thunks
 export const fetchProjects = createAsyncThunk(
   'projects/fetchProjects',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/projects');
-      return response.data;
+      const response = await apiService.projects.list();
+      // Handle the API response format: {projects: [], total: 0, page: 1, page_size: 20}
+      return response.data.projects || response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
     }
@@ -18,7 +19,7 @@ export const fetchProjectById = createAsyncThunk(
   'projects/fetchProjectById',
   async (id, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/projects/${id}`);
+      const response = await apiService.projects.getById(id);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -30,9 +31,9 @@ export const createProject = createAsyncThunk(
   'projects/createProject',
   async (projectData, { rejectWithValue }) => {
     try {
-      const response = await api.post('/projects/new', {
+      const response = await apiService.projects.create({
         name: projectData.name,
-        location: projectData.location_name || '0,0',
+        location_name: projectData.location_name || 'Unknown Location',
         area_size: parseFloat(projectData.area_hectares) || 0,
         description: projectData.description || '',
         project_type: projectData.project_type || 'Reforestation'
@@ -48,7 +49,7 @@ export const updateProject = createAsyncThunk(
   'projects/updateProject',
   async ({ id, projectData }, { rejectWithValue }) => {
     try {
-      const response = await api.put(`/projects/${id}`, projectData);
+      const response = await apiService.projects.update(id, projectData);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -64,11 +65,7 @@ export const uploadSatelliteImage = createAsyncThunk(
       formData.append('file', file);
       formData.append('project_id', projectId);
       
-      const response = await api.post('/satellite/images/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await apiService.satellite.upload(formData);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -80,7 +77,7 @@ export const verifyProject = createAsyncThunk(
   'projects/verifyProject',
   async (projectId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/verification?project_id=${projectId}`);
+      const response = await apiService.verification.list({ project_id: projectId });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || { detail: 'Network error' });
@@ -193,7 +190,7 @@ const projectSlice = createSlice({
       .addCase(verifyProject.fulfilled, (state, action) => {
         state.loading = false;
         state.verificationResults = action.payload;
-        if (state.currentProject && action.payload.project_id == state.currentProject.id) {
+        if (state.currentProject && action.payload.project_id === state.currentProject.id) {
           state.currentProject.status = action.payload.status;
         }
       })

@@ -22,7 +22,7 @@ echo ""
 echo "========================================"
 echo "Running backend tests..."
 echo "========================================"
-python3 test_backend.py
+python3 ../tests/test_backend.py
 
 BACKEND_RESULT=$?
 
@@ -32,7 +32,7 @@ if [ $BACKEND_RESULT -eq 0 ]; then
     echo "========================================"
     echo "Running frontend tests..."
     echo "========================================"
-    python3 test_frontend.py
+    python3 ../tests/test_frontend.py
     FRONTEND_RESULT=$?
 else
     echo "Backend tests failed. Skipping frontend tests."
@@ -45,7 +45,7 @@ if [ $BACKEND_RESULT -eq 0 ] && [ $FRONTEND_RESULT -eq 0 ]; then
     echo "========================================"
     echo "Validating implementation..."
     echo "========================================"
-    python3 validate_implementation.py
+    python3 ../tests/validate_implementation.py
     VALIDATION_RESULT=$?
 else
     echo "Tests failed. Skipping validation."

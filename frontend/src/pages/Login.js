@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Container, 
   Typography, 
@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../store/authSlice';
+import { login, clearError } from '../store/authSlice';
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -24,6 +24,11 @@ const Login = () => {
     email: '',
     password: ''
   });
+
+  // Clear any existing errors when component mounts
+  useEffect(() => {
+    dispatch(clearError());
+  }, [dispatch]);
   
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -68,7 +73,7 @@ const Login = () => {
             </Alert>
           )}
           
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <TextField
               margin="normal"
               required
@@ -107,7 +112,14 @@ const Login = () => {
             
             <Grid container justifyContent="flex-end">
               <Grid item>
-                <Link href="/register" variant="body2">
+                <Link 
+                  component="button"
+                  variant="body2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/register');
+                  }}
+                >
                   {"Don't have an account? Sign Up"}
                 </Link>
               </Grid>
