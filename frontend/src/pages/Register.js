@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Container, 
   Typography, 
@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { register } from '../store/authSlice';
+import { register, clearError } from '../store/authSlice';
 
 const Register = () => {
   const dispatch = useDispatch();
@@ -29,10 +29,15 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     fullName: '',
-    role: 'viewer'
+    role: 'Project Developer'
   });
   
   const [formErrors, setFormErrors] = useState({});
+
+  // Clear any existing errors when component mounts
+  useEffect(() => {
+    dispatch(clearError());
+  }, [dispatch]);
   
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -121,7 +126,7 @@ const Register = () => {
             </Alert>
           )}
           
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <TextField
               margin="normal"
               required
@@ -190,9 +195,9 @@ const Register = () => {
                 label="Role"
                 onChange={handleChange}
               >
-                <MenuItem value="viewer">Viewer</MenuItem>
-                <MenuItem value="project_developer">Project Developer</MenuItem>
-                <MenuItem value="verifier">Verifier</MenuItem>
+                <MenuItem value="Project Developer">Project Developer</MenuItem>
+                <MenuItem value="Verifier">Verifier</MenuItem>
+                <MenuItem value="Admin">Admin</MenuItem>
               </Select>
             </FormControl>
             
@@ -208,7 +213,14 @@ const Register = () => {
             
             <Grid container justifyContent="flex-end">
               <Grid item>
-                <Link href="/login" variant="body2">
+                <Link 
+                  component="button"
+                  variant="body2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/login');
+                  }}
+                >
                   {"Already have an account? Sign In"}
                 </Link>
               </Grid>

@@ -1,22 +1,17 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../services/api';
+import apiService from '../services/apiService';
 
 // Async thunks
 export const fetchVerifications = createAsyncThunk(
   'verifications/fetchVerifications',
   async ({ projectId, status }, { rejectWithValue }) => {
     try {
-      let url = '/verification';
       const params = new URLSearchParams();
       
       if (projectId) params.append('project_id', projectId);
       if (status) params.append('status', status);
       
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
-      
-      const response = await api.get(url);
+      const response = await apiService.verification.list(Object.fromEntries(params));
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -28,7 +23,7 @@ export const fetchVerificationById = createAsyncThunk(
   'verifications/fetchVerificationById',
   async (id, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/verification/${id}`);
+      const response = await apiService.verification.getById(id);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -40,7 +35,7 @@ export const createVerification = createAsyncThunk(
   'verifications/createVerification',
   async (verificationData, { rejectWithValue }) => {
     try {
-      const response = await api.post('/verification', verificationData);
+      const response = await apiService.verification.create(verificationData);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -52,7 +47,7 @@ export const submitHumanReview = createAsyncThunk(
   'verifications/submitHumanReview',
   async ({ id, approved, notes }, { rejectWithValue }) => {
     try {
-      const response = await api.post(`/verification/${id}/human-review`, {
+      const response = await apiService.verification.submitHumanReview(id, {
         approved,
         notes
       });
@@ -67,7 +62,7 @@ export const certifyVerification = createAsyncThunk(
   'verifications/certifyVerification',
   async (verificationId, { rejectWithValue }) => {
     try {
-      const response = await api.post(`/blockchain/certify/${verificationId}`);
+      const response = await apiService.verification.certify(verificationId);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);

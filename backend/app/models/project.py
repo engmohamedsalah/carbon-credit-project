@@ -1,48 +1,132 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Float, Text, Enum, JSON
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-from geoalchemy2 import Geometry
-import enum
+"""
+Project models and schemas
+"""
+from typing import Optional
+from pydantic import BaseModel, validator
+from datetime import datetime
+from enum import Enum
 
-from app.core.database import Base
 
-class ProjectStatus(str, enum.Enum):
-    DRAFT = "draft"
-    ACTIVE = "active"
-    UNDER_VERIFICATION = "under_verification"
-    VERIFIED = "verified"
-    REJECTED = "rejected"
+class ProjectType(str, Enum):
+    """Project type enumeration"""
+    REFORESTATION = "Reforestation"
+    AFFORESTATION = "Afforestation"
+    FOREST_CONSERVATION = "Forest Conservation"
+    AGROFORESTRY = "Agroforestry"
+    RENEWABLE_ENERGY = "Renewable Energy"
+    ENERGY_EFFICIENCY = "Energy Efficiency"
 
-class Project(Base):
-    __tablename__ = "projects"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    description = Column(Text)
-    location_name = Column(String)
-    # GeoJSON geometry for the project area
-    geometry = Column(Geometry('POLYGON', srid=4326))
-    # Project metadata
-    start_date = Column(DateTime(timezone=True))
-    end_date = Column(DateTime(timezone=True))
-    area_hectares = Column(Float)
-    estimated_carbon_credits = Column(Float)
-    project_type = Column(String)  # e.g., reforestation, avoided deforestation
-    status = Column(Enum(ProjectStatus), default=ProjectStatus.DRAFT)
+class ProjectStatus(str, Enum):
+    """Project status enumeration"""
+    PENDING = "Pending"
+    UNDER_REVIEW = "Under Review"
+    APPROVED = "Approved"
+    REJECTED = "Rejected"
+    ACTIVE = "Active"
+    COMPLETED = "Completed"
+    SUSPENDED = "Suspended"
+
+
+class ProjectBase(BaseModel):
+    """Base project model"""
+    name: str
+    description: Optional[str] = None
+    location_name: str
+    area_size: float
+    project_type: ProjectType = ProjectType.REFORESTATION
     
-    # Blockchain related fields
-    blockchain_token_id = Column(String, nullable=True)
-    blockchain_transaction_hash = Column(String, nullable=True)
+    @validator('name')
+    def validate_name(cls, v):
+        if len(v.strip()) < 3:
+            raise ValueError('Project name must be at least 3 characters long')
+        if len(v.strip()) > 200:
+            raise ValueError('Project name must be less than 200 characters')
+        return v.strip()
     
-    # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    @validator('location_name')
+    def validate_location(cls, v):
+        if len(v.strip()) < 2:
+            raise ValueError('Location name must be at least 2 characters long')
+        if len(v.strip()) > 100:
+            raise ValueError('Location name must be less than 100 characters')
+        return v.strip()
     
-    # Foreign keys
-    owner_id = Column(Integer, ForeignKey("users.id"))
+    @validator('area_size')
+    def validate_area_size(cls, v):
+        if v <= 0:
+            raise ValueError('Area size must be greater than 0')
+        if v > 1000000:  # 1 million hectares max
+            raise ValueError('Area size cannot exceed 1,000,000 hectares')
+        return v
     
-    # Relationships
-    owner = relationship("User", back_populates="projects")
-    verifications = relationship("Verification", back_populates="project")
-    satellite_images = relationship("SatelliteImage", back_populates="project")
-    carbon_estimates = relationship("CarbonEstimate", back_populates="project")
+    @validator('description')
+    def validate_description(cls, v):
+        if v and len(v.strip()) > 1000:
+            raise ValueError('Description must be less than 1000 characters')
+        return v.strip() if v else None
+
+
+class ProjectCreate(ProjectBase):
+    """Project creation model"""
+    pass
+
+
+class ProjectUpdate(BaseModel):
+    """Project update model"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    location_name: Optional[str] = None
+    area_size: Optional[float] = None
+    project_type: Optional[ProjectType] = None
+    status: Optional[ProjectStatus] = None
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if v is not None:
+            if len(v.strip()) < 3:
+                raise ValueError('Project name must be at least 3 characters long')
+            if len(v.strip()) > 200:
+                raise ValueError('Project name must be less than 200 characters')
+            return v.strip()
+        return v
+    
+    @validator('location_name')
+    def validate_location(cls, v):
+        if v is not None:
+            if len(v.strip()) < 2:
+                raise ValueError('Location name must be at least 2 characters long')
+            if len(v.strip()) > 100:
+                raise ValueError('Location name must be less than 100 characters')
+            return v.strip()
+        return v
+    
+    @validator('area_size')
+    def validate_area_size(cls, v):
+        if v is not None:
+            if v <= 0:
+                raise ValueError('Area size must be greater than 0')
+            if v > 1000000:
+                raise ValueError('Area size cannot exceed 1,000,000 hectares')
+        return v
+
+
+class ProjectResponse(ProjectBase):
+    """Project response model"""
+    id: int
+    status: ProjectStatus = ProjectStatus.PENDING
+    user_id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class ProjectListResponse(BaseModel):
+    """Project list response with pagination"""
+    projects: list[ProjectResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int

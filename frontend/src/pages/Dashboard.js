@@ -14,12 +14,13 @@ const Dashboard = () => {
     dispatch(fetchProjects());
   }, [dispatch]);
 
-  // Count projects by status
+  // Count projects by status - ensure projects is always an array
+  const projectsArray = Array.isArray(projects) ? projects : [];
   const projectStats = {
-    total: projects.length,
-    pending: projects.filter(p => p.status === 'Pending').length,
-    verified: projects.filter(p => p.status === 'Verified').length,
-    inProgress: projects.filter(p => p.status === 'In Progress').length,
+    total: projectsArray.length,
+    pending: projectsArray.filter(p => p.status === 'Pending').length,
+    verified: projectsArray.filter(p => p.status === 'Verified').length,
+    inProgress: projectsArray.filter(p => p.status === 'In Progress').length,
   };
 
   return (
