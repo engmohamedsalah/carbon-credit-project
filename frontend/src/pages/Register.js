@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Container, 
   Typography, 
@@ -33,20 +33,21 @@ const Register = () => {
   });
   
   const [formErrors, setFormErrors] = useState({});
-
-  // Clear any existing errors when component mounts
-  useEffect(() => {
-    dispatch(clearError());
-  }, [dispatch]);
   
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Clear global error when user starts typing (standard UX practice)
+    if (error) {
+      dispatch(clearError());
+    }
+    
     setFormData({
       ...formData,
       [name]: value
     });
     
-    // Clear error for this field
+    // Clear field-specific error
     if (formErrors[name]) {
       setFormErrors({
         ...formErrors,

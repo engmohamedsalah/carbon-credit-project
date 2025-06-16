@@ -10,7 +10,7 @@ export const fetchProjects = createAsyncThunk(
       // Handle the API response format: {projects: [], total: 0, page: 1, page_size: 20}
       return response.data.projects || response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || error.message || 'Failed to fetch projects');
     }
   }
 );
@@ -22,7 +22,7 @@ export const fetchProjectById = createAsyncThunk(
       const response = await apiService.projects.getById(id);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || error.message || 'Failed to fetch project');
     }
   }
 );
@@ -52,7 +52,7 @@ export const updateProject = createAsyncThunk(
       const response = await apiService.projects.update(id, projectData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || error.message || 'Failed to update project');
     }
   }
 );
@@ -68,7 +68,7 @@ export const uploadSatelliteImage = createAsyncThunk(
       const response = await apiService.satellite.upload(formData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || error.message || 'Failed to upload satellite image');
     }
   }
 );

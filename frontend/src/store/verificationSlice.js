@@ -14,7 +14,7 @@ export const fetchVerifications = createAsyncThunk(
       const response = await apiService.verification.list(Object.fromEntries(params));
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || error.message || 'Failed to fetch verifications');
     }
   }
 );
@@ -26,7 +26,7 @@ export const fetchVerificationById = createAsyncThunk(
       const response = await apiService.verification.getById(id);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || error.message || 'Failed to fetch verification');
     }
   }
 );
@@ -38,7 +38,7 @@ export const createVerification = createAsyncThunk(
       const response = await apiService.verification.create(verificationData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || error.message || 'Failed to create verification');
     }
   }
 );
@@ -53,7 +53,7 @@ export const submitHumanReview = createAsyncThunk(
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || error.message || 'Failed to submit human review');
     }
   }
 );
@@ -65,7 +65,7 @@ export const certifyVerification = createAsyncThunk(
       const response = await apiService.verification.certify(verificationId);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data || error.message || 'Failed to certify verification');
     }
   }
 );
