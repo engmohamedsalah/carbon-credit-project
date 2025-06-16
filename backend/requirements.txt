@@ -11,7 +11,7 @@ PyJWT==2.8.0
 python-multipart==0.0.6
 
 # Database
-sqlite3  # Built-in with Python
+# sqlite3 is built-in with Python - no need to install
 
 # HTTP client
 httpx==0.25.2
