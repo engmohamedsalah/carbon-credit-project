@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Container, 
   Typography, 
@@ -25,21 +25,59 @@ const Login = () => {
     password: ''
   });
 
-  // Clear any existing errors when component mounts
-  useEffect(() => {
-    dispatch(clearError());
-  }, [dispatch]);
-  
+  const [formErrors, setFormErrors] = useState({});
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Clear error when user starts typing (standard UX practice)
+    if (error) {
+      dispatch(clearError());
+    }
+    
+    // Clear field-specific error
+    if (formErrors[name]) {
+      setFormErrors({
+        ...formErrors,
+        [name]: null
+      });
+    }
+    
     setFormData({
       ...formData,
       [name]: value
     });
   };
   
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = 'Email is invalid';
+    }
+    
+    if (!formData.password) {
+      errors.password = 'Password is required';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Prevent multiple submissions while loading
+    if (loading) {
+      return;
+    }
+
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
     
     const resultAction = await dispatch(login(formData));
     
@@ -85,6 +123,8 @@ const Login = () => {
               autoFocus
               value={formData.email}
               onChange={handleChange}
+              error={!!formErrors.email}
+              helperText={formErrors.email}
             />
             
             <TextField
@@ -98,6 +138,8 @@ const Login = () => {
               autoComplete="current-password"
               value={formData.password}
               onChange={handleChange}
+              error={!!formErrors.password}
+              helperText={formErrors.password}
             />
             
             <Button

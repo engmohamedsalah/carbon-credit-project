@@ -10,4 +10,11 @@ geopandas>=0.9.0
 shapely>=1.7.1
 shap>=0.40.0
 pillow>=8.3.2
-requests>=2.26.0 
+requests>=2.26.0
+
+# E2E Testing Dependencies
+playwright>=1.52.0
+pytest-playwright>=0.7.0
+pytest>=8.4.0
+pytest-xdist>=3.0.0  # For parallel test execution
+pytest-html>=4.0.0   # For HTML test reports 
