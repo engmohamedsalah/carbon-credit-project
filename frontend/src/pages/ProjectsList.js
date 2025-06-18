@@ -101,7 +101,16 @@ const ProjectsList = () => {
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ ...COMMON_STYLES.CARD, background: THEME_COLORS.primary, color: 'white' }}>
+          <Card sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            height: '120px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            background: THEME_COLORS.primary, 
+            color: 'white' 
+          }}>
             <Typography variant="h4" fontWeight="bold">
               {filteredProjects.length}
             </Typography>
@@ -111,7 +120,14 @@ const ProjectsList = () => {
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={COMMON_STYLES.CARD}>
+          <Card sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            height: '120px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center'
+          }}>
             <Typography variant="h4" fontWeight="bold" color="success.main">
               {filteredProjects.filter(p => p.status === 'Verified').length}
             </Typography>
@@ -121,7 +137,14 @@ const ProjectsList = () => {
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, textAlign: 'center' }}>
+          <Card sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            height: '120px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center'
+          }}>
             <Typography variant="h4" fontWeight="bold" color="warning.main">
               {filteredProjects.filter(p => p.status === 'Pending').length}
             </Typography>
@@ -131,7 +154,14 @@ const ProjectsList = () => {
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ p: 2, textAlign: 'center' }}>
+          <Card sx={{ 
+            p: 2, 
+            textAlign: 'center', 
+            height: '120px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center'
+          }}>
             <Typography variant="h4" fontWeight="bold" color="primary.main">
               {filteredProjects
                 .reduce((sum, p) => sum + (p.area_hectares || 0), 0)
