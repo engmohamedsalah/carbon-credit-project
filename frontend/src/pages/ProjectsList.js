@@ -24,7 +24,7 @@ import {
 // Centralized utilities - eliminates DRY violations
 import { getStatusColor } from '../utils/statusUtils';
 import { formatDate as formatDateUtil } from '../utils/dateUtils';
-import { COMMON_STYLES, DIMENSIONS, SPACING, COLORS } from '../theme/constants';
+import { COMMON_STYLES, DIMENSIONS, SPACING, THEME_COLORS } from '../theme/constants';
 import {
   Add as AddIcon,
   Search as SearchIcon,
@@ -101,7 +101,7 @@ const ProjectsList = () => {
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ ...COMMON_STYLES.CARD, background: COLORS.gradients.primary, color: 'white' }}>
+          <Card sx={{ ...COMMON_STYLES.CARD, background: THEME_COLORS.primary, color: 'white' }}>
             <Typography variant="h4" fontWeight="bold">
               {filteredProjects.length}
             </Typography>
