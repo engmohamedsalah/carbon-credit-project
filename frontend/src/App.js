@@ -6,12 +6,18 @@ import ProjectsList from './pages/ProjectsList';
 import NewProject from './pages/NewProject';
 import ProjectDetail from './pages/ProjectDetail';
 import Verification from './pages/Verification';
+import XAI from './pages/XAI';
+import IoT from './pages/IoT';
+import Analytics from './pages/Analytics';
+import Blockchain from './pages/Blockchain';
+import Reports from './pages/Reports';
+import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
-function App() {
 
+function App() {
   return (
     <Box sx={{ display: 'flex' }}>
       <Routes>
@@ -29,6 +35,12 @@ function App() {
           <Route path="projects/:id" element={<ProjectDetail />} />
           <Route path="verification" element={<Verification />} />
           <Route path="verification/:id" element={<Verification />} />
+          <Route path="xai" element={<XAI />} />
+          <Route path="iot" element={<IoT />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="blockchain" element={<Blockchain />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </Box>

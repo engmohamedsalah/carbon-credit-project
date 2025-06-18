@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   AppBar, 
   Toolbar, 
@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../store/authSlice';
+import { logout, getCurrentUser } from '../store/authSlice';
 
 // Icons
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -26,13 +26,36 @@ import VerifiedIcon from '@mui/icons-material/Verified';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import LogoutIcon from '@mui/icons-material/Logout';
 import BlockIcon from '@mui/icons-material/ViewInAr';
+import SensorsIcon from '@mui/icons-material/Sensors';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import SettingsIcon from '@mui/icons-material/Settings';
+import PsychologyIcon from '@mui/icons-material/Psychology';
 
 const drawerWidth = 240;
 
 const Layout = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user } = useSelector(state => state.auth);
+  const { user, isAuthenticated } = useSelector(state => state.auth);
+  
+  // Fetch user data when authenticated but user data is not loaded
+  useEffect(() => {
+    if (isAuthenticated && !user) {
+      dispatch(getCurrentUser());
+    }
+  }, [dispatch, isAuthenticated, user]);
+  
+  // Debug: log user role and filtered menu items
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const userRole = user?.role || 'viewer';
+    const visibleItems = menuItems.filter(item => item.roles.includes(userRole));
+    console.log('🔍 Debug - User Role:', userRole);
+    console.log('👤 User Object:', user);
+    console.log('📋 Visible Menu Items:', visibleItems.length, 'of', menuItems.length);
+    console.log('📝 Items:', visibleItems.map(item => item.text));
+  }, [user]);
   
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
@@ -55,25 +78,64 @@ const Layout = () => {
       text: 'Dashboard',
       icon: <DashboardIcon />,
       path: '/dashboard',
-      roles: ['viewer', 'project_developer', 'verifier', 'admin']
+      roles: ['viewer', 'project_developer', 'verifier', 'admin'],
+      description: 'Overview and quick actions'
     },
     {
       text: 'Projects',
       icon: <ForestIcon />,
       path: '/projects',
-      roles: ['viewer', 'project_developer', 'verifier', 'admin']
+      roles: ['viewer', 'project_developer', 'verifier', 'admin'],
+      description: 'Manage carbon credit projects'
     },
     {
-      text: 'Verifications',
+      text: 'AI Verification',
       icon: <VerifiedIcon />,
-      path: '/verifications',
-      roles: ['verifier', 'admin']
+      path: '/verification',
+      roles: ['project_developer', 'verifier', 'admin'],
+      description: 'ML-powered satellite analysis'
     },
     {
-      text: 'Blockchain Explorer',
+      text: 'Explainable AI',
+      icon: <PsychologyIcon />,
+      path: '/xai',
+      roles: ['verifier', 'admin'],
+      description: 'Model explanations and transparency'
+    },
+    {
+      text: 'IoT Sensors',
+      icon: <SensorsIcon />,
+      path: '/iot',
+      roles: ['project_developer', 'verifier', 'admin'],
+      description: 'Ground-based sensor data'
+    },
+    {
+      text: 'Analytics',
+      icon: <AnalyticsIcon />,
+      path: '/analytics',
+      roles: ['viewer', 'project_developer', 'verifier', 'admin'],
+      description: 'Performance insights and trends'
+    },
+    {
+      text: 'Blockchain',
       icon: <BlockIcon />,
-      path: '/blockchain/explorer',
-      roles: ['viewer', 'project_developer', 'verifier', 'admin']
+      path: '/blockchain',
+      roles: ['viewer', 'project_developer', 'verifier', 'admin'],
+      description: 'Certificate verification and explorer'
+    },
+    {
+      text: 'Reports',
+      icon: <AssessmentIcon />,
+      path: '/reports',
+      roles: ['verifier', 'admin'],
+      description: 'Verification certificates and audits'
+    },
+    {
+      text: 'Settings',
+      icon: <SettingsIcon />,
+      path: '/settings',
+      roles: ['project_developer', 'admin'],
+      description: 'Account and system preferences'
     }
   ];
   

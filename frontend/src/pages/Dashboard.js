@@ -3,6 +3,7 @@ import { Box, Typography, Container, Grid, Paper, Button, CircularProgress } fro
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchProjects } from '../store/projectSlice';
+import { COMMON_STYLES, DIMENSIONS } from '../theme/constants';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4, textAlign: 'center' }}>
+      <Container maxWidth="lg" sx={COMMON_STYLES.LOADING_CONTAINER}>
         <CircularProgress />
         <Typography variant="body1" sx={{ mt: 2 }}>
           Loading dashboard...
@@ -35,7 +36,7 @@ const Dashboard = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="lg" sx={COMMON_STYLES.CONTAINER}>
       <Typography variant="h4" gutterBottom>
         Dashboard
       </Typography>
@@ -52,7 +53,7 @@ const Dashboard = () => {
               p: 2,
               display: 'flex',
               flexDirection: 'column',
-              height: 240,
+              height: DIMENSIONS.DASHBOARD_CARD_HEIGHT,
             }}
           >
             <Typography component="h2" variant="h6" color="primary" gutterBottom>
@@ -94,7 +95,7 @@ const Dashboard = () => {
               p: 2,
               display: 'flex',
               flexDirection: 'column',
-              height: 240,
+              height: DIMENSIONS.DASHBOARD_CARD_HEIGHT,
             }}
           >
             <Typography component="h2" variant="h6" color="primary" gutterBottom>
@@ -154,9 +155,9 @@ const Dashboard = () => {
               
               <Button 
                 variant="outlined"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/projects')}
               >
-                View Reports
+                View All Projects
               </Button>
             </Box>
           </Paper>
