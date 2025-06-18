@@ -3,14 +3,46 @@
  * Eliminates hardcoded values and provides centralized design tokens
  */
 
+// Theme constants for the Carbon Credit Verification System
+
+export const THEME_COLORS = {
+  primary: '#2e7d32',      // Forest green - represents sustainability
+  secondary: '#4caf50',    // Lighter green
+  accent: '#81c784',       // Light green accent
+  error: '#d32f2f',        // Red for errors
+  warning: '#ff9800',      // Orange for warnings
+  info: '#2196f3',         // Blue for information
+  success: '#4caf50',      // Green for success
+  
+  // Role-specific colors
+  roles: {
+    admin: '#d32f2f',        // Red for admin
+    verifier: '#2196f3',     // Blue for verifiers
+    scientist: '#9c27b0',    // Purple for scientists
+    developer: '#2e7d32',    // Green for developers
+    investor: '#ff9800',     // Orange for investors
+    regulatory: '#795548',   // Brown for regulatory
+    default: '#757575'       // Grey for default/unknown roles
+  },
+  
+  // Status colors
+  status: {
+    pending: '#ff9800',
+    verified: '#4caf50',
+    rejected: '#d32f2f',
+    draft: '#757575',
+    reviewing: '#2196f3'
+  }
+};
+
 // Spacing scale based on Material-UI theme units
 export const SPACING = {
-  xs: 1,    // 8px
-  sm: 2,    // 16px
-  md: 3,    // 24px
-  lg: 4,    // 32px
-  xl: 5,    // 40px
-  xxl: 6    // 48px
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48
 };
 
 // Layout dimensions
@@ -96,9 +128,9 @@ export const BORDER_RADIUS = {
 
 // Shadow levels
 export const SHADOWS = {
-  small: '0 1px 3px rgba(0,0,0,0.12)',
-  medium: '0 2px 6px rgba(0,0,0,0.15)',
-  large: '0 4px 12px rgba(0,0,0,0.18)'
+  light: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+  medium: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)',
+  heavy: '0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23)'
 };
 
 // Z-index values
@@ -112,11 +144,11 @@ export const Z_INDEX = {
 
 // Breakpoint helpers
 export const BREAKPOINTS = {
-  xs: '(max-width: 599px)',
-  sm: '(min-width: 600px)',
-  md: '(min-width: 960px)',
-  lg: '(min-width: 1280px)',
-  xl: '(min-width: 1920px)'
+  xs: 0,
+  sm: 600,
+  md: 960,
+  lg: 1280,
+  xl: 1920
 };
 
 // Animation durations
@@ -129,31 +161,61 @@ export const ANIMATION = {
 
 // Typography scale
 export const TYPOGRAPHY = {
-  fontSize: {
-    small: '0.875rem',
-    normal: '1rem',
-    large: '1.125rem',
-    xlarge: '1.25rem'
-  },
-  lineHeight: {
-    tight: 1.25,
-    normal: 1.5,
-    loose: 1.75
+  fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+  sizes: {
+    h1: '2.5rem',
+    h2: '2rem',
+    h3: '1.75rem',
+    h4: '1.5rem',
+    h5: '1.25rem',
+    h6: '1rem',
+    body1: '1rem',
+    body2: '0.875rem',
+    caption: '0.75rem'
   }
 };
 
-// Color palette extensions
-export const COLORS = {
-  gradients: {
-    primary: 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
-    secondary: 'linear-gradient(135deg, #2196f3 0%, #1976d2 100%)',
-    success: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
-    warning: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
-    error: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)'
+// Professional role-based styling configuration
+export const ROLE_STYLES = {
+  adminBadge: {
+    backgroundColor: THEME_COLORS.roles.admin,
+    color: 'white',
+    fontWeight: 600,
+    fontSize: '0.75rem'
   },
-  overlay: {
-    light: 'rgba(255, 255, 255, 0.8)',
-    medium: 'rgba(255, 255, 255, 0.9)',
-    dark: 'rgba(0, 0, 0, 0.5)'
+  
+  roleIndicator: {
+    borderRadius: '4px',
+    padding: '2px 6px',
+    fontSize: '0.7rem',
+    fontWeight: 500,
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
+  },
+  
+  menuItemActive: {
+    backgroundColor: 'rgba(46, 125, 50, 0.1)',
+    borderLeft: '3px solid #2e7d32',
+    '&:hover': {
+      backgroundColor: 'rgba(46, 125, 50, 0.2)'
+    }
   }
-}; 
+};
+
+const themeConstants = {
+  THEME_COLORS,
+  SPACING,
+  LAYOUT,
+  DIMENSIONS,
+  SPACING_PATTERNS,
+  COMMON_STYLES,
+  BORDER_RADIUS,
+  Z_INDEX,
+  ANIMATION,
+  BREAKPOINTS,
+  TYPOGRAPHY,
+  SHADOWS,
+  ROLE_STYLES
+};
+
+export default themeConstants; 
