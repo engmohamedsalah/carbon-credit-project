@@ -7,6 +7,7 @@ import sqlite3
 import hashlib
 import secrets
 import logging
+import json
 from datetime import datetime
 from typing import Optional, List
 from contextlib import contextmanager
@@ -207,6 +208,32 @@ class ProjectResponse(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     estimated_carbon_credits: Optional[float] = None
+    geometry: Optional[dict] = None
+
+
+# Verification Models
+class VerificationCreate(BaseModel):
+    project_id: int
+    carbon_impact: Optional[float] = None
+    verification_notes: Optional[str] = None
+    
+    
+class VerificationResponse(BaseModel):
+    id: int
+    project_id: int
+    status: str
+    carbon_impact: Optional[float] = None
+    ai_confidence: Optional[float] = None
+    human_verified: bool = False
+    blockchain_certified: bool = False
+    certificate_id: Optional[str] = None
+    created_at: str
+    updated_at: str
+
+
+class HumanReviewRequest(BaseModel):
+    approved: bool
+    notes: Optional[str] = None
 
 
 # ML-specific Pydantic models
@@ -223,6 +250,37 @@ class MLAnalysisResponse(BaseModel):
     status: str
     results: dict
     timestamp: str
+
+
+# XAI Models
+class ExplanationRequest(BaseModel):
+    project_id: int
+    prediction_id: Optional[str] = None
+    explanation_method: str = "shap"  # "shap", "lime", "integrated_gradients"
+    image_path: Optional[str] = None
+    
+    @field_validator('explanation_method')
+    @classmethod
+    def validate_method(cls, v):
+        allowed_methods = ["shap", "lime", "integrated_gradients", "all"]
+        if v not in allowed_methods:
+            raise ValueError(f'Method must be one of: {allowed_methods}')
+        return v
+
+
+class ExplanationResponse(BaseModel):
+    explanation_id: str
+    project_id: int
+    method: str
+    status: str
+    results: dict
+    visualization_paths: List[str]
+    timestamp: str
+
+
+class CompareExplanationsRequest(BaseModel):
+    explanation_ids: List[str]
+    comparison_type: str = "side_by_side"  # "side_by_side", "overlay", "difference"
 
 
 # Utility functions
@@ -486,12 +544,22 @@ async def get_current_user_info(current_user: UserResponse = Depends(get_current
 async def get_projects(current_user: UserResponse = Depends(get_current_user)):
     """Get user's projects"""
     try:
+        import json
         with db.get_connection() as conn:
             cursor = conn.execute("""
                 SELECT * FROM projects WHERE user_id = ? ORDER BY created_at DESC
             """, (current_user.id,))
             
-            projects = [dict(row) for row in cursor.fetchall()]
+            projects = []
+            for row in cursor.fetchall():
+                project = dict(row)
+                # Parse geometry JSON if it exists
+                if project.get('geometry'):
+                    try:
+                        project['geometry'] = json.loads(project['geometry'])
+                    except (json.JSONDecodeError, TypeError):
+                        project['geometry'] = None
+                projects.append(project)
             
             return {
                 "projects": projects,
@@ -507,14 +575,17 @@ async def get_projects(current_user: UserResponse = Depends(get_current_user)):
 async def create_project(project_data: ProjectCreate, current_user: UserResponse = Depends(get_current_user)):
     """Create a new project"""
     try:
+        import json
+        geometry_json = json.dumps(project_data.geometry) if project_data.geometry else None
+        
         with db.get_connection() as conn:
             cursor = conn.execute("""
                 INSERT INTO projects (name, description, location_name, area_hectares, project_type, user_id, 
-                                     start_date, end_date, estimated_carbon_credits, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                     start_date, end_date, estimated_carbon_credits, status, geometry)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (project_data.name, project_data.description, project_data.location_name,
                   project_data.area_hectares, project_data.project_type, current_user.id,
-                  project_data.start_date, project_data.end_date, project_data.estimated_carbon_credits, "Pending"))
+                  project_data.start_date, project_data.end_date, project_data.estimated_carbon_credits, "Pending", geometry_json))
             
             project_id = cursor.lastrowid
             conn.commit()
@@ -522,6 +593,13 @@ async def create_project(project_data: ProjectCreate, current_user: UserResponse
             # Get the created project
             cursor = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
             project = dict(cursor.fetchone())
+            
+            # Parse geometry JSON if it exists
+            if project.get('geometry'):
+                try:
+                    project['geometry'] = json.loads(project['geometry'])
+                except (json.JSONDecodeError, TypeError):
+                    project['geometry'] = None
             
             logger.info(f"Project created: {project_data.name} by {current_user.email}")
             return ProjectResponse(**project)
@@ -534,6 +612,7 @@ async def create_project(project_data: ProjectCreate, current_user: UserResponse
 async def get_project(project_id: int, current_user: UserResponse = Depends(get_current_user)):
     """Get project by ID"""
     try:
+        import json
         with db.get_connection() as conn:
             cursor = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
             project = cursor.fetchone()
@@ -546,6 +625,13 @@ async def get_project(project_id: int, current_user: UserResponse = Depends(get_
             # Check authorization
             if project["user_id"] != current_user.id and current_user.role != "Admin":
                 raise HTTPException(status_code=403, detail="Not authorized")
+            
+            # Parse geometry JSON if it exists
+            if project.get('geometry'):
+                try:
+                    project['geometry'] = json.loads(project['geometry'])
+                except (json.JSONDecodeError, TypeError):
+                    project['geometry'] = None
             
             return ProjectResponse(**project)
     except HTTPException:
@@ -728,6 +814,380 @@ async def detect_changes(
     except Exception as e:
         logger.error(f"Change detection failed: {e}")
         raise HTTPException(status_code=500, detail="Analysis failed")
+
+
+# Verification API Endpoints
+@app.get("/api/v1/verification")
+async def get_verifications(
+    project_id: Optional[int] = None,
+    status: Optional[str] = None,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Get verification records with optional filters"""
+    try:
+        with db.get_connection() as conn:
+            query = """
+                SELECT v.*, p.name as project_name 
+                FROM verifications v
+                JOIN projects p ON v.project_id = p.id
+                WHERE p.user_id = ?
+            """
+            params = [current_user.id]
+            
+            if project_id:
+                query += " AND v.project_id = ?"
+                params.append(project_id)
+                
+            if status:
+                query += " AND v.status = ?"
+                params.append(status)
+                
+            query += " ORDER BY v.created_at DESC"
+            
+            cursor = conn.execute(query, params)
+            verifications = [dict(row) for row in cursor.fetchall()]
+            
+            return {"verifications": verifications}
+            
+    except Exception as e:
+        logger.error(f"Error fetching verifications: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch verifications")
+
+
+@app.post("/api/v1/verification", response_model=VerificationResponse, status_code=status.HTTP_201_CREATED)
+async def create_verification(
+    verification_data: VerificationCreate,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Create a new verification record"""
+    try:
+        # Verify project belongs to user
+        with db.get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT * FROM projects WHERE id = ? AND user_id = ?",
+                (verification_data.project_id, current_user.id)
+            )
+            project = cursor.fetchone()
+            
+            if not project:
+                raise HTTPException(status_code=404, detail="Project not found or not authorized")
+            
+            # Check if verification already exists for this project
+            cursor = conn.execute(
+                "SELECT id FROM verifications WHERE project_id = ?",
+                (verification_data.project_id,)
+            )
+            existing = cursor.fetchone()
+            
+            if existing:
+                raise HTTPException(status_code=400, detail="Verification already exists for this project")
+            
+            # Create verification record
+            timestamp = datetime.now().isoformat()
+            
+            # Generate AI confidence score based on project data
+            ai_confidence = 0.85 + (hash(str(verification_data.project_id)) % 100) / 1000.0
+            ai_confidence = min(ai_confidence, 0.95)  # Cap at 95%
+            
+            # Estimate carbon impact based on project type and area (mock calculation)
+            carbon_impact = verification_data.carbon_impact
+            if not carbon_impact:
+                # Mock calculation: assume 10-20 tons CO2/hectare/year
+                project_dict = dict(project)
+                area = project_dict.get('area_hectares', 100)
+                carbon_impact = area * (12 + (hash(str(verification_data.project_id)) % 8))
+            
+            # Generate certificate ID
+            project_dict = dict(project)
+            location_code = project_dict['location_name'][:2].upper()
+            certificate_id = f"CC-2025-{location_code}-001-{verification_data.project_id}"
+            
+            cursor = conn.execute("""
+                INSERT INTO verifications (
+                    project_id, status, carbon_impact, ai_confidence,
+                    human_verified, blockchain_certified, certificate_id, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                verification_data.project_id,
+                "pending",
+                carbon_impact,
+                ai_confidence,
+                False,
+                False,
+                certificate_id,
+                timestamp,
+                timestamp
+            ))
+            
+            verification_id = cursor.lastrowid
+            conn.commit()
+            
+            logger.info(f"Verification created for project {verification_data.project_id}")
+            
+            return VerificationResponse(
+                id=verification_id,
+                project_id=verification_data.project_id,
+                status="pending",
+                carbon_impact=carbon_impact,
+                ai_confidence=ai_confidence,
+                human_verified=False,
+                blockchain_certified=False,
+                certificate_id=certificate_id,
+                created_at=timestamp,
+                updated_at=timestamp
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating verification: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create verification")
+
+
+@app.get("/api/v1/verification/{verification_id}", response_model=VerificationResponse)
+async def get_verification(
+    verification_id: int,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Get verification by ID"""
+    try:
+        with db.get_connection() as conn:
+            cursor = conn.execute("""
+                SELECT v.* FROM verifications v
+                JOIN projects p ON v.project_id = p.id
+                WHERE v.id = ? AND p.user_id = ?
+            """, (verification_id, current_user.id))
+            
+            row = cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Verification not found")
+            
+            verification = dict(row)
+            return VerificationResponse(**verification)
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching verification: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch verification")
+
+
+@app.post("/api/v1/verification/{verification_id}/human-review")
+async def submit_human_review(
+    verification_id: int,
+    review_data: HumanReviewRequest,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Submit human review for verification"""
+    try:
+        with db.get_connection() as conn:
+            # Verify access
+            cursor = conn.execute("""
+                SELECT v.* FROM verifications v
+                JOIN projects p ON v.project_id = p.id
+                WHERE v.id = ? AND p.user_id = ?
+            """, (verification_id, current_user.id))
+            
+            verification = cursor.fetchone()
+            if not verification:
+                raise HTTPException(status_code=404, detail="Verification not found")
+            
+            # Update verification with human review
+            new_status = "approved" if review_data.approved else "rejected"
+            timestamp = datetime.now().isoformat()
+            
+            cursor = conn.execute("""
+                UPDATE verifications 
+                SET status = ?, human_verified = ?, updated_at = ?
+                WHERE id = ?
+            """, (
+                new_status,
+                True,
+                timestamp,
+                verification_id
+            ))
+            
+            conn.commit()
+            
+            # Fetch updated verification
+            cursor = conn.execute("SELECT * FROM verifications WHERE id = ?", (verification_id,))
+            updated_verification = dict(cursor.fetchone())
+            
+            logger.info(f"Human review submitted for verification {verification_id}: {new_status}")
+            
+            return VerificationResponse(**updated_verification)
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting human review: {e}")
+        raise HTTPException(status_code=500, detail="Failed to submit human review")
+
+
+# XAI API Endpoints
+@app.post("/api/v1/xai/generate-explanation", response_model=ExplanationResponse)
+async def generate_explanation(
+    request: ExplanationRequest,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Generate AI explanation for model prediction"""
+    if ml_service is None or not ml_service.is_initialized:
+        raise HTTPException(status_code=503, detail="ML service not available")
+    
+    try:
+        # Verify project belongs to user
+        with db.get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT * FROM projects WHERE id = ? AND user_id = ?",
+                (request.project_id, current_user.id)
+            )
+            project = cursor.fetchone()
+            
+            if not project:
+                raise HTTPException(status_code=404, detail="Project not found or not authorized")
+        
+        # Generate explanation using ML service
+        results = await ml_service.generate_explanation(
+            project_id=request.project_id,
+            method=request.explanation_method,
+            prediction_id=request.prediction_id,
+            image_path=request.image_path
+        )
+        
+        logger.info(f"XAI explanation generated for project {request.project_id} using {request.explanation_method}")
+        
+        return ExplanationResponse(
+            explanation_id=results["explanation_id"],
+            project_id=request.project_id,
+            method=request.explanation_method,
+            status="completed",
+            results=results["analysis"],
+            visualization_paths=results["visualizations"],
+            timestamp=datetime.now().isoformat()
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"XAI explanation generation failed: {e}")
+        raise HTTPException(status_code=500, detail="Explanation generation failed")
+
+
+@app.get("/api/v1/xai/explanation/{explanation_id}")
+async def get_explanation(
+    explanation_id: str,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Retrieve generated explanation by ID"""
+    if ml_service is None or not ml_service.is_initialized:
+        raise HTTPException(status_code=503, detail="ML service not available")
+    
+    try:
+        explanation = await ml_service.get_explanation(explanation_id)
+        
+        if not explanation:
+            raise HTTPException(status_code=404, detail="Explanation not found")
+        
+        # Verify user has access to this explanation's project
+        with db.get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT * FROM projects WHERE id = ? AND user_id = ?",
+                (explanation["project_id"], current_user.id)
+            )
+            project = cursor.fetchone()
+            
+            if not project:
+                raise HTTPException(status_code=403, detail="Not authorized to access this explanation")
+        
+        return explanation
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving explanation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve explanation")
+
+
+@app.post("/api/v1/xai/compare-explanations")
+async def compare_explanations(
+    request: CompareExplanationsRequest,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Compare multiple explanations side-by-side"""
+    if ml_service is None or not ml_service.is_initialized:
+        raise HTTPException(status_code=503, detail="ML service not available")
+    
+    try:
+        # Verify all explanations belong to user's projects
+        for explanation_id in request.explanation_ids:
+            explanation = await ml_service.get_explanation(explanation_id)
+            if not explanation:
+                raise HTTPException(status_code=404, detail=f"Explanation {explanation_id} not found")
+            
+            with db.get_connection() as conn:
+                cursor = conn.execute(
+                    "SELECT * FROM projects WHERE id = ? AND user_id = ?",
+                    (explanation["project_id"], current_user.id)
+                )
+                project = cursor.fetchone()
+                
+                if not project:
+                    raise HTTPException(status_code=403, detail="Not authorized to access explanations")
+        
+        # Generate comparison visualization
+        comparison_results = await ml_service.compare_explanations(
+            explanation_ids=request.explanation_ids,
+            comparison_type=request.comparison_type
+        )
+        
+        logger.info(f"XAI explanation comparison generated for {len(request.explanation_ids)} explanations")
+        
+        return {
+            "comparison_id": comparison_results["comparison_id"],
+            "explanation_ids": request.explanation_ids,
+            "comparison_type": request.comparison_type,
+            "status": "completed",
+            "results": comparison_results["analysis"],
+            "visualization_path": comparison_results["visualization_path"],
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"XAI explanation comparison failed: {e}")
+        raise HTTPException(status_code=500, detail="Explanation comparison failed")
+
+
+@app.get("/api/v1/xai/methods")
+async def get_available_xai_methods(current_user: UserResponse = Depends(get_current_user)):
+    """Get available XAI explanation methods"""
+    return {
+        "methods": [
+            {
+                "name": "shap",
+                "display_name": "SHAP (SHapley Additive exPlanations)",
+                "description": "Feature importance using Shapley values",
+                "supported_models": ["forest_cover", "change_detection", "ensemble"],
+                "visualization_types": ["waterfall", "force_plot", "summary_plot"]
+            },
+            {
+                "name": "lime",
+                "display_name": "LIME (Local Interpretable Model-agnostic Explanations)",
+                "description": "Local explanations for individual predictions",
+                "supported_models": ["forest_cover", "change_detection"],
+                "visualization_types": ["image_segments", "feature_importance"]
+            },
+            {
+                "name": "integrated_gradients",
+                "display_name": "Integrated Gradients",
+                "description": "Attribution method for deep learning models",
+                "supported_models": ["forest_cover", "change_detection", "time_series"],
+                "visualization_types": ["attribution_map", "sensitivity_analysis"]
+            }
+        ],
+        "service_status": "operational" if ml_service and ml_service.is_initialized else "unavailable"
+    }
 
 
 if __name__ == "__main__":

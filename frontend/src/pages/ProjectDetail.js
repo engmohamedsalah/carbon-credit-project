@@ -215,7 +215,7 @@ const ProjectDetail = () => {
               <Box sx={{ textAlign: 'center', py: 3 }}>
                 <CircularProgress />
               </Box>
-            ) : verifications.length === 0 ? (
+            ) : !Array.isArray(verifications) || verifications.length === 0 ? (
               <Alert severity="info">No verifications found for this project.</Alert>
             ) : (
               <Box>
@@ -245,19 +245,37 @@ const ProjectDetail = () => {
                       
                       <Grid item xs={12} sm={6}>
                         <Typography variant="body2" color="text.secondary">
-                          Verified Carbon Credits
+                          Carbon Impact
                         </Typography>
                         <Typography variant="body1">
-                          {verification.verified_carbon_credits ? `${verification.verified_carbon_credits} tonnes CO₂e` : 'Not specified'}
+                          {verification.carbon_impact ? `${verification.carbon_impact} tonnes CO₂/year` : 'Not specified'}
                         </Typography>
                       </Grid>
                       
                       <Grid item xs={12} sm={6}>
                         <Typography variant="body2" color="text.secondary">
-                          Confidence Score
+                          AI Confidence
                         </Typography>
                         <Typography variant="body1">
-                          {verification.confidence_score ? `${(verification.confidence_score * 100).toFixed(1)}%` : 'Not specified'}
+                          {verification.ai_confidence ? `${(verification.ai_confidence * 100).toFixed(1)}%` : 'Not specified'}
+                        </Typography>
+                      </Grid>
+                      
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Certificate ID
+                        </Typography>
+                        <Typography variant="body1">
+                          {verification.certificate_id || 'Not issued'}
+                        </Typography>
+                      </Grid>
+                      
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Human Verified
+                        </Typography>
+                        <Typography variant="body1">
+                          {verification.human_verified ? 'Yes' : 'No'}
                         </Typography>
                       </Grid>
                       
