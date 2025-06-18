@@ -6,26 +6,16 @@ import {
   Box, 
   Grid,
   Button,
-  TextField,
   CircularProgress,
   Alert,
-  Chip,
-  Divider,
-  Card,
-  CardContent,
-  CardActions,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails
+  Chip
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { verifyProject } from '../store/projectSlice';
-import MapComponent from '../components/MapComponent';
+import MLAnalysis from '../components/MLAnalysis';
+import apiService from '../services/apiService';
 
 const Verification = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -33,16 +23,33 @@ const Verification = () => {
   const query = new URLSearchParams(location.search);
   const projectId = query.get('project_id');
   
-  const { verificationResults, loading, error } = useSelector(state => state.projects);
-  const { user } = useSelector(state => state.auth);
-  
-  const [reviewNotes, setReviewNotes] = useState('');
+  const { loading, error } = useSelector(state => state.projects);
+  const [projectData, setProjectData] = useState(null);
+  const [loadingProject, setLoadingProject] = useState(false);
+  const [mlAnalysisResults, setMLAnalysisResults] = useState(null);
   
   useEffect(() => {
+    const fetchProjectData = async () => {
+      setLoadingProject(true);
+      try {
+        const response = await apiService.get(`/projects/${projectId}`);
+        setProjectData(response.data);
+      } catch (error) {
+        console.error('Failed to fetch project:', error);
+      } finally {
+        setLoadingProject(false);
+      }
+    };
+
     if (projectId) {
-      dispatch(verifyProject(projectId));
+      fetchProjectData();
     }
-  }, [dispatch, projectId]);
+  }, [projectId]);
+
+  const handleAnalysisComplete = (results) => {
+    setMLAnalysisResults(results);
+    // You could also dispatch this to Redux store if needed
+  };
   
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -59,10 +66,13 @@ const Verification = () => {
     }
   };
   
-  if (loading) {
+  if (loading || loadingProject) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4, textAlign: 'center' }}>
         <CircularProgress />
+        <Typography variant="body1" sx={{ mt: 2 }}>
+          {loadingProject ? 'Loading project data...' : 'Loading verification...'}
+        </Typography>
       </Container>
     );
   }
@@ -75,148 +85,118 @@ const Verification = () => {
     );
   }
   
-  if (!verificationResults) {
+  if (!projectData && !loadingProject) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Alert severity="info">Verification not found</Alert>
+        <Alert severity="info">Project not found</Alert>
       </Container>
     );
   }
   
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
-          Project Verification
+          AI-Powered Carbon Credit Verification
         </Typography>
         
-        <Chip 
-          label={verificationResults.status} 
-          color={getStatusColor(verificationResults.status)}
-          sx={{ textTransform: 'capitalize' }}
-        />
+        {projectData && (
+          <Chip 
+            label={projectData.status} 
+            color={getStatusColor(projectData.status)}
+            sx={{ textTransform: 'capitalize' }}
+          />
+        )}
       </Box>
       
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Verification Results
-            </Typography>
-            
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Project ID
-                  </Typography>
-                  <Typography variant="body1">
-                    {verificationResults.project_id}
-                  </Typography>
-                </Box>
-              </Grid>
-              
-              <Grid item xs={12} sm={6}>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Status
-                  </Typography>
-                  <Typography variant="body1">
-                    {verificationResults.status}
-                  </Typography>
-                </Box>
-              </Grid>
-              
-              {verificationResults.satellite_imagery && (
-                <Grid item xs={12}>
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle1" color="text.primary">
-                      Satellite Imagery
-                    </Typography>
-                    <Typography variant="body2">
-                      Provider: {verificationResults.satellite_imagery.provider}
-                    </Typography>
-                    <Typography variant="body2">
-                      Resolution: {verificationResults.satellite_imagery.resolution}
-                    </Typography>
-                    <Typography variant="body2">
-                      Status: {verificationResults.satellite_imagery.status}
-                    </Typography>
-                  </Box>
-                </Grid>
-              )}
-              
-              {verificationResults.analysis_results && (
-                <Grid item xs={12}>
-                  <Accordion defaultExpanded>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                      <Typography variant="subtitle1">Land Cover Analysis</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12}>
-                          <Typography variant="body2" gutterBottom>
-                            Total Area: {verificationResults.analysis_results.total_area_hectares} hectares
-                        </Typography>
-                          <Typography variant="body2" gutterBottom>
-                            Total Carbon Estimate: {verificationResults.analysis_results.total_carbon_estimate_tonnes} tonnes
-                        </Typography>
-                          <Typography variant="body2" gutterBottom>
-                            Confidence Level: {(verificationResults.analysis_results.confidence_level * 100).toFixed(1)}%
-                        </Typography>
-                      </Grid>
-                      
-                      <Grid item xs={12}>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Land Cover Distribution
-                        </Typography>
-                          {verificationResults.analysis_results.land_cover_distribution && 
-                            Object.entries(verificationResults.analysis_results.land_cover_distribution).map(([type, area]) => (
-                              <Box key={type} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                <Typography variant="body2">{type}</Typography>
-                                <Typography variant="body2">{area} ha</Typography>
-                              </Box>
-                            ))
-                          }
-                      </Grid>
-                    </Grid>
-                  </AccordionDetails>
-                </Accordion>
-                </Grid>
-            )}
+      {/* Project Information */}
+      {projectData && (
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Project Information
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="body2" color="text.secondary">Project Name</Typography>
+              <Typography variant="body1">{projectData.name}</Typography>
             </Grid>
-          </Paper>
-        </Grid>
-        
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-              Actions
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="body2" color="text.secondary">Location</Typography>
+              <Typography variant="body1">{projectData.location_name}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="body2" color="text.secondary">Area Size</Typography>
+              <Typography variant="body1">{projectData.area_size} hectares</Typography>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="body2" color="text.secondary">Project Type</Typography>
+              <Typography variant="body1">{projectData.project_type}</Typography>
+            </Grid>
+          </Grid>
+          {projectData.description && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" color="text.secondary">Description</Typography>
+              <Typography variant="body1">{projectData.description}</Typography>
+            </Box>
+          )}
+        </Paper>
+      )}
+
+      {/* ML Analysis Component */}
+      <MLAnalysis 
+        projectId={parseInt(projectId)}
+        projectData={projectData}
+        onAnalysisComplete={handleAnalysisComplete}
+      />
+
+      {/* Analysis Summary (if completed) */}
+      {mlAnalysisResults && (
+        <Paper sx={{ p: 3, mt: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Verification Summary
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={8}>
+              <Typography variant="body1" gutterBottom>
+                <strong>Recommendation:</strong> {mlAnalysisResults.eligibility?.recommendation}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                This assessment is based on machine learning analysis of satellite imagery, 
+                location data, and forest cover patterns. Final certification requires 
+                additional field verification and regulatory review.
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="h3" color="primary">
+                  {mlAnalysisResults.eligibility?.percentage}%
                 </Typography>
-                
-                  <Button 
-                    variant="contained" 
-              color="primary" 
-              fullWidth 
-              sx={{ mb: 2 }}
-              onClick={() => navigate('/dashboard')}
-            >
-              Back to Dashboard
-                  </Button>
-                  
-            {projectId !== 'new' && (
-                  <Button 
-                variant="outlined" 
-                color="secondary" 
-                    fullWidth
-                onClick={() => navigate(`/projects/${projectId}`)}
-                  >
-                View Project Details
-                  </Button>
-              )}
-          </Paper>
-        </Grid>
-      </Grid>
+                <Typography variant="body2">Eligibility Score</Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </Paper>
+      )}
+
+      {/* Navigation Actions */}
+      <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'center' }}>
+        <Button 
+          variant="outlined" 
+          onClick={() => navigate('/dashboard')}
+        >
+          Back to Dashboard
+        </Button>
+        
+        {projectId !== 'new' && (
+          <Button 
+            variant="contained" 
+            color="primary"
+            onClick={() => navigate(`/projects/${projectId}`)}
+          >
+            View Project Details
+          </Button>
+        )}
+      </Box>
     </Container>
   );
 };

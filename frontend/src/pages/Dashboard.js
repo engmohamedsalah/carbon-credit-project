@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Box, Typography, Container, Grid, Paper, Button } from '@mui/material';
+import { Box, Typography, Container, Grid, Paper, Button, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchProjects } from '../store/projectSlice';
@@ -22,6 +22,17 @@ const Dashboard = () => {
     verified: projectsArray.filter(p => p.status === 'Verified').length,
     inProgress: projectsArray.filter(p => p.status === 'In Progress').length,
   };
+
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4, textAlign: 'center' }}>
+        <CircularProgress />
+        <Typography variant="body1" sx={{ mt: 2 }}>
+          Loading dashboard...
+        </Typography>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
