@@ -2,16 +2,15 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Box } from '@mui/material';
 import Dashboard from './pages/Dashboard';
+import ProjectsList from './pages/ProjectsList';
+import NewProject from './pages/NewProject';
 import ProjectDetail from './pages/ProjectDetail';
 import Verification from './pages/Verification';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
-import { useSelector } from 'react-redux';
-
 function App() {
-  const { isAuthenticated } = useSelector(state => state.auth);
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -25,7 +24,10 @@ function App() {
         }>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="projects" element={<ProjectsList />} />
+          <Route path="projects/new" element={<NewProject />} />
           <Route path="projects/:id" element={<ProjectDetail />} />
+          <Route path="verification" element={<Verification />} />
           <Route path="verification/:id" element={<Verification />} />
         </Route>
       </Routes>

@@ -19,6 +19,8 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 from pydantic import BaseModel, field_validator
 from passlib.context import CryptContext
+from fastapi import UploadFile, File
+from typing import Tuple
 
 
 # Configure logging
@@ -98,14 +100,41 @@ class DatabaseManager:
                         name TEXT NOT NULL,
                         description TEXT,
                         location_name TEXT NOT NULL,
-                        area_size REAL NOT NULL,
+                        area_hectares REAL,
                         project_type TEXT DEFAULT 'Reforestation',
                         status TEXT DEFAULT 'Pending',
                         user_id INTEGER NOT NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        start_date TEXT,
+                        end_date TEXT,
+                        estimated_carbon_credits REAL,
                         FOREIGN KEY (user_id) REFERENCES users (id)
                     )
                 """)
+                
+                # Check if we need to migrate existing table
+                try:
+                    cursor = conn.execute("PRAGMA table_info(projects)")
+                    columns = [row[1] for row in cursor.fetchall()]
+                    
+                    # Add missing columns if they don't exist
+                    if 'area_hectares' not in columns and 'area_size' in columns:
+                        conn.execute("ALTER TABLE projects ADD COLUMN area_hectares REAL")
+                        conn.execute("UPDATE projects SET area_hectares = area_size")
+                        logger.info("Migrated area_size to area_hectares")
+                    
+                    if 'start_date' not in columns:
+                        conn.execute("ALTER TABLE projects ADD COLUMN start_date TEXT")
+                    
+                    if 'end_date' not in columns:
+                        conn.execute("ALTER TABLE projects ADD COLUMN end_date TEXT")
+                        
+                    if 'estimated_carbon_credits' not in columns:
+                        conn.execute("ALTER TABLE projects ADD COLUMN estimated_carbon_credits REAL")
+                        
+                except Exception as migration_error:
+                    logger.warning(f"Migration warning: {migration_error}")
+                    # Continue if migration fails - table might already be correct
                 
                 conn.commit()
                 logger.info("Database initialized successfully")
@@ -143,8 +172,12 @@ class ProjectCreate(BaseModel):
     name: str
     description: Optional[str] = None
     location_name: str
-    area_size: float
+    area_hectares: Optional[float] = None
     project_type: str = "Reforestation"
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    estimated_carbon_credits: Optional[float] = None
+    geometry: Optional[dict] = None
     
     @field_validator('name')
     @classmethod
@@ -153,11 +186,11 @@ class ProjectCreate(BaseModel):
             raise ValueError('Project name must be at least 3 characters long')
         return v.strip()
     
-    @field_validator('area_size')
+    @field_validator('area_hectares')
     @classmethod
     def validate_area(cls, v):
-        if v <= 0:
-            raise ValueError('Area size must be positive')
+        if v is not None and v <= 0:
+            raise ValueError('Area must be positive')
         return v
 
 
@@ -166,11 +199,30 @@ class ProjectResponse(BaseModel):
     name: str
     description: Optional[str]
     location_name: str
-    area_size: float
+    area_hectares: Optional[float]
     project_type: str
     status: str
     user_id: int
     created_at: str
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    estimated_carbon_credits: Optional[float] = None
+
+
+# ML-specific Pydantic models
+class LocationAnalysisRequest(BaseModel):
+    project_id: int
+    latitude: float
+    longitude: float
+    analysis_type: str = "comprehensive"
+
+
+class MLAnalysisResponse(BaseModel):
+    project_id: int
+    analysis_type: str
+    status: str
+    results: dict
+    timestamp: str
 
 
 # Utility functions
@@ -457,10 +509,12 @@ async def create_project(project_data: ProjectCreate, current_user: UserResponse
     try:
         with db.get_connection() as conn:
             cursor = conn.execute("""
-                INSERT INTO projects (name, description, location_name, area_size, project_type, user_id)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO projects (name, description, location_name, area_hectares, project_type, user_id, 
+                                     start_date, end_date, estimated_carbon_credits, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (project_data.name, project_data.description, project_data.location_name,
-                  project_data.area_size, project_data.project_type, current_user.id))
+                  project_data.area_hectares, project_data.project_type, current_user.id,
+                  project_data.start_date, project_data.end_date, project_data.estimated_carbon_credits, "Pending"))
             
             project_id = cursor.lastrowid
             conn.commit()
@@ -499,6 +553,181 @@ async def get_project(project_id: int, current_user: UserResponse = Depends(get_
     except Exception as e:
         logger.error(f"Error getting project: {e}")
         raise HTTPException(status_code=500, detail="Failed to get project")
+
+
+# ML Integration - Import ML service
+try:
+    from services.ml_service import ml_service
+    logger.info("✅ ML Service imported successfully")
+except ImportError as e:
+    logger.error(f"❌ Failed to import ML service: {e}")
+    ml_service = None
+
+
+# ML Analysis endpoints
+@app.get("/api/v1/ml/status")
+async def get_ml_status(current_user: UserResponse = Depends(get_current_user)):
+    """Get ML service status"""
+    if ml_service is None:
+        return {"error": "ML service not available"}
+    
+    return {
+        "ml_service": ml_service.get_service_status(),
+        "models_ready": ml_service.is_initialized,
+        "service_version": "1.0.0"
+    }
+
+
+@app.post("/api/v1/ml/analyze-location", response_model=MLAnalysisResponse)
+async def analyze_location(
+    request: LocationAnalysisRequest,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Analyze a location for carbon credit potential"""
+    if ml_service is None or not ml_service.is_initialized:
+        raise HTTPException(status_code=503, detail="ML service not available")
+    
+    try:
+        # Verify project belongs to user
+        with db.get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT * FROM projects WHERE id = ? AND user_id = ?",
+                (request.project_id, current_user.id)
+            )
+            project = cursor.fetchone()
+            
+            if not project:
+                raise HTTPException(status_code=404, detail="Project not found or not authorized")
+        
+        # Run ML analysis
+        coordinates = (request.latitude, request.longitude)
+        results = await ml_service.analyze_location(
+            coordinates=coordinates,
+            project_id=request.project_id,
+            analysis_type=request.analysis_type
+        )
+        
+        logger.info(f"Location analysis completed for project {request.project_id}")
+        
+        return MLAnalysisResponse(
+            project_id=request.project_id,
+            analysis_type=request.analysis_type,
+            status="completed",
+            results=results,
+            timestamp=results.get("timestamp", datetime.now().isoformat())
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"ML analysis failed: {e}")
+        raise HTTPException(status_code=500, detail="Analysis failed")
+
+
+@app.post("/api/v1/ml/forest-cover")
+async def analyze_forest_cover(
+    project_id: int,
+    file: UploadFile = File(...),
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Analyze forest cover from uploaded satellite image"""
+    if ml_service is None or not ml_service.is_initialized:
+        raise HTTPException(status_code=503, detail="ML service not available")
+    
+    try:
+        # Verify project belongs to user
+        with db.get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT * FROM projects WHERE id = ? AND user_id = ?",
+                (project_id, current_user.id)
+            )
+            project = cursor.fetchone()
+            
+            if not project:
+                raise HTTPException(status_code=404, detail="Project not found or not authorized")
+        
+        # Save uploaded file
+        file_content = await file.read()
+        file_path = await ml_service.save_uploaded_file(file_content, file.filename)
+        
+        # Run forest cover analysis
+        results = await ml_service.analyze_forest_cover(
+            image_path=file_path,
+            project_id=project_id
+        )
+        
+        logger.info(f"Forest cover analysis completed for project {project_id}")
+        
+        return {
+            "project_id": project_id,
+            "analysis_type": "forest_cover",
+            "status": "completed",
+            "results": results,
+            "file_processed": file.filename
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Forest cover analysis failed: {e}")
+        raise HTTPException(status_code=500, detail="Analysis failed")
+
+
+@app.post("/api/v1/ml/change-detection")
+async def detect_changes(
+    project_id: int,
+    before_image: UploadFile = File(...),
+    after_image: UploadFile = File(...),
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Detect forest changes between two satellite images"""
+    if ml_service is None or not ml_service.is_initialized:
+        raise HTTPException(status_code=503, detail="ML service not available")
+    
+    try:
+        # Verify project belongs to user
+        with db.get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT * FROM projects WHERE id = ? AND user_id = ?",
+                (project_id, current_user.id)
+            )
+            project = cursor.fetchone()
+            
+            if not project:
+                raise HTTPException(status_code=404, detail="Project not found or not authorized")
+        
+        # Save uploaded files
+        before_content = await before_image.read()
+        after_content = await after_image.read()
+        
+        before_path = await ml_service.save_uploaded_file(before_content, before_image.filename)
+        after_path = await ml_service.save_uploaded_file(after_content, after_image.filename)
+        
+        # Run change detection analysis
+        results = await ml_service.detect_changes(
+            before_image_path=before_path,
+            after_image_path=after_path,
+            project_id=project_id
+        )
+        
+        logger.info(f"Change detection completed for project {project_id}")
+        
+        return {
+            "project_id": project_id,
+            "analysis_type": "change_detection",
+            "status": "completed",
+            "results": results,
+            "files_processed": {
+                "before": before_image.filename,
+                "after": after_image.filename
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Change detection failed: {e}")
+        raise HTTPException(status_code=500, detail="Analysis failed")
 
 
 if __name__ == "__main__":
