@@ -203,4 +203,12 @@ const projectSlice = createSlice({
 
 export const { clearCurrentProject, clearError } = projectSlice.actions;
 
+// Selectors
+export const selectProjects = (state) => state.projects.projects;
+export const selectCurrentProject = (state) => state.projects.currentProject;
+export const selectProjectsLoading = (state) => state.projects.loading;
+export const selectProjectsError = (state) => state.projects.error;
+export const selectSatelliteImages = (state) => state.projects.satelliteImages;
+export const selectVerificationResults = (state) => state.projects.verificationResults;
+
 export default projectSlice.reducer;

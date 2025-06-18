@@ -103,7 +103,7 @@ const verificationSlice = createSlice({
       })
       .addCase(fetchVerifications.fulfilled, (state, action) => {
         state.loading = false;
-        state.verifications = action.payload;
+        state.verifications = action.payload.verifications || action.payload;
       })
       .addCase(fetchVerifications.rejected, (state, action) => {
         state.loading = false;
