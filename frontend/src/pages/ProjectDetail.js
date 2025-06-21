@@ -11,11 +11,15 @@ import {
   CircularProgress,
   Alert,
   Chip,
-  Divider
+  Divider,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel
 } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchProjectById } from '../store/projectSlice';
+import { fetchProjectById, updateProjectStatus } from '../store/projectSlice';
 import { fetchVerifications } from '../store/verificationSlice';
 import MapComponent from '../components/MapComponent';
 
@@ -24,10 +28,21 @@ const ProjectDetail = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
+  const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
   
   const { currentProject, loading: projectLoading, error: projectError } = useSelector(state => state.projects);
   const { verifications, loading: verificationsLoading } = useSelector(state => state.verifications);
   const { user } = useSelector(state => state.auth);
+  
+  // Status options for progression
+  const statusOptions = [
+    'Draft',
+    'Pending',
+    'In Progress', 
+    'Under Review',
+    'Verified',
+    'Rejected'
+  ];
   
   useEffect(() => {
     dispatch(fetchProjectById(id));
@@ -58,6 +73,31 @@ const ProjectDetail = () => {
   const formatDate = (dateString) => {
     if (!dateString) return 'Not set';
     return new Date(dateString).toLocaleDateString();
+  };
+
+  const handleStatusUpdate = async (newStatus) => {
+    setStatusUpdateLoading(true);
+    try {
+      await dispatch(updateProjectStatus({ 
+        projectId: parseInt(id), 
+        status: newStatus 
+      })).unwrap();
+      
+      // Refresh project data
+      dispatch(fetchProjectById(id));
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      alert('Failed to update project status. Please try again.');
+    } finally {
+      setStatusUpdateLoading(false);
+    }
+  };
+
+  const canUpdateStatus = () => {
+    // Project owner, Admins, and Verifiers can update status
+    return currentProject?.user_id === user?.id || 
+           user?.role === 'Admin' || 
+           user?.role === 'Verifier';
   };
 
   // Helper function to render project field only if it has meaningful data
@@ -115,11 +155,32 @@ const ProjectDetail = () => {
         <Typography variant="h4" component="h1">
           {currentProject.name}
         </Typography>
-        <Chip 
-          label={currentProject.status || 'PENDING'} 
-          color={currentProject.status === 'APPROVED' ? 'success' : 'default'}
-          variant="outlined"
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {canUpdateStatus() && (
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel>Update Status</InputLabel>
+              <Select
+                value={currentProject.status || 'Pending'}
+                label="Update Status"
+                onChange={(e) => handleStatusUpdate(e.target.value)}
+                disabled={statusUpdateLoading}
+              >
+                {statusOptions.map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {status}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+          <Chip 
+            label={currentProject.status || 'PENDING'} 
+            color={currentProject.status === 'Verified' ? 'success' : 
+                   currentProject.status === 'Rejected' ? 'error' :
+                   currentProject.status === 'In Progress' ? 'primary' : 'default'}
+            variant="outlined"
+          />
+        </Box>
       </Box>
 
       <Paper sx={{ p: 3, mb: 3 }}>

@@ -43,6 +43,7 @@ export const API_ENDPOINTS = {
     detail: (id) => `${API_BASE}/projects/${id}`,
     update: (id) => `${API_BASE}/projects/${id}`,
     delete: (id) => `${API_BASE}/projects/${id}`,
+    updateStatus: (id) => `${API_BASE}/projects/${id}/status`,
   },
   
   // Verification endpoints

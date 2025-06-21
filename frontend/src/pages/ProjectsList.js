@@ -29,11 +29,13 @@ import {
   Add as AddIcon,
   Search as SearchIcon,
   Visibility as ViewIcon,
-  VerifiedUser as VerifyIcon
+  VerifiedUser as VerifyIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchProjects } from '../store/projectSlice';
+import { fetchProjects, deleteProject } from '../store/projectSlice';
 
 const ProjectsList = () => {
   const navigate = useNavigate();
@@ -74,6 +76,23 @@ const ProjectsList = () => {
   const handleProjectVerification = useCallback((projectId) => {
     navigate(`/verification?project_id=${projectId}`);
   }, [navigate]);
+
+  const handleProjectEdit = useCallback((projectId) => {
+    navigate(`/projects/${projectId}/edit`);
+  }, [navigate]);
+
+  const handleProjectDelete = useCallback(async (projectId, projectName) => {
+    if (window.confirm(`Are you sure you want to delete "${projectName}"? This action cannot be undone.`)) {
+      try {
+        await dispatch(deleteProject(projectId)).unwrap();
+        // Refresh the projects list
+        dispatch(fetchProjects());
+      } catch (error) {
+        console.error('Failed to delete project:', error);
+        alert('Failed to delete project. Please try again.');
+      }
+    }
+  }, [dispatch]);
 
   if (loading) {
     return (
@@ -374,7 +393,7 @@ const ProjectsList = () => {
                     {formatDateUtil(project.created_at)}
                   </TableCell>
                   <TableCell align="right">
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
                       <IconButton
                         size="small"
                         onClick={() => handleProjectView(project.id)}
@@ -384,11 +403,27 @@ const ProjectsList = () => {
                       </IconButton>
                       <IconButton
                         size="small"
+                        onClick={() => handleProjectEdit(project.id)}
+                        title="Edit Project"
+                        color="secondary"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
                         onClick={() => handleProjectVerification(project.id)}
                         title="Verify Project"
                         color="primary"
                       >
                         <VerifyIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleProjectDelete(project.id, project.name)}
+                        title="Delete Project"
+                        color="error"
+                      >
+                        <DeleteIcon />
                       </IconButton>
                     </Box>
                   </TableCell>

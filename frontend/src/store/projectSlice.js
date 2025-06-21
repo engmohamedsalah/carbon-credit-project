@@ -57,6 +57,30 @@ export const updateProject = createAsyncThunk(
   }
 );
 
+export const deleteProject = createAsyncThunk(
+  'projects/deleteProject',
+  async (projectId, { rejectWithValue }) => {
+    try {
+      const response = await apiService.projects.delete(projectId);
+      return { projectId, message: response.data.message };
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message || 'Failed to delete project');
+    }
+  }
+);
+
+export const updateProjectStatus = createAsyncThunk(
+  'projects/updateProjectStatus',
+  async ({ projectId, status }, { rejectWithValue }) => {
+    try {
+      const response = await apiService.projects.updateStatus(projectId, status);
+      return { projectId, status, ...response.data };
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message || 'Failed to update project status');
+    }
+  }
+);
+
 export const uploadSatelliteImage = createAsyncThunk(
   'projects/uploadSatelliteImage',
   async ({ projectId, file }, { rejectWithValue }) => {
@@ -166,6 +190,41 @@ const projectSlice = createSlice({
       .addCase(updateProject.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.detail || 'Failed to update project';
+      })
+      // Delete project
+      .addCase(deleteProject.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteProject.fulfilled, (state, action) => {
+        state.loading = false;
+        state.projects = state.projects.filter(p => p.id !== action.payload.projectId);
+        if (state.currentProject?.id === action.payload.projectId) {
+          state.currentProject = null;
+        }
+      })
+      .addCase(deleteProject.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.detail || 'Failed to delete project';
+      })
+      // Update project status
+      .addCase(updateProjectStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProjectStatus.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.projects.findIndex(p => p.id === action.payload.projectId);
+        if (index !== -1) {
+          state.projects[index] = action.payload;
+        }
+        if (state.currentProject?.id === action.payload.projectId) {
+          state.currentProject = action.payload;
+        }
+      })
+      .addCase(updateProjectStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.detail || 'Failed to update project status';
       })
       // Upload satellite image
       .addCase(uploadSatelliteImage.pending, (state) => {

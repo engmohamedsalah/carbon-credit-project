@@ -89,6 +89,7 @@ class ApiService {
     getById: (id) => this.client.get(API_ENDPOINTS.projects.detail(id)),
     update: (id, projectData) => this.client.put(API_ENDPOINTS.projects.update(id), projectData),
     delete: (id) => this.client.delete(API_ENDPOINTS.projects.delete(id)),
+    updateStatus: (id, status) => this.client.patch(API_ENDPOINTS.projects.updateStatus(id), { status }),
   };
 
   /**
