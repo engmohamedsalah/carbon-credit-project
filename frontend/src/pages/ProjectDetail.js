@@ -1,27 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Container, 
-  Typography, 
-  Paper, 
-  Box, 
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Chip,
   Grid,
   Button,
   Tabs,
   Tab,
-  CircularProgress,
-  Alert,
-  Chip,
-  Divider,
-  MenuItem,
-  Select,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
   FormControl,
-  InputLabel
+  InputLabel,
+  Select,
+  MenuItem,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Alert,
+  CircularProgress,
+  Container,
+  Paper
 } from '@mui/material';
-import { useDispatch, useSelector } from 'react-redux';
-import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  LocationOn as LocationIcon,
+  CalendarToday as CalendarIcon,
+  Eco as EcoIcon,
+  Assessment as AssessmentIcon,
+  History as HistoryIcon,
+  CheckCircle as VerifiedIcon,
+  Cancel as RejectedIcon,
+  Pending as PendingIcon,
+  Person as PersonIcon
+} from '@mui/icons-material';
 import { fetchProjectById, updateProjectStatus } from '../store/projectSlice';
 import { fetchVerifications } from '../store/verificationSlice';
 import MapComponent from '../components/MapComponent';
+import apiService from '../services/apiService';
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -29,25 +54,38 @@ const ProjectDetail = () => {
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
   const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [statusReason, setStatusReason] = useState('');
+  const [statusNotes, setStatusNotes] = useState('');
+  const [statusLogs, setStatusLogs] = useState([]);
   
   const { currentProject, loading: projectLoading, error: projectError } = useSelector(state => state.projects);
   const { verifications, loading: verificationsLoading } = useSelector(state => state.verifications);
   const { user } = useSelector(state => state.auth);
   
-  // Status options for progression
+  // Status options for progression - simplified workflow
   const statusOptions = [
     'Draft',
-    'Pending',
-    'In Progress', 
-    'Under Review',
+    'Pending', 
     'Verified',
     'Rejected'
   ];
   
+  const fetchStatusLogs = useCallback(async () => {
+    try {
+      const response = await apiService.get(`/api/v1/projects/${id}/status-logs`);
+      setStatusLogs(response.data.status_logs || []);
+    } catch (error) {
+      console.error('Failed to fetch status logs:', error);
+    }
+  }, [id]);
+
   useEffect(() => {
     dispatch(fetchProjectById(id));
     dispatch(fetchVerifications({ projectId: id }));
-  }, [dispatch, id]);
+    fetchStatusLogs();
+  }, [dispatch, id, fetchStatusLogs]);
   
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -75,19 +113,35 @@ const ProjectDetail = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const handleStatusUpdate = async (newStatus) => {
+  const handleStatusChange = (newStatus) => {
+    setSelectedStatus(newStatus);
+    setStatusReason('');
+    setStatusNotes('');
+    setStatusDialogOpen(true);
+  };
+
+  const handleStatusUpdate = async () => {
+    if (selectedStatus === 'Rejected' && !statusReason.trim()) {
+      alert('Please provide a reason for rejection.');
+      return;
+    }
+
     setStatusUpdateLoading(true);
     try {
       await dispatch(updateProjectStatus({ 
         projectId: parseInt(id), 
-        status: newStatus 
+        status: selectedStatus,
+        reason: statusReason,
+        notes: statusNotes
       })).unwrap();
       
-      // Refresh project data
+      // Refresh project data and logs
       dispatch(fetchProjectById(id));
+      fetchStatusLogs();
+      setStatusDialogOpen(false);
     } catch (error) {
       console.error('Failed to update status:', error);
-      alert('Failed to update project status. Please try again.');
+      alert(error.message || 'Failed to update project status. Please try again.');
     } finally {
       setStatusUpdateLoading(false);
     }
@@ -162,7 +216,7 @@ const ProjectDetail = () => {
               <Select
                 value={currentProject.status || 'Pending'}
                 label="Update Status"
-                onChange={(e) => handleStatusUpdate(e.target.value)}
+                onChange={(e) => handleStatusChange(e.target.value)}
                 disabled={statusUpdateLoading}
               >
                 {statusOptions.map((status) => (
@@ -177,7 +231,7 @@ const ProjectDetail = () => {
             label={currentProject.status || 'PENDING'} 
             color={currentProject.status === 'Verified' ? 'success' : 
                    currentProject.status === 'Rejected' ? 'error' :
-                   currentProject.status === 'In Progress' ? 'primary' : 'default'}
+                   currentProject.status === 'Pending' ? 'warning' : 'default'}
             variant="outlined"
           />
         </Box>
@@ -264,11 +318,75 @@ const ProjectDetail = () => {
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabValue} onChange={handleTabChange}>
             <Tab label="Verifications" />
+            <Tab label="Status History" />
             <Tab label="Satellite Images" />
             <Tab label="Carbon Estimates" />
           </Tabs>
         </Box>
         
+        {/* Status History Tab */}
+        {tabValue === 1 && (
+          <Box sx={{ pt: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Status Change History
+            </Typography>
+            
+            {statusLogs.length === 0 ? (
+              <Alert severity="info">No status changes recorded yet.</Alert>
+            ) : (
+              <List>
+                {statusLogs.map((log, index) => (
+                                     <React.Fragment key={log.id}>
+                     <ListItem>
+                       <ListItemIcon>
+                         {log.new_status === 'Verified' ? (
+                           <VerifiedIcon color="success" />
+                         ) : log.new_status === 'Rejected' ? (
+                           <RejectedIcon color="error" />
+                         ) : (
+                           <PendingIcon color="warning" />
+                         )}
+                       </ListItemIcon>
+                       <ListItemText
+                         primary={
+                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                             <Typography variant="h6" component="span">
+                               {log.old_status ? `${log.old_status} → ${log.new_status}` : `Set to ${log.new_status}`}
+                             </Typography>
+                             <Typography variant="body2" color="text.secondary">
+                               {new Date(log.created_at).toLocaleDateString()} {new Date(log.created_at).toLocaleTimeString()}
+                             </Typography>
+                           </Box>
+                         }
+                         secondary={
+                           <Box>
+                             <Typography variant="body2" color="text.secondary">
+                               by {log.changed_by_name} ({log.changed_by_role})
+                             </Typography>
+                             {log.reason && (
+                               <Box sx={{ mt: 1, p: 1, bgcolor: 'grey.100', borderRadius: 1 }}>
+                                 <Typography variant="body2" fontWeight="bold">Reason:</Typography>
+                                 <Typography variant="body2">{log.reason}</Typography>
+                               </Box>
+                             )}
+                             {log.notes && (
+                               <Box sx={{ mt: 1, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
+                                 <Typography variant="body2" fontWeight="bold">Notes:</Typography>
+                                 <Typography variant="body2">{log.notes}</Typography>
+                               </Box>
+                             )}
+                           </Box>
+                         }
+                       />
+                     </ListItem>
+                     {index < statusLogs.length - 1 && <Divider />}
+                   </React.Fragment>
+                ))}
+              </List>
+            )}
+          </Box>
+        )}
+
         {/* Verifications Tab */}
         {tabValue === 0 && (
           <Box sx={{ pt: 3 }}>
@@ -374,7 +492,7 @@ const ProjectDetail = () => {
         )}
         
         {/* Satellite Images Tab */}
-        {tabValue === 1 && (
+        {tabValue === 2 && (
           <Box sx={{ pt: 3 }}>
             <Typography variant="h6" gutterBottom>
               Satellite Images
@@ -387,7 +505,7 @@ const ProjectDetail = () => {
         )}
         
         {/* Carbon Estimates Tab */}
-        {tabValue === 2 && (
+        {tabValue === 3 && (
           <Box sx={{ pt: 3 }}>
             <Typography variant="h6" gutterBottom>
               Carbon Estimates
@@ -399,6 +517,80 @@ const ProjectDetail = () => {
           </Box>
         )}
       </Paper>
+
+      {/* Status Change Dialog */}
+      <Dialog 
+        open={statusDialogOpen} 
+        onClose={() => setStatusDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Update Project Status
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 1 }}>
+            <Typography variant="body1" gutterBottom>
+              Change status from <strong>{currentProject?.status}</strong> to <strong>{selectedStatus}</strong>
+            </Typography>
+            
+            {selectedStatus === 'Rejected' && (
+              <TextField
+                fullWidth
+                required
+                label="Reason for Rejection"
+                value={statusReason}
+                onChange={(e) => setStatusReason(e.target.value)}
+                multiline
+                rows={3}
+                sx={{ mt: 2 }}
+                helperText="Please provide a clear reason for rejecting this project"
+              />
+            )}
+            
+            {(selectedStatus === 'Verified' || selectedStatus === 'Rejected') && (
+              <TextField
+                fullWidth
+                label={selectedStatus === 'Verified' ? 'Verification Notes' : 'Additional Notes'}
+                value={statusNotes}
+                onChange={(e) => setStatusNotes(e.target.value)}
+                multiline
+                rows={2}
+                sx={{ mt: 2 }}
+                helperText="Optional additional information about this decision"
+              />
+            )}
+
+            {selectedStatus === 'Pending' && (
+              <TextField
+                fullWidth
+                label="Submission Notes"
+                value={statusNotes}
+                onChange={(e) => setStatusNotes(e.target.value)}
+                multiline
+                rows={2}
+                sx={{ mt: 2 }}
+                helperText="Optional notes about this submission"
+              />
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setStatusDialogOpen(false)}
+            disabled={statusUpdateLoading}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleStatusUpdate}
+            variant="contained"
+            disabled={statusUpdateLoading || (selectedStatus === 'Rejected' && !statusReason.trim())}
+          >
+            {statusUpdateLoading ? <CircularProgress size={20} /> : 'Update Status'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

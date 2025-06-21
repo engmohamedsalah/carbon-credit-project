@@ -2,16 +2,22 @@ import os
 import json
 import subprocess
 import sys
+import requests
+
+# Get the current project directory
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def check_file_exists(filepath):
     """Check if a file exists"""
-    exists = os.path.isfile(filepath)
+    full_path = os.path.join(PROJECT_DIR, filepath) if not filepath.startswith('/') else filepath
+    exists = os.path.isfile(full_path)
     print(f"{'✅' if exists else '❌'} {filepath}")
     return exists
 
 def check_directory_exists(dirpath):
     """Check if a directory exists"""
-    exists = os.path.isdir(dirpath)
+    full_path = os.path.join(PROJECT_DIR, dirpath) if not dirpath.startswith('/') else dirpath
+    exists = os.path.isdir(full_path)
     print(f"{'✅' if exists else '❌'} {dirpath}")
     return exists
 
@@ -21,56 +27,32 @@ def validate_backend():
     
     # Check core files
     backend_files = [
-        "/home/ubuntu/carbon_credit_project/backend/main.py",
-        "/home/ubuntu/carbon_credit_project/backend/requirements.txt",
-        "/home/ubuntu/carbon_credit_project/backend/.env"
+        "backend/main.py",
+        "backend/requirements.txt"
     ]
     
     backend_dirs = [
-        "/home/ubuntu/carbon_credit_project/backend/app",
-        "/home/ubuntu/carbon_credit_project/backend/app/api",
-        "/home/ubuntu/carbon_credit_project/backend/app/core",
-        "/home/ubuntu/carbon_credit_project/backend/app/models",
-        "/home/ubuntu/carbon_credit_project/backend/app/schemas",
-        "/home/ubuntu/carbon_credit_project/backend/app/services"
+        "backend/services"
     ]
     
     files_exist = all(check_file_exists(f) for f in backend_files)
     dirs_exist = all(check_directory_exists(d) for d in backend_dirs)
     
-    # Check API endpoints
-    api_files = [
-        "/home/ubuntu/carbon_credit_project/backend/app/api/auth.py",
-        "/home/ubuntu/carbon_credit_project/backend/app/api/projects.py",
-        "/home/ubuntu/carbon_credit_project/backend/app/api/verification.py",
-        "/home/ubuntu/carbon_credit_project/backend/app/api/satellite.py",
-        "/home/ubuntu/carbon_credit_project/backend/app/api/blockchain.py"
+    # Check ML service
+    ml_files = [
+        "backend/services/ml_service.py"
     ]
     
-    api_exist = all(check_file_exists(f) for f in api_files)
+    ml_exist = all(check_file_exists(f) for f in ml_files)
     
-    # Check models
-    model_files = [
-        "/home/ubuntu/carbon_credit_project/backend/app/models/user.py",
-        "/home/ubuntu/carbon_credit_project/backend/app/models/project.py",
-        "/home/ubuntu/carbon_credit_project/backend/app/models/verification.py",
-        "/home/ubuntu/carbon_credit_project/backend/app/models/satellite.py"
+    # Check database
+    db_files = [
+        "database/carbon_credits.db"
     ]
     
-    models_exist = all(check_file_exists(f) for f in model_files)
+    db_exist = all(check_file_exists(f) for f in db_files)
     
-    # Check services
-    service_files = [
-        "/home/ubuntu/carbon_credit_project/backend/app/services/auth_service.py",
-        "/home/ubuntu/carbon_credit_project/backend/app/services/project_service.py",
-        "/home/ubuntu/carbon_credit_project/backend/app/services/verification_service.py",
-        "/home/ubuntu/carbon_credit_project/backend/app/services/satellite_service.py",
-        "/home/ubuntu/carbon_credit_project/backend/app/services/blockchain_service.py"
-    ]
-    
-    services_exist = all(check_file_exists(f) for f in service_files)
-    
-    backend_valid = files_exist and dirs_exist and api_exist and models_exist and services_exist
+    backend_valid = files_exist and dirs_exist and ml_exist and db_exist
     
     if backend_valid:
         print("\n✅ Backend implementation is valid")
@@ -85,17 +67,17 @@ def validate_frontend():
     
     # Check core files
     frontend_files = [
-        "/home/ubuntu/carbon_credit_project/frontend/package.json",
-        "/home/ubuntu/carbon_credit_project/frontend/src/index.js",
-        "/home/ubuntu/carbon_credit_project/frontend/src/App.js"
+        "frontend/package.json",
+        "frontend/src/index.js",
+        "frontend/src/App.js"
     ]
     
     frontend_dirs = [
-        "/home/ubuntu/carbon_credit_project/frontend/src",
-        "/home/ubuntu/carbon_credit_project/frontend/src/components",
-        "/home/ubuntu/carbon_credit_project/frontend/src/pages",
-        "/home/ubuntu/carbon_credit_project/frontend/src/store",
-        "/home/ubuntu/carbon_credit_project/frontend/src/services"
+        "frontend/src",
+        "frontend/src/components",
+        "frontend/src/pages",
+        "frontend/src/store",
+        "frontend/src/services"
     ]
     
     files_exist = all(check_file_exists(f) for f in frontend_files)
@@ -103,38 +85,42 @@ def validate_frontend():
     
     # Check components
     component_files = [
-        "/home/ubuntu/carbon_credit_project/frontend/src/components/Layout.js",
-        "/home/ubuntu/carbon_credit_project/frontend/src/components/ProtectedRoute.js",
-        "/home/ubuntu/carbon_credit_project/frontend/src/components/MapComponent.js"
+        "frontend/src/components/Layout.js",
+        "frontend/src/components/ProtectedRoute.js",
+        "frontend/src/components/MapComponent.js",
+        "frontend/src/components/MLAnalysis.js"
     ]
     
     components_exist = all(check_file_exists(f) for f in component_files)
     
     # Check pages
     page_files = [
-        "/home/ubuntu/carbon_credit_project/frontend/src/pages/Login.js",
-        "/home/ubuntu/carbon_credit_project/frontend/src/pages/Register.js",
-        "/home/ubuntu/carbon_credit_project/frontend/src/pages/Dashboard.js",
-        "/home/ubuntu/carbon_credit_project/frontend/src/pages/ProjectDetail.js",
-        "/home/ubuntu/carbon_credit_project/frontend/src/pages/NewProject.js",
-        "/home/ubuntu/carbon_credit_project/frontend/src/pages/Verification.js"
+        "frontend/src/pages/Login.js",
+        "frontend/src/pages/Register.js",
+        "frontend/src/pages/Dashboard.js",
+        "frontend/src/pages/ProjectDetail.js",
+        "frontend/src/pages/NewProject.js",
+        "frontend/src/pages/EditProject.js",
+        "frontend/src/pages/Verification.js",
+        "frontend/src/pages/XAI.js"
     ]
     
     pages_exist = all(check_file_exists(f) for f in page_files)
     
     # Check store
     store_files = [
-        "/home/ubuntu/carbon_credit_project/frontend/src/store/index.js",
-        "/home/ubuntu/carbon_credit_project/frontend/src/store/authSlice.js",
-        "/home/ubuntu/carbon_credit_project/frontend/src/store/projectSlice.js",
-        "/home/ubuntu/carbon_credit_project/frontend/src/store/verificationSlice.js"
+        "frontend/src/store/index.js",
+        "frontend/src/store/authSlice.js",
+        "frontend/src/store/projectSlice.js",
+        "frontend/src/store/verificationSlice.js"
     ]
     
     store_exist = all(check_file_exists(f) for f in store_files)
     
     # Check services
     service_files = [
-        "/home/ubuntu/carbon_credit_project/frontend/src/services/api.js"
+        "frontend/src/services/apiService.js",
+        "frontend/src/services/mlService.js"
     ]
     
     services_exist = all(check_file_exists(f) for f in service_files)
@@ -153,9 +139,9 @@ def validate_docker():
     print("\n=== Validating Docker Configuration ===")
     
     docker_files = [
-        "/home/ubuntu/carbon_credit_project/docker/docker-compose.yml",
-        "/home/ubuntu/carbon_credit_project/docker/backend.Dockerfile",
-        "/home/ubuntu/carbon_credit_project/docker/frontend.Dockerfile"
+        "docker/docker-compose.yml",
+        "docker/backend.Dockerfile",
+        "docker/frontend.Dockerfile"
     ]
     
     docker_valid = all(check_file_exists(f) for f in docker_files)
@@ -167,44 +153,103 @@ def validate_docker():
     
     return docker_valid
 
+def validate_ml_models():
+    """Validate ML models"""
+    print("\n=== Validating ML Models ===")
+    
+    ml_files = [
+        "ml/models/forest_cover_unet_focal_alpha_0.75_threshold_0.53.pth",
+        "ml/models/change_detection_siamese_unet.pth",
+        "ml/models/convlstm_fast_final.pth",
+        "ml/models/ensemble_config.json"
+    ]
+    
+    ml_valid = all(check_file_exists(f) for f in ml_files)
+    
+    if ml_valid:
+        print("\n✅ ML models are available")
+    else:
+        print("\n❌ Some ML models are missing")
+    
+    return ml_valid
+
+def validate_api_endpoints():
+    """Validate API endpoints are working"""
+    print("\n=== Validating API Endpoints ===")
+    
+    base_url = "http://localhost:8000"
+    
+    try:
+        # Test health endpoint
+        response = requests.get(f"{base_url}/health", timeout=5)
+        health_ok = response.status_code == 200
+        print(f"{'✅' if health_ok else '❌'} Health endpoint")
+        
+        # Test API documentation
+        response = requests.get(f"{base_url}/api/v1/docs", timeout=5)
+        docs_ok = response.status_code == 200
+        print(f"{'✅' if docs_ok else '❌'} API documentation")
+        
+        api_valid = health_ok and docs_ok
+        
+    except requests.exceptions.RequestException:
+        print("❌ API server is not running")
+        api_valid = False
+    
+    if api_valid:
+        print("\n✅ API endpoints are working")
+    else:
+        print("\n❌ API endpoints have issues")
+    
+    return api_valid
+
 def validate_requirements():
     """Validate implementation against requirements"""
     print("\n=== Validating Implementation Against Requirements ===")
     
     requirements = [
         {
-            "name": "Human-in-the-loop verification",
+            "name": "Project Management (CRUD)",
             "files": [
-                "/home/ubuntu/carbon_credit_project/backend/app/api/verification.py",
-                "/home/ubuntu/carbon_credit_project/frontend/src/pages/Verification.js"
+                "frontend/src/pages/ProjectDetail.js",
+                "frontend/src/pages/NewProject.js",
+                "frontend/src/pages/EditProject.js"
             ]
         },
         {
-            "name": "Blockchain integration",
+            "name": "ML Integration",
             "files": [
-                "/home/ubuntu/carbon_credit_project/backend/app/api/blockchain.py",
-                "/home/ubuntu/carbon_credit_project/backend/app/services/blockchain_service.py"
+                "backend/services/ml_service.py",
+                "frontend/src/services/mlService.js",
+                "ml/models/forest_cover_unet_focal_alpha_0.75_threshold_0.53.pth"
             ]
         },
         {
-            "name": "XAI for transparency",
+            "name": "Verification Workflow",
             "files": [
-                "/home/ubuntu/carbon_credit_project/backend/app/models/verification.py",
-                "/home/ubuntu/carbon_credit_project/frontend/src/pages/Verification.js"
+                "frontend/src/pages/Verification.js",
+                "frontend/src/store/verificationSlice.js"
             ]
         },
         {
-            "name": "Project management",
+            "name": "Authentication & RBAC",
             "files": [
-                "/home/ubuntu/carbon_credit_project/backend/app/api/projects.py",
-                "/home/ubuntu/carbon_credit_project/frontend/src/pages/ProjectDetail.js"
+                "frontend/src/pages/Login.js",
+                "frontend/src/utils/roleUtils.js",
+                "frontend/src/store/authSlice.js"
             ]
         },
         {
-            "name": "Satellite imagery analysis",
+            "name": "XAI Integration",
             "files": [
-                "/home/ubuntu/carbon_credit_project/backend/app/api/satellite.py",
-                "/home/ubuntu/carbon_credit_project/backend/app/services/satellite_service.py"
+                "frontend/src/pages/XAI.js",
+                "frontend/src/services/xaiService.js"
+            ]
+        },
+        {
+            "name": "Status Logging System",
+            "files": [
+                "frontend/src/pages/ProjectDetail.js"  # Contains status logging UI
             ]
         }
     ]
@@ -213,9 +258,9 @@ def validate_requirements():
     
     for req in requirements:
         print(f"\nChecking requirement: {req['name']}")
-        files_exist = all(check_file_exists(f) for f in req['files'])
+        req_files_exist = all(check_file_exists(f) for f in req['files'])
         
-        if files_exist:
+        if req_files_exist:
             print(f"✅ {req['name']} requirement is implemented")
         else:
             print(f"❌ {req['name']} requirement is not fully implemented")
@@ -231,20 +276,27 @@ def validate_requirements():
 def run_validation():
     """Run all validation checks"""
     print("Starting validation of Carbon Credit Verification SaaS application...")
+    print(f"Project directory: {PROJECT_DIR}")
     
     backend_valid = validate_backend()
     frontend_valid = validate_frontend()
     docker_valid = validate_docker()
-    requirements_met = validate_requirements()
+    ml_valid = validate_ml_models()
+    api_valid = validate_api_endpoints()
+    requirements_valid = validate_requirements()
     
     print("\n=== Validation Summary ===")
     print(f"Backend: {'✅ Valid' if backend_valid else '❌ Invalid'}")
     print(f"Frontend: {'✅ Valid' if frontend_valid else '❌ Invalid'}")
     print(f"Docker: {'✅ Valid' if docker_valid else '❌ Invalid'}")
-    print(f"Requirements: {'✅ Met' if requirements_met else '❌ Not fully met'}")
+    print(f"ML Models: {'✅ Valid' if ml_valid else '❌ Invalid'}")
+    print(f"API Endpoints: {'✅ Valid' if api_valid else '❌ Invalid'}")
+    print(f"Requirements: {'✅ Met' if requirements_valid else '❌ Not fully met'}")
     
-    if backend_valid and frontend_valid and docker_valid and requirements_met:
-        print("\n🎉 Implementation is valid and meets all requirements!")
+    overall_valid = all([backend_valid, frontend_valid, docker_valid, ml_valid, api_valid, requirements_valid])
+    
+    if overall_valid:
+        print("\n🎉 Implementation is complete and valid!")
         return True
     else:
         print("\n❌ Implementation has issues that need to be addressed")

@@ -756,16 +756,23 @@ async def update_project_status(
     status_data: dict,
     current_user: UserResponse = Depends(get_current_user)
 ):
-    """Update project status"""
+    """Update project status with logging"""
     try:
         new_status = status_data.get("status")
+        reason = status_data.get("reason", "")
+        notes = status_data.get("notes", "")
+        
         if not new_status:
             raise HTTPException(status_code=400, detail="Status is required")
         
-        # Validate status
-        valid_statuses = ["Pending", "In Progress", "Under Review", "Verified", "Rejected", "Draft"]
+        # Validate status - simplified workflow
+        valid_statuses = ["Draft", "Pending", "Verified", "Rejected"]
         if new_status not in valid_statuses:
             raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+        
+        # Require reason for rejection
+        if new_status == "Rejected" and not reason.strip():
+            raise HTTPException(status_code=400, detail="Reason is required when rejecting a project")
         
         with db.get_connection() as conn:
             # Check if project exists and user has permission
@@ -776,6 +783,15 @@ async def update_project_status(
                 raise HTTPException(status_code=404, detail="Project not found")
             
             project = dict(project)
+            old_status = project["status"]
+            
+            # Skip if status hasn't changed
+            if old_status == new_status:
+                return {
+                    "message": "Status unchanged",
+                    "project_id": project_id,
+                    "status": new_status
+                }
             
             # Check authorization - allow verifiers and admins to update status
             allowed_roles = ["Admin", "Verifier", "Project Developer"]
@@ -788,18 +804,34 @@ async def update_project_status(
                 (new_status, project_id)
             )
             
+            # Log the status change
+            cursor = conn.execute("""
+                INSERT INTO project_status_logs 
+                (project_id, old_status, new_status, changed_by_user_id, reason, notes)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                project_id,
+                old_status,
+                new_status,
+                current_user.id,
+                reason,
+                notes
+            ))
+            
             conn.commit()
             
             # Get updated project
             cursor = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
             updated_project = dict(cursor.fetchone())
             
-            logger.info(f"Project status updated: {project['name']} -> {new_status} by {current_user.email}")
+            logger.info(f"Project status updated: {project['name']} ({old_status} -> {new_status}) by {current_user.email}")
             return {
                 "message": "Project status updated successfully",
                 "project_id": project_id,
-                "old_status": project["status"],
-                "new_status": new_status
+                "old_status": old_status,
+                "new_status": new_status,
+                "reason": reason,
+                "notes": notes
             }
             
     except HTTPException:
@@ -807,6 +839,55 @@ async def update_project_status(
     except Exception as e:
         logger.error(f"Error updating project status: {e}")
         raise HTTPException(status_code=500, detail="Failed to update project status")
+
+
+@app.get("/api/v1/projects/{project_id}/status-logs")
+async def get_project_status_logs(
+    project_id: int,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Get status change history for a project"""
+    try:
+        with db.get_connection() as conn:
+            # Check if project exists and user has permission
+            cursor = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+            project = cursor.fetchone()
+            
+            if not project:
+                raise HTTPException(status_code=404, detail="Project not found")
+            
+            project = dict(project)
+            
+            # Check authorization - project owner, verifiers, and admins can view logs
+            if (project["user_id"] != current_user.id and 
+                current_user.role not in ["Admin", "Verifier"]):
+                raise HTTPException(status_code=403, detail="Not authorized to view project logs")
+            
+            # Get status logs with user information
+            cursor = conn.execute("""
+                SELECT 
+                    psl.*,
+                    u.full_name as changed_by_name,
+                    u.role as changed_by_role
+                FROM project_status_logs psl
+                JOIN users u ON psl.changed_by_user_id = u.id
+                WHERE psl.project_id = ?
+                ORDER BY psl.created_at DESC
+            """, (project_id,))
+            
+            logs = [dict(row) for row in cursor.fetchall()]
+            
+            return {
+                "project_id": project_id,
+                "project_name": project["name"],
+                "status_logs": logs
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching project status logs: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch project status logs")
 
 
 # ML Integration - Import ML service
