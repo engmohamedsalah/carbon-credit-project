@@ -101,21 +101,21 @@ const Verification = () => {
         </Typography>
         
         {projectData && (
-          <Chip 
+        <Chip 
             label={projectData.status} 
             color={getStatusColor(projectData.status)}
-            sx={{ textTransform: 'capitalize' }}
-          />
+          sx={{ textTransform: 'capitalize' }}
+        />
         )}
       </Box>
       
       {/* Project Information */}
       {projectData && (
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
             Project Information
-          </Typography>
-          <Grid container spacing={2}>
+            </Typography>
+            <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={3}>
               <Typography variant="body2" color="text.secondary">Project Name</Typography>
               <Typography variant="body1">{projectData.name}</Typography>
@@ -131,17 +131,17 @@ const Verification = () => {
             <Grid item xs={12} sm={6} md={3}>
               <Typography variant="body2" color="text.secondary">Project Type</Typography>
               <Typography variant="body1">{projectData.project_type}</Typography>
-            </Grid>
-          </Grid>
+              </Grid>
+              </Grid>
           {projectData.description && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="body2" color="text.secondary">Description</Typography>
               <Typography variant="body1">{projectData.description}</Typography>
-            </Box>
+                  </Box>
           )}
         </Paper>
-      )}
-
+              )}
+              
       {/* ML Analysis Component */}
       <MLAnalysis 
         projectId={parseInt(projectId)}
@@ -155,18 +155,18 @@ const Verification = () => {
           <Typography variant="h6" gutterBottom>
             Verification Summary
           </Typography>
-          <Grid container spacing={2}>
+                    <Grid container spacing={2}>
             <Grid item xs={12} md={8}>
               <Typography variant="body1" gutterBottom>
                 <strong>Recommendation:</strong> {mlAnalysisResults.eligibility?.recommendation}
-              </Typography>
+                        </Typography>
               <Typography variant="body2" color="text.secondary">
                 This assessment is based on machine learning analysis of satellite imagery, 
                 location data, and forest cover patterns. Final certification requires 
                 additional field verification and regulatory review.
-              </Typography>
+                        </Typography>
             </Grid>
-            <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={4}>
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="h3" color="primary">
                   {mlAnalysisResults.eligibility?.percentage}%
@@ -180,22 +180,22 @@ const Verification = () => {
 
       {/* Navigation Actions */}
       <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'center' }}>
-        <Button 
+                  <Button 
           variant="outlined" 
-          onClick={() => navigate('/dashboard')}
-        >
-          Back to Dashboard
-        </Button>
-        
-        {projectId !== 'new' && (
-          <Button 
+              onClick={() => navigate('/dashboard')}
+            >
+              Back to Dashboard
+                  </Button>
+                  
+            {projectId !== 'new' && (
+                  <Button 
             variant="contained" 
             color="primary"
-            onClick={() => navigate(`/projects/${projectId}`)}
-          >
-            View Project Details
-          </Button>
-        )}
+                onClick={() => navigate(`/projects/${projectId}`)}
+                  >
+                View Project Details
+                  </Button>
+              )}
       </Box>
     </Container>
   );

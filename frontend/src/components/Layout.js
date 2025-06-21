@@ -187,10 +187,10 @@ const Layout = () => {
         <Box sx={{ overflow: 'auto' }}>
           <List>
             {menuItems.map((item) => (
-              <ListItem 
-                button 
-                key={item.text} 
-                onClick={() => navigate(item.path)}
+                <ListItem 
+                  button 
+                  key={item.text} 
+                  onClick={() => navigate(item.path)}
                 selected={location.pathname === item.path}
                 sx={{
                   '&.Mui-selected': {
@@ -200,10 +200,10 @@ const Layout = () => {
                     },
                   },
                 }}
-              >
-                <ListItemIcon>
+                >
+                  <ListItemIcon>
                   {iconMap[item.text] || <DashboardIcon />}
-                </ListItemIcon>
+                  </ListItemIcon>
                 <ListItemText 
                   primary={item.text}
                   secondary={item.description}
@@ -212,7 +212,7 @@ const Layout = () => {
                     sx: { fontSize: '0.65rem' }
                   }}
                 />
-              </ListItem>
+                </ListItem>
             ))}
           </List>
           <Divider />
