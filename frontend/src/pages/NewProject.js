@@ -172,9 +172,12 @@ const NewProject = () => {
                   label="Project Type"
                   required
                 >
-                  <MenuItem value="reforestation">Reforestation</MenuItem>
+                  <MenuItem value="Reforestation">Reforestation</MenuItem>
+                  <MenuItem value="Conservation">Conservation</MenuItem>
+                  <MenuItem value="Afforestation">Afforestation</MenuItem>
+                  <MenuItem value="Restoration">Restoration</MenuItem>
+                  <MenuItem value="Agroforestry">Agroforestry</MenuItem>
                   <MenuItem value="avoided_deforestation">Avoided Deforestation</MenuItem>
-                  <MenuItem value="agroforestry">Agroforestry</MenuItem>
                   <MenuItem value="soil_carbon">Soil Carbon</MenuItem>
                   <MenuItem value="mangrove_restoration">Mangrove Restoration</MenuItem>
                   <MenuItem value="other">Other</MenuItem>

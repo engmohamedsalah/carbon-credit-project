@@ -17,6 +17,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchProjectById, updateProject } from '../store/projectSlice';
+import MapComponent from '../components/MapComponent';
 
 const EditProject = () => {
   const { id } = useParams();
@@ -36,18 +37,21 @@ const EditProject = () => {
     estimated_carbon_credits: ''
   });
   
+  const [geometry, setGeometry] = useState(null);
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Project type options
+  // Project type options - matching existing database values
   const projectTypes = [
-    'Reforestation',
-    'Forest_Conservation',
-    'Wetland_Restoration',
-    'Grassland_Management',
-    'Soil_Carbon',
-    'Blue_Carbon',
-    'Other'
+    { value: 'Reforestation', label: 'Reforestation' },
+    { value: 'Conservation', label: 'Conservation' },
+    { value: 'Afforestation', label: 'Afforestation' },
+    { value: 'Restoration', label: 'Restoration' },
+    { value: 'Agroforestry', label: 'Agroforestry' },
+    { value: 'avoided_deforestation', label: 'Avoided Deforestation' },
+    { value: 'soil_carbon', label: 'Soil Carbon' },
+    { value: 'mangrove_restoration', label: 'Mangrove Restoration' },
+    { value: 'other', label: 'Other' }
   ];
 
   useEffect(() => {
@@ -66,6 +70,9 @@ const EditProject = () => {
         end_date: currentProject.end_date || '',
         estimated_carbon_credits: currentProject.estimated_carbon_credits || ''
       });
+      
+      // Set existing geometry
+      setGeometry(currentProject.geometry || null);
     }
   }, [currentProject]);
 
@@ -77,6 +84,12 @@ const EditProject = () => {
     }));
     
     // Clear error when user starts typing
+    if (formError) setFormError('');
+  };
+
+  const handleGeometryChange = (newGeometry) => {
+    setGeometry(newGeometry);
+    // Clear error when geometry is updated
     if (formError) setFormError('');
   };
 
@@ -109,6 +122,7 @@ const EditProject = () => {
         id: parseInt(id), 
         projectData: {
           ...formData,
+          geometry: geometry,
           area_hectares: formData.area_hectares ? parseFloat(formData.area_hectares) : null,
           estimated_carbon_credits: formData.estimated_carbon_credits ? parseFloat(formData.estimated_carbon_credits) : null
         }
@@ -210,13 +224,13 @@ const EditProject = () => {
                   value={formData.project_type}
                   label="Project Type"
                   onChange={handleChange}
-                >
-                  {projectTypes.map((type) => (
-                    <MenuItem key={type} value={type}>
-                      {type.replace('_', ' ')}
-                    </MenuItem>
-                  ))}
-                </Select>
+                                 >
+                   {projectTypes.map((type) => (
+                     <MenuItem key={type.value} value={type.value}>
+                       {type.label}
+                     </MenuItem>
+                   ))}
+                 </Select>
               </FormControl>
             </Grid>
 
@@ -272,6 +286,33 @@ const EditProject = () => {
                 onChange={handleChange}
                 InputLabelProps={{ shrink: true }}
               />
+            </Grid>
+
+            {/* Project Area Map */}
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>
+                Project Area
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Update the project area on the map below. The existing area is shown, and you can modify it by drawing a new area.
+              </Typography>
+              
+                             <Box sx={{ height: 400, mb: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                 <MapComponent 
+                   onGeometryChange={handleGeometryChange}
+                   initialGeometry={geometry}
+                 />
+               </Box>
+              
+              {geometry ? (
+                <Typography variant="caption" color="success.main">
+                  ✓ Project area is defined
+                </Typography>
+              ) : (
+                <Typography variant="caption" color="text.secondary">
+                  No area defined. Draw an area on the map to set project boundaries.
+                </Typography>
+              )}
             </Grid>
 
             {/* Action Buttons */}

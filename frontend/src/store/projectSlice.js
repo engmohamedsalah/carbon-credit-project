@@ -71,9 +71,9 @@ export const deleteProject = createAsyncThunk(
 
 export const updateProjectStatus = createAsyncThunk(
   'projects/updateProjectStatus',
-  async ({ projectId, status }, { rejectWithValue }) => {
+  async ({ projectId, status, reason, notes }, { rejectWithValue }) => {
     try {
-      const response = await apiService.projects.updateStatus(projectId, status);
+      const response = await apiService.projects.updateStatus(projectId, { status, reason, notes });
       return { projectId, status, ...response.data };
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message || 'Failed to update project status');

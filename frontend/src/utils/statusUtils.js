@@ -12,11 +12,10 @@ import {
 } from '@mui/icons-material';
 
 export const PROJECT_STATUS = {
-  DRAFT: 'draft',
-  VERIFIED: 'verified',
-  PENDING: 'pending',
-  IN_PROGRESS: 'in_progress',
-  REJECTED: 'rejected'
+  DRAFT: 'Draft',
+  PENDING: 'Pending',
+  VERIFIED: 'Verified',
+  REJECTED: 'Rejected'
 };
 
 /**
@@ -25,15 +24,15 @@ export const PROJECT_STATUS = {
  * @returns {string} Material-UI color variant
  */
 export const getStatusColor = (status) => {
-  switch (status?.toLowerCase()) {
+  switch (status) {
     case PROJECT_STATUS.VERIFIED:
       return 'success';
     case PROJECT_STATUS.PENDING:
       return 'warning';
-    case PROJECT_STATUS.IN_PROGRESS:
-      return 'info';
     case PROJECT_STATUS.REJECTED:
       return 'error';
+    case PROJECT_STATUS.DRAFT:
+      return 'default';
     default:
       return 'default';
   }
@@ -45,15 +44,15 @@ export const getStatusColor = (status) => {
  * @returns {JSX.Element} Material-UI icon component
  */
 export const getStatusIcon = (status) => {
-  switch (status?.toLowerCase()) {
+  switch (status) {
     case PROJECT_STATUS.VERIFIED:
       return <CheckCircleIcon />;
     case PROJECT_STATUS.PENDING:
       return <PendingIcon />;
-    case PROJECT_STATUS.IN_PROGRESS:
-      return <AutorenewIcon />;
     case PROJECT_STATUS.REJECTED:
       return <ErrorIcon />;
+    case PROJECT_STATUS.DRAFT:
+      return <InfoIcon />;
     default:
       return <InfoIcon />;
   }
@@ -84,6 +83,6 @@ export const isCompletedStatus = (status) => {
  * @returns {boolean} True if status indicates pending
  */
 export const isPendingStatus = (status) => {
-  const pendingStatuses = [PROJECT_STATUS.PENDING, PROJECT_STATUS.IN_PROGRESS];
-  return pendingStatuses.includes(status?.toLowerCase());
+  const pendingStatuses = [PROJECT_STATUS.PENDING, PROJECT_STATUS.DRAFT];
+  return pendingStatuses.includes(status);
 }; 
