@@ -6,6 +6,130 @@ This document provides comprehensive documentation for the Carbon Credit Verific
 
 The application combines state-of-the-art machine learning models with professional web development practices to deliver a scalable, maintainable solution for carbon credit verification with human oversight and explainable AI capabilities.
 
+## Technology Stack Selection and Justification
+
+The technology stack was carefully selected to balance performance, scalability, maintainability, and development velocity. Each choice involved analyzing multiple alternatives and their tradeoffs to create an optimal solution for carbon credit verification.
+
+### Backend Framework
+
+**Selected: FastAPI (Python)**
+
+**Justification:**
+- **High Performance**: FastAPI provides async capabilities with performance comparable to Node.js and Go
+- **Automatic Documentation**: Built-in OpenAPI/Swagger documentation generation reduces development overhead
+- **Type Safety**: Native Python type hints integration improves code reliability and IDE support
+- **ML Integration**: Seamless integration with Python ML ecosystem (PyTorch, scikit-learn, SHAP)
+- **Rapid Development**: Intuitive API design patterns accelerate development velocity
+
+**Tradeoffs Considered:**
+- **Alternative: Node.js/Express**
+  - ✅ Pros: JavaScript consistency across stack, large ecosystem, excellent for I/O operations
+  - ❌ Cons: Weaker ML ecosystem, callback complexity, less suitable for CPU-intensive ML tasks
+- **Alternative: Django**
+  - ✅ Pros: Mature ecosystem, excellent ORM, built-in admin interface
+  - ❌ Cons: Monolithic structure, slower API performance, over-engineered for API-focused architecture
+- **Alternative: Flask**
+  - ✅ Pros: Lightweight, flexible, familiar Python framework
+  - ❌ Cons: Manual configuration overhead, lacks built-in async support, no automatic documentation
+
+**Decision Impact**: FastAPI's async capabilities and ML integration justified the choice despite Node.js being more common in SaaS applications.
+
+### Frontend Framework
+
+**Selected: React 18 + Redux Toolkit + Material-UI v5**
+
+**Justification:**
+- **Component Architecture**: React's component-based architecture aligns with complex UI requirements for data visualization
+- **State Management**: Redux Toolkit provides predictable state management for complex ML analysis workflows
+- **Professional UI**: Material-UI v5 delivers enterprise-grade components with consistent styling
+- **Ecosystem Maturity**: Extensive library ecosystem for mapping (Leaflet), visualization (Chart.js), and XAI components
+- **Performance**: React 18's concurrent features optimize rendering for data-heavy interfaces
+
+**Tradeoffs Considered:**
+- **Alternative: Vue.js 3**
+  - ✅ Pros: Simpler learning curve, excellent TypeScript support, smaller bundle size
+  - ❌ Cons: Smaller ecosystem for specialized ML visualization libraries
+- **Alternative: Angular 15**
+  - ✅ Pros: Full framework with batteries included, excellent TypeScript integration, enterprise-focused
+  - ❌ Cons: Steep learning curve, larger bundle size, over-engineered for SaaS requirements
+- **Alternative: Next.js**
+  - ✅ Pros: Server-side rendering, better SEO, full-stack capabilities
+  - ❌ Cons: Additional complexity for API-centric architecture, overkill for dashboard application
+
+**Decision Impact**: React's mature ecosystem for data visualization and mapping components outweighed the simplicity advantages of Vue.js.
+
+### Machine Learning Framework
+
+**Selected: PyTorch + scikit-learn + SHAP + LIME**
+
+**Justification:**
+- **Research-to-Production**: PyTorch's dynamic computation graph facilitates both research and production deployment
+- **Computer Vision Strength**: Excellent support for U-Net, Siamese networks, and ConvLSTM architectures
+- **XAI Integration**: SHAP and LIME provide state-of-the-art explainable AI capabilities
+- **Ecosystem Compatibility**: Strong integration with geospatial libraries (GDAL, rasterio) for satellite imagery
+- **Model Flexibility**: Easy ensemble model implementation and custom architecture development
+
+**Tradeoffs Considered:**
+- **Alternative: TensorFlow/Keras**
+  - ✅ Pros: Larger community, TensorFlow Serving for production, more deployment options
+  - ❌ Cons: Static graph complexity, heavier framework, less flexible for research-style development
+- **Alternative: scikit-learn Only**
+  - ✅ Pros: Simpler implementation, faster development, reliable classical ML
+  - ❌ Cons: Limited deep learning capabilities, insufficient for satellite imagery analysis
+- **Alternative: Hugging Face Transformers**
+  - ✅ Pros: Pre-trained models, transformer architectures, excellent for NLP
+  - ❌ Cons: Not optimized for computer vision tasks, large model sizes, limited geospatial support
+
+**Decision Impact**: PyTorch's flexibility for custom architectures and strong computer vision support justified the choice despite TensorFlow's production advantages.
+
+### Blockchain Platform
+
+**Selected: Polygon (Ethereum L2) - Framework Ready**
+
+**Justification:**
+- **Energy Efficiency**: Proof-of-Stake consensus aligns with environmental goals of carbon credit verification
+- **Low Transaction Costs**: Sub-cent transaction fees enable micro-transactions for small carbon credits
+- **Ethereum Compatibility**: Access to mature DeFi ecosystem and established carbon credit protocols
+- **Scalability**: Layer 2 solution provides high throughput for enterprise-scale verification
+- **Developer Experience**: Mature tooling (Hardhat, Truffle) and extensive documentation
+
+**Tradeoffs Considered:**
+- **Alternative: Ethereum Mainnet**
+  - ✅ Pros: Maximum security, largest ecosystem, established carbon credit standards
+  - ❌ Cons: High gas fees, energy consumption concerns, scalability limitations
+- **Alternative: Solana**
+  - ✅ Pros: Extremely fast transactions, low costs, growing ecosystem
+  - ❌ Cons: Less mature ecosystem, network stability concerns, smaller carbon credit adoption
+- **Alternative: Hyperledger Fabric**
+  - ✅ Pros: Enterprise-focused, permissioned network, better privacy controls
+  - ❌ Cons: Less transparent, complex setup, limited public verification
+
+**Decision Impact**: Polygon's balance of cost efficiency and ecosystem maturity aligned with both environmental goals and practical deployment requirements.
+
+### Database and Storage
+
+**Selected: SQLite (Development) + PostgreSQL (Production Ready)**
+
+**Justification:**
+- **Development Simplicity**: SQLite provides zero-configuration development environment
+- **Production Scalability**: PostgreSQL offers enterprise-grade features and horizontal scaling
+- **GeoJSON Support**: Both databases handle spatial data well with PostGIS extension for PostgreSQL
+- **Transaction Integrity**: ACID compliance ensures data consistency for financial applications
+- **Cost Efficiency**: Open-source solutions reduce operational overhead
+
+**Tradeoffs Considered:**
+- **Alternative: MongoDB**
+  - ✅ Pros: Flexible schema, excellent for JSON/GeoJSON storage, horizontal scaling
+  - ❌ Cons: Eventual consistency issues, less mature transaction support, query complexity
+- **Alternative: MySQL**
+  - ✅ Pros: Familiar SQL interface, good community support, reliable performance
+  - ❌ Cons: Limited JSON support, weaker spatial data handling, licensing considerations
+- **Alternative: Cloud Databases (AWS RDS, Google Cloud SQL)**
+  - ✅ Pros: Managed service, automatic backups, built-in scaling
+  - ❌ Cons: Vendor lock-in, higher costs, less control over optimization
+
+**Decision Impact**: The SQLite-to-PostgreSQL migration path provides optimal development experience while maintaining production scalability options.
+
 ## System Architecture
 
 The application follows a modern, production-ready architecture:
@@ -80,349 +204,51 @@ The application follows a modern, production-ready architecture:
 
 ### System Architecture Overview
 
-The following diagram illustrates the complete system architecture showing the relationship between frontend, backend, ML pipeline, and data layers:
+![System Architecture](images/system_architecture.png)
 
-```mermaid
-graph TB
-    subgraph "Frontend Layer"
-        A["React 18 + Redux Toolkit"]
-        B["Material-UI v5"]
-        C["Leaflet Maps"]
-        D["XAI Visualizations"]
-    end
-    
-    subgraph "API Layer"
-        E["FastAPI Backend"]
-        F["JWT Authentication"]
-        G["RBAC Authorization"]
-        H["OpenAPI Documentation"]
-    end
-    
-    subgraph "Business Logic"
-        I["Project Management"]
-        J["Verification Workflow"]
-        K["ML Analysis Service"]
-        L["XAI Service"]
-    end
-    
-    subgraph "ML Pipeline"
-        M["Forest Cover U-Net<br/>F1=0.49"]
-        N["Change Detection<br/>Siamese U-Net F1=0.60"]
-        O["ConvLSTM<br/>Temporal Analysis"]
-        P["Ensemble Model<br/>Expected F1>0.6"]
-    end
-    
-    subgraph "Data Layer"
-        Q["SQLite Database"]
-        R["File Storage"]
-        S["Model Storage<br/>96MB Total"]
-    end
-    
-    A --> E
-    B --> E
-    C --> E
-    D --> L
-    E --> F
-    E --> G
-    E --> I
-    E --> J
-    E --> K
-    K --> M
-    K --> N
-    K --> O
-    M --> P
-    N --> P
-    O --> P
-    I --> Q
-    J --> Q
-    K --> S
-    L --> S
-    
-    style M fill:#e1f5fe
-    style N fill:#e8f5e8
-    style O fill:#fff3e0
-    style P fill:#f3e5f5
-    style Q fill:#fce4ec
-```
+The system architecture diagram illustrates the complete system architecture showing the relationship between frontend, backend, ML pipeline, and data layers. The architecture follows a modern layered approach with clear separation of concerns:
+
+- **Frontend Layer**: React 18 with Redux Toolkit, Material-UI v5, Leaflet Maps, and XAI Visualizations
+- **API Layer**: FastAPI Backend with JWT Authentication, RBAC Authorization, and OpenAPI Documentation
+- **Business Logic**: Project Management, Verification Workflow, ML Analysis Service, and XAI Service
+- **ML Pipeline**: Four production models working together in an ensemble approach
+- **Data Layer**: SQLite Database, File Storage, and Model Storage (96MB total)
 
 ### ML Processing Pipeline
 
-This diagram shows the complete machine learning pipeline from satellite imagery input to final verification:
+![ML Pipeline](images/ml_pipeline.png)
 
-```mermaid
-graph LR
-    subgraph "Input Data"
-        A["Satellite Imagery<br/>Sentinel-2"]
-        B["Project Boundaries<br/>GeoJSON"]
-        C["User Requirements"]
-    end
-    
-    subgraph "ML Processing Pipeline"
-        D["Image Preprocessing<br/>Channel Adaptation"]
-        E["Forest Cover Model<br/>U-Net"]
-        F["Change Detection<br/>Siamese U-Net"]
-        G["Temporal Analysis<br/>ConvLSTM"]
-        H["Ensemble Integration<br/>Weighted Combination"]
-    end
-    
-    subgraph "Analysis Results"
-        I["Forest Coverage<br/>Percentage"]
-        J["Change Detection<br/>Deforestation/Growth"]
-        K["Carbon Impact<br/>Tonnes CO2e"]
-        L["Confidence Scores<br/>AI Reliability"]
-    end
-    
-    subgraph "Verification Process"
-        M["AI Verification<br/>Initial Assessment"]
-        N["Human Review<br/>Expert Validation"]
-        O["Final Certification<br/>Approved/Rejected"]
-    end
-    
-    subgraph "XAI Explanations"
-        P["SHAP Values<br/>Feature Importance"]
-        Q["LIME Explanations<br/>Local Interpretability"]
-        R["Integrated Gradients<br/>Attribution Analysis"]
-        S["Visual Explanations<br/>Saliency Maps"]
-    end
-    
-    A --> D
-    B --> D
-    C --> D
-    D --> E
-    D --> F
-    D --> G
-    E --> H
-    F --> H
-    G --> H
-    H --> I
-    H --> J
-    H --> K
-    H --> L
-    I --> M
-    J --> M
-    K --> M
-    L --> M
-    M --> N
-    N --> O
-    H --> P
-    H --> Q
-    H --> R
-    P --> S
-    Q --> S
-    R --> S
-    
-    style E fill:#e1f5fe
-    style F fill:#e8f5e8
-    style G fill:#fff3e0
-    style H fill:#f3e5f5
-```
+The ML processing pipeline demonstrates how data flows from satellite imagery input to final verification. The pipeline includes:
+
+- **Input Processing**: Satellite imagery, project boundaries, and user requirements
+- **ML Processing**: Image preprocessing, three specialized models, and ensemble integration
+- **Analysis Results**: Forest coverage, change detection, carbon impact, and confidence scores
+- **Verification Process**: AI verification, human review, and final certification
+- **XAI Explanations**: SHAP, LIME, Integrated Gradients, and visual explanations
 
 ### Model Performance Comparison
 
-The following chart shows the F1 scores of our production models compared to baseline performance:
+![Model Performance](images/model_performance.png)
 
-```mermaid
-pie title ML Model Performance Distribution (F1 Scores)
-    "Forest Cover U-Net" : 49
-    "Change Detection Siamese" : 60
-    "Ensemble Expected" : 65
-    "Production Baseline" : 50
-```
+The pie chart shows the F1 score distribution across our production models, demonstrating the performance characteristics of each component in our ensemble system.
 
 ### Role-Based Access Control Matrix
 
-This diagram illustrates the comprehensive RBAC system implemented in the application:
+![RBAC Matrix](images/rbac_matrix.png)
 
-```mermaid
-graph TD
-    subgraph "User Roles & Permissions"
-        A["Admin<br/>Full System Access"]
-        B["Verifier<br/>Verification & Review"]
-        C["Scientist<br/>ML Analysis & XAI"]
-        D["Developer<br/>Project Management"]
-        E["Viewer<br/>Read-Only Access"]
-    end
-    
-    subgraph "Feature Access Matrix"
-        F["Project CRUD<br/>✓ Admin, Developer"]
-        G["Verification Review<br/>✓ Admin, Verifier"]
-        H["ML Analysis<br/>✓ Admin, Scientist, Verifier"]
-        I["XAI Explanations<br/>✓ Admin, Scientist, Verifier"]
-        J["User Management<br/>✓ Admin Only"]
-        K["System Settings<br/>✓ Admin Only"]
-        L["Reports & Analytics<br/>✓ All Roles"]
-    end
-    
-    subgraph "Security Features"
-        M["JWT Authentication"]
-        N["Bcrypt Password Hashing"]
-        O["Role-Based Route Protection"]
-        P["API Endpoint Authorization"]
-        Q["Input Validation & Sanitization"]
-    end
-    
-    A --> F
-    A --> G
-    A --> H
-    A --> I
-    A --> J
-    A --> K
-    A --> L
-    
-    B --> G
-    B --> H
-    B --> I
-    B --> L
-    
-    C --> H
-    C --> I
-    C --> L
-    
-    D --> F
-    D --> L
-    
-    E --> L
-    
-    F --> M
-    G --> N
-    H --> O
-    I --> P
-    J --> Q
-    
-    style A fill:#ff6b6b
-    style B fill:#4ecdc4
-    style C fill:#45b7d1
-    style D fill:#96ceb4
-    style E fill:#feca57
-```
+The RBAC system provides comprehensive access control with five distinct user roles, each with specific permissions and access levels. The diagram shows the relationship between user roles, feature access, and security measures.
 
 ### Development Timeline
 
-The project development followed a structured timeline achieving production readiness:
+![Development Timeline](images/development_timeline.png)
 
-```mermaid
-timeline
-    title Carbon Credit Verification Development Timeline
-    
-    section Phase 1 - Foundation
-        Week 1-2 : Project Setup
-                 : Database Design
-                 : Authentication System
-        
-    section Phase 2 - ML Integration  
-        Week 3-4 : Model Training
-                 : Forest Cover U-Net (F1=0.49)
-                 : Change Detection Model (F1=0.60)
-        Week 5   : Ensemble Development
-                 : ConvLSTM Integration
-                 : Production Pipeline (96MB)
-        
-    section Phase 3 - Frontend Development
-        Week 6-7 : React Components
-                 : Material-UI Integration
-                 : Interactive Maps
-        Week 8   : RBAC Implementation
-                 : Professional Layout
-                 : Responsive Design
-        
-    section Phase 4 - XAI & Verification
-        Week 9   : SHAP Integration
-                 : LIME Implementation
-                 : Integrated Gradients
-        Week 10  : Verification Workflow
-                 : Human Review Interface
-                 : Audit Trails
-        
-    section Phase 5 - Production Ready
-        Week 11  : Testing Suite
-                 : Performance Optimization
-                 : Documentation
-        Week 12  : Deployment Ready
-                 : Production Validation
-                 : Final Testing
-```
+The development timeline shows the structured 12-week development process that led to a production-ready system, from initial foundation work through final deployment preparation.
 
 ### Complete Data Flow Architecture
 
-This comprehensive diagram shows how data flows through the entire system from user interaction to final results:
+![Data Flow](images/data_flow.png)
 
-```mermaid
-flowchart TD
-    subgraph "User Interface Layer"
-        A["User Login<br/>Role Authentication"]
-        B["Project Creation<br/>Boundary Drawing"]
-        C["File Upload<br/>Satellite Imagery"]
-        D["Verification Interface<br/>Human Review"]
-    end
-    
-    subgraph "API Gateway & Security"
-        E["JWT Token Validation"]
-        F["Role-Based Authorization"]
-        G["Input Validation"]
-        H["Rate Limiting"]
-    end
-    
-    subgraph "Business Services"
-        I["Project Service<br/>CRUD Operations"]
-        J["ML Analysis Service<br/>Image Processing"]
-        K["Verification Service<br/>Workflow Management"]
-        L["XAI Service<br/>Explanation Generation"]
-    end
-    
-    subgraph "ML Engine"
-        M["Preprocessing<br/>Channel Adaptation"]
-        N["Model Inference<br/>Forest + Change + LSTM"]
-        O["Ensemble Processing<br/>Weighted Combination"]
-        P["Carbon Calculation<br/>Impact Assessment"]
-    end
-    
-    subgraph "Data Persistence"
-        Q["SQLite Database<br/>Users, Projects, Verifications"]
-        R["File System<br/>Images, Models, Results"]
-        S["Model Storage<br/>96MB Production Models"]
-    end
-    
-    subgraph "External Integrations"
-        T["Satellite APIs<br/>Sentinel-2 Data"]
-        U["Blockchain Ready<br/>Polygon Integration"]
-        V["XAI Libraries<br/>SHAP, LIME, IG"]
-    end
-    
-    A --> E
-    B --> E
-    C --> E
-    D --> E
-    
-    E --> F
-    F --> G
-    G --> H
-    
-    H --> I
-    H --> J
-    H --> K
-    H --> L
-    
-    I --> Q
-    J --> M
-    K --> Q
-    L --> V
-    
-    M --> N
-    N --> O
-    O --> P
-    
-    J --> S
-    P --> R
-    
-    B --> T
-    K --> U
-    
-    style A fill:#e3f2fd
-    style J fill:#e8f5e8
-    style N fill:#fff3e0
-    style Q fill:#fce4ec
-    style U fill:#f3e5f5
-```
+This comprehensive diagram shows how data flows through the entire system from user interaction to final results, including all security layers, business services, ML processing, and data persistence components.
 
 ## Technical Implementation Details
 

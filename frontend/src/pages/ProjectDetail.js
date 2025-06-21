@@ -59,6 +59,31 @@ const ProjectDetail = () => {
     if (!dateString) return 'Not set';
     return new Date(dateString).toLocaleDateString();
   };
+
+  // Helper function to render project field only if it has meaningful data
+  const renderProjectField = (label, value, unit = '') => {
+    if (!value && value !== 0) return null;
+    
+    let displayValue = value;
+    if (label.includes('Carbon Credits') && typeof value === 'number') {
+      displayValue = `${value} tonnes CO₂e`;
+    } else if (label.includes('Hectares') && typeof value === 'number') {
+      displayValue = `${value} hectares`;
+    } else if (unit) {
+      displayValue = `${value} ${unit}`;
+    }
+    
+    return (
+      <Box sx={{ mb: 1.5 }}>
+        <Typography variant="body2" color="text.secondary">
+          {label}
+        </Typography>
+        <Typography variant="body1">
+          {displayValue}
+        </Typography>
+      </Box>
+    );
+  };
   
   if (projectLoading) {
     return (
@@ -85,27 +110,36 @@ const ProjectDetail = () => {
   }
   
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth={false} sx={{ mt: 4, mb: 4, px: 3, maxWidth: '90%' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h4" gutterBottom>
+        <Typography variant="h4" component="h1">
           {currentProject.name}
         </Typography>
-        
         <Chip 
-          label={currentProject.status.replace('_', ' ').toUpperCase()} 
-          color={getStatusColor(currentProject.status)}
-          sx={{ textTransform: 'capitalize' }}
+          label={currentProject.status || 'PENDING'} 
+          color={currentProject.status === 'APPROVED' ? 'success' : 'default'}
+          variant="outlined"
         />
       </Box>
-      
+
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 4,
+          flexDirection: { xs: 'column', md: 'row' },
+          width: '100%',
+          overflow: 'hidden'
+        }}>
+          {/* Project Details - Flexible content width */}
+          <Box sx={{ 
+            minWidth: 0,
+            flex: { xs: '1', md: '1 1 60%' }
+          }}>
             <Typography variant="h6" gutterBottom>
               Project Details
             </Typography>
             
-            <Box sx={{ mb: 2 }}>
+            <Box sx={{ mb: 1.5 }}>
               <Typography variant="body2" color="text.secondary">
                 Location
               </Typography>
@@ -114,73 +148,55 @@ const ProjectDetail = () => {
               </Typography>
             </Box>
             
-            <Box sx={{ mb: 2 }}>
+            <Box sx={{ mb: 1.5 }}>
               <Typography variant="body2" color="text.secondary">
                 Project Type
               </Typography>
-              <Typography variant="body1" sx={{ textTransform: 'capitalize' }}>
-                {currentProject.project_type?.replace('_', ' ') || 'Not specified'}
+              <Typography variant="body1">
+                {currentProject.project_type ? 
+                  currentProject.project_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) 
+                  : 'Not specified'
+                }
               </Typography>
             </Box>
             
-            <Box sx={{ mb: 2 }}>
+            {renderProjectField('Area (Hectares)', currentProject.area_hectares)}
+            {renderProjectField('Start Date', formatDate(currentProject.start_date))}
+            {renderProjectField('End Date', formatDate(currentProject.end_date))}
+            {renderProjectField('Estimated Carbon Credits', currentProject.estimated_carbon_credits)}
+            
+            <Box sx={{ mb: 1.5 }}>
               <Typography variant="body2" color="text.secondary">
-                Area
+                Description
               </Typography>
               <Typography variant="body1">
-                {currentProject.area_hectares ? `${currentProject.area_hectares} hectares` : 'Not specified'}
+                {currentProject.description || 'Not specified'}
               </Typography>
             </Box>
-            
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                Date Range
+          </Box>
+          
+          {/* Map - Contained within frame */}
+          {currentProject.geometry && (
+            <Box sx={{ 
+              minWidth: 0,
+              flex: { xs: '1', md: '0 1 40%' },
+              maxWidth: { md: '40%' }
+            }}>
+              <Typography variant="h6" gutterBottom>
+                Project Area
               </Typography>
-              <Typography variant="body1">
-                {formatDate(currentProject.start_date)} to {formatDate(currentProject.end_date)}
-              </Typography>
-            </Box>
-            
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                Estimated Carbon Credits
-              </Typography>
-              <Typography variant="body1">
-                {currentProject.estimated_carbon_credits ? `${currentProject.estimated_carbon_credits} tonnes CO₂e` : 'Not specified'}
-              </Typography>
-            </Box>
-            
-            {currentProject.blockchain_token_id && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Blockchain Token ID
-                </Typography>
-                <Typography variant="body1">
-                  {currentProject.blockchain_token_id}
-                </Typography>
+              <Box sx={{ 
+                height: 350, 
+                border: '1px solid #e0e0e0', 
+                borderRadius: 1,
+                width: '100%',
+                overflow: 'hidden'
+              }}>
+                <MapComponent initialGeometry={currentProject.geometry} />
               </Box>
-            )}
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Typography variant="h6" gutterBottom>
-              Project Area
-            </Typography>
-            
-            <Box sx={{ height: 300 }}>
-              <MapComponent initialGeometry={currentProject.geometry} />
             </Box>
-          </Grid>
-          
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom>
-              Description
-            </Typography>
-            <Typography variant="body1">
-              {currentProject.description || 'No description provided.'}
-            </Typography>
-          </Grid>
-        </Grid>
+          )}
+        </Box>
       </Paper>
       
       <Paper sx={{ p: 3 }}>
