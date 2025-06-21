@@ -641,6 +641,174 @@ async def get_project(project_id: int, current_user: UserResponse = Depends(get_
         raise HTTPException(status_code=500, detail="Failed to get project")
 
 
+@app.put("/api/v1/projects/{project_id}", response_model=ProjectResponse)
+async def update_project(
+    project_id: int, 
+    project_data: ProjectCreate, 
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Update an existing project"""
+    try:
+        import json
+        
+        with db.get_connection() as conn:
+            # Check if project exists and user has permission
+            cursor = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+            existing_project = cursor.fetchone()
+            
+            if not existing_project:
+                raise HTTPException(status_code=404, detail="Project not found")
+            
+            existing_project = dict(existing_project)
+            
+            # Check authorization
+            if existing_project["user_id"] != current_user.id and current_user.role != "Admin":
+                raise HTTPException(status_code=403, detail="Not authorized to update this project")
+            
+            # Prepare updated data
+            geometry_json = json.dumps(project_data.geometry) if project_data.geometry else existing_project.get('geometry')
+            
+            # Update project
+            cursor = conn.execute("""
+                UPDATE projects 
+                SET name = ?, description = ?, location_name = ?, area_hectares = ?, 
+                    project_type = ?, start_date = ?, end_date = ?, 
+                    estimated_carbon_credits = ?, geometry = ?
+                WHERE id = ?
+            """, (
+                project_data.name,
+                project_data.description,
+                project_data.location_name,
+                project_data.area_hectares,
+                project_data.project_type,
+                project_data.start_date,
+                project_data.end_date,
+                project_data.estimated_carbon_credits,
+                geometry_json,
+                project_id
+            ))
+            
+            conn.commit()
+            
+            # Get updated project
+            cursor = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+            updated_project = dict(cursor.fetchone())
+            
+            # Parse geometry JSON if it exists
+            if updated_project.get('geometry'):
+                try:
+                    updated_project['geometry'] = json.loads(updated_project['geometry'])
+                except (json.JSONDecodeError, TypeError):
+                    updated_project['geometry'] = None
+            
+            logger.info(f"Project updated: {project_data.name} by {current_user.email}")
+            return ProjectResponse(**updated_project)
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating project: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update project")
+
+
+@app.delete("/api/v1/projects/{project_id}")
+async def delete_project(project_id: int, current_user: UserResponse = Depends(get_current_user)):
+    """Delete a project"""
+    try:
+        with db.get_connection() as conn:
+            # Check if project exists and user has permission
+            cursor = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+            project = cursor.fetchone()
+            
+            if not project:
+                raise HTTPException(status_code=404, detail="Project not found")
+            
+            project = dict(project)
+            
+            # Check authorization
+            if project["user_id"] != current_user.id and current_user.role != "Admin":
+                raise HTTPException(status_code=403, detail="Not authorized to delete this project")
+            
+            # Delete related verifications first (foreign key constraint)
+            cursor = conn.execute("DELETE FROM verifications WHERE project_id = ?", (project_id,))
+            
+            # Delete the project
+            cursor = conn.execute("DELETE FROM projects WHERE id = ?", (project_id,))
+            
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="Project not found")
+            
+            conn.commit()
+            
+            logger.info(f"Project deleted: {project['name']} by {current_user.email}")
+            return {"message": "Project deleted successfully", "project_id": project_id}
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting project: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete project")
+
+
+@app.patch("/api/v1/projects/{project_id}/status")
+async def update_project_status(
+    project_id: int, 
+    status_data: dict,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Update project status"""
+    try:
+        new_status = status_data.get("status")
+        if not new_status:
+            raise HTTPException(status_code=400, detail="Status is required")
+        
+        # Validate status
+        valid_statuses = ["Pending", "In Progress", "Under Review", "Verified", "Rejected", "Draft"]
+        if new_status not in valid_statuses:
+            raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+        
+        with db.get_connection() as conn:
+            # Check if project exists and user has permission
+            cursor = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+            project = cursor.fetchone()
+            
+            if not project:
+                raise HTTPException(status_code=404, detail="Project not found")
+            
+            project = dict(project)
+            
+            # Check authorization - allow verifiers and admins to update status
+            allowed_roles = ["Admin", "Verifier", "Project Developer"]
+            if project["user_id"] != current_user.id and current_user.role not in allowed_roles:
+                raise HTTPException(status_code=403, detail="Not authorized to update project status")
+            
+            # Update project status
+            cursor = conn.execute(
+                "UPDATE projects SET status = ? WHERE id = ?",
+                (new_status, project_id)
+            )
+            
+            conn.commit()
+            
+            # Get updated project
+            cursor = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
+            updated_project = dict(cursor.fetchone())
+            
+            logger.info(f"Project status updated: {project['name']} -> {new_status} by {current_user.email}")
+            return {
+                "message": "Project status updated successfully",
+                "project_id": project_id,
+                "old_status": project["status"],
+                "new_status": new_status
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating project status: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update project status")
+
+
 # ML Integration - Import ML service
 try:
     from services.ml_service import ml_service

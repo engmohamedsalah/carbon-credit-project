@@ -4,6 +4,7 @@ import { Box } from '@mui/material';
 import Dashboard from './pages/Dashboard';
 import ProjectsList from './pages/ProjectsList';
 import NewProject from './pages/NewProject';
+import EditProject from './pages/EditProject';
 import ProjectDetail from './pages/ProjectDetail';
 import Verification from './pages/Verification';
 import XAI from './pages/XAI';
@@ -32,6 +33,7 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="projects" element={<ProjectsList />} />
           <Route path="projects/new" element={<NewProject />} />
+          <Route path="projects/:id/edit" element={<EditProject />} />
           <Route path="projects/:id" element={<ProjectDetail />} />
           <Route path="verification" element={<Verification />} />
           <Route path="verification/:id" element={<Verification />} />
