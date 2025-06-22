@@ -2,20 +2,20 @@ import React from 'react';
 import {
   Box,
   Typography,
-  Button,
-  ButtonGroup,
-  Card,
-  CardContent,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Grid,
   Chip,
-  Tooltip,
-  CircularProgress,
-  Alert
+  Paper,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import {
-  TrendingUp as SHAPIcon,
-  Visibility as LIMEIcon,
-  Science as IGIcon,
-  SelectAll as AllIcon
+  Psychology as PsychologyIcon,
+  Lightbulb as LightbulbIcon,
+  Analytics as AnalyticsIcon
 } from '@mui/icons-material';
 
 const MethodSelector = ({ 
@@ -23,178 +23,113 @@ const MethodSelector = ({
   selectedMethod, 
   onMethodChange, 
   loading = false,
-  variant = 'buttons' // 'buttons' or 'cards'
+  variant = 'dropdown', // 'dropdown' or 'cards'
+  sx = {} // Allow custom styling
 }) => {
-  
-  // Method icon mapping
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
   const getMethodIcon = (methodName) => {
-    switch (methodName) {
-      case 'shap': return <SHAPIcon />;
-      case 'lime': return <LIMEIcon />;
-      case 'integrated_gradients': return <IGIcon />;
-      case 'all': return <AllIcon />;
-      default: return <IGIcon />;
+    switch (methodName?.toLowerCase()) {
+      case 'shap':
+        return <AnalyticsIcon />;
+      case 'lime':
+        return <LightbulbIcon />;
+      case 'integrated_gradients':
+        return <PsychologyIcon />;
+      default:
+        return <PsychologyIcon />;
     }
   };
 
-  // Method color mapping
-  const getMethodColor = (methodName) => {
-    switch (methodName) {
-      case 'shap': return 'primary';
-      case 'lime': return 'secondary';
-      case 'integrated_gradients': return 'success';
-      case 'all': return 'warning';
-      default: return 'default';
-    }
+  const getMethodDescription = (method) => {
+    const descriptions = {
+      shap: 'Global feature importance with game theory foundations',
+      lime: 'Local interpretable model-agnostic explanations',
+      integrated_gradients: 'Attribution method for deep neural networks'
+    };
+    return descriptions[method.name] || method.description || 'AI explanation method';
   };
 
-  if (loading) {
+  if (variant === 'cards' && !isMobile) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 2 }}>
-        <CircularProgress size={20} />
-        <Typography variant="body2">Loading XAI methods...</Typography>
-      </Box>
-    );
-  }
-
-  if (methods.length === 0) {
-    return (
-      <Alert severity="warning">
-        No XAI methods available. Please check service status.
-      </Alert>
-    );
-  }
-
-  if (variant === 'cards') {
-    return (
-      <Box>
+      <Box sx={{ mb: 3, ...sx }}>
         <Typography variant="subtitle2" gutterBottom>
-          Select Explanation Method
+          XAI Method
         </Typography>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Grid container spacing={2}>
           {methods.map((method) => (
-            <Card
-              key={method.name}
-              variant={selectedMethod === method.name ? "elevation" : "outlined"}
-              sx={{
-                cursor: 'pointer',
-                border: selectedMethod === method.name ? 2 : 1,
-                borderColor: selectedMethod === method.name ? `${getMethodColor(method.name)}.main` : 'divider',
-                transition: 'all 0.2s ease-in-out',
-                '&:hover': {
-                  elevation: 3,
-                  borderColor: `${getMethodColor(method.name)}.main`
-                }
-              }}
-              onClick={() => onMethodChange(method.name)}
-            >
-              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                  <Box sx={{ color: `${getMethodColor(method.name)}.main`, mt: 0.5 }}>
-                    {getMethodIcon(method.name)}
-                  </Box>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 'medium', mb: 0.5 }}>
-                      {method.display_name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {method.description}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                      Best for: {method.bestFor}
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {method.visualization_types?.map((viz, index) => (
-                        <Chip
-                          key={index}
-                          label={viz}
-                          size="small"
-                          variant="outlined"
-                          color={getMethodColor(method.name)}
-                        />
-                      ))}
-                    </Box>
-                  </Box>
+            <Grid item xs={12} sm={6} md={4} key={method.name}>
+              <Paper
+                sx={{
+                  p: 2,
+                  cursor: 'pointer',
+                  border: selectedMethod === method.name ? 2 : 1,
+                  borderColor: selectedMethod === method.name ? 'primary.main' : 'divider',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    boxShadow: 1
+                  },
+                  transition: 'all 0.2s'
+                }}
+                onClick={() => !loading && onMethodChange(method.name)}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  {getMethodIcon(method.name)}
+                  <Typography variant="subtitle2">
+                    {method.display_name || method.name.toUpperCase()}
+                  </Typography>
                 </Box>
-              </CardContent>
-            </Card>
+                <Typography variant="caption" color="text.secondary">
+                  {getMethodDescription(method)}
+                </Typography>
+                {selectedMethod === method.name && (
+                  <Chip 
+                    label="Selected" 
+                    color="primary" 
+                    size="small" 
+                    sx={{ mt: 1 }}
+                  />
+                )}
+              </Paper>
+            </Grid>
           ))}
-        </Box>
+        </Grid>
       </Box>
     );
   }
 
-  // Button variant (default)
+  // Dropdown variant (default and mobile)
   return (
-    <Box>
-      <Typography variant="subtitle2" gutterBottom>
-        Explanation Method
-      </Typography>
-      <ButtonGroup
-        orientation="vertical"
-        variant="outlined"
-        fullWidth
-        sx={{ mb: 2 }}
+    <FormControl fullWidth sx={{ ...sx }}>
+      <InputLabel id="method-select-label">XAI Method</InputLabel>
+      <Select
+        labelId="method-select-label"
+        id="method-select"
+        value={selectedMethod}
+        label="XAI Method"
+        onChange={(e) => onMethodChange(e.target.value)}
+        disabled={loading}
+        size="small"
       >
         {methods.map((method) => (
-          <Tooltip
-            key={method.name}
-            title={
+          <MenuItem key={method.name} value={method.name}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {getMethodIcon(method.name)}
               <Box>
-                <Typography variant="subtitle2">{method.display_name}</Typography>
-                <Typography variant="body2">{method.description}</Typography>
-                <Typography variant="caption">Best for: {method.bestFor}</Typography>
-              </Box>
-            }
-            placement="right"
-            arrow
-          >
-            <Button
-              variant={selectedMethod === method.name ? "contained" : "outlined"}
-              color={getMethodColor(method.name)}
-              startIcon={getMethodIcon(method.name)}
-              onClick={() => onMethodChange(method.name)}
-              sx={{
-                justifyContent: 'flex-start',
-                textAlign: 'left',
-                px: 2,
-                py: 1.5
-              }}
-            >
-              <Box sx={{ textAlign: 'left' }}>
-                <Typography variant="button" sx={{ fontWeight: 'medium' }}>
-                  {method.display_name}
+                <Typography variant="body2">
+                  {method.display_name || method.name.toUpperCase()}
                 </Typography>
-                <Typography variant="caption" sx={{ display: 'block', textTransform: 'none' }}>
-                  {method.name === 'all' ? 'Generate all explanations' : method.description.substring(0, 40) + '...'}
+                <Typography variant="caption" color="text.secondary">
+                  {getMethodDescription(method)}
                 </Typography>
               </Box>
-            </Button>
-          </Tooltip>
+            </Box>
+          </MenuItem>
         ))}
-      </ButtonGroup>
-
-      {/* Quick method selector */}
-      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        {['shap', 'lime', 'integrated_gradients', 'all'].map((methodName) => {
-          const method = methods.find(m => m.name === methodName);
-          if (!method) return null;
-          
-          return (
-            <Chip
-              key={methodName}
-              label={method.name.toUpperCase()}
-              icon={getMethodIcon(methodName)}
-              color={selectedMethod === methodName ? getMethodColor(methodName) : 'default'}
-              variant={selectedMethod === methodName ? 'filled' : 'outlined'}
-              onClick={() => onMethodChange(methodName)}
-              sx={{ cursor: 'pointer' }}
-            />
-          );
-        })}
-      </Box>
-    </Box>
+      </Select>
+    </FormControl>
   );
 };
 
-export default MethodSelector; 
+export default React.memo(MethodSelector); 
