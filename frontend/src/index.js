@@ -1,20 +1,21 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
+import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import App from './App';
 import store from './store';
+import { setupErrorHandlers } from './utils/errorUtils';
 
-// Create a theme instance
+// Create theme
 const theme = createTheme({
   palette: {
     primary: {
       main: '#2e7d32', // Green color for environmental theme
     },
     secondary: {
-      main: '#0288d1', // Blue for water/sky elements
+      main: '#ff6f00',
     },
     background: {
       default: '#f5f5f5',
@@ -28,6 +29,9 @@ const theme = createTheme({
     ].join(','),
   },
 });
+
+// Setup global error handlers to suppress Chrome extension errors
+setupErrorHandlers();
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

@@ -3,8 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Chip,
   Grid,
@@ -16,10 +14,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+
   List,
   ListItem,
   ListItemIcon,
@@ -31,21 +26,14 @@ import {
   Paper
 } from '@mui/material';
 import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  LocationOn as LocationIcon,
-  CalendarToday as CalendarIcon,
-  Eco as EcoIcon,
-  Assessment as AssessmentIcon,
-  History as HistoryIcon,
   CheckCircle as VerifiedIcon,
   Cancel as RejectedIcon,
-  Pending as PendingIcon,
-  Person as PersonIcon
+  Pending as PendingIcon
 } from '@mui/icons-material';
 import { fetchProjectById, updateProjectStatus } from '../store/projectSlice';
 import { fetchVerifications } from '../store/verificationSlice';
 import MapComponent from '../components/MapComponent';
+import StatusManagement from '../components/StatusManagement';
 import apiService from '../services/apiService';
 
 const ProjectDetail = () => {
@@ -64,13 +52,7 @@ const ProjectDetail = () => {
   const { verifications, loading: verificationsLoading } = useSelector(state => state.verifications);
   const { user } = useSelector(state => state.auth);
   
-  // Status options for progression - simplified workflow
-  const statusOptions = [
-    'Draft',
-    'Pending', 
-    'Verified',
-    'Rejected'
-  ];
+
   
   const fetchStatusLogs = useCallback(async () => {
     try {
@@ -113,12 +95,7 @@ const ProjectDetail = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const handleStatusChange = (newStatus) => {
-    setSelectedStatus(newStatus);
-    setStatusReason('');
-    setStatusNotes('');
-    setStatusDialogOpen(true);
-  };
+
 
   const handleStatusUpdate = async () => {
     if (selectedStatus === 'Rejected' && !statusReason.trim()) {
@@ -209,32 +186,22 @@ const ProjectDetail = () => {
         <Typography variant="h4" component="h1">
           {currentProject.name}
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {canUpdateStatus() && (
-            <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel>Update Status</InputLabel>
-              <Select
-                value={currentProject.status || 'Pending'}
-                label="Update Status"
-                onChange={(e) => handleStatusChange(e.target.value)}
-                disabled={statusUpdateLoading}
-              >
-                {statusOptions.map((status) => (
-                  <MenuItem key={status} value={status}>
-                    {status}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
-          <Chip 
-            label={currentProject.status || 'PENDING'} 
-            color={currentProject.status === 'Verified' ? 'success' : 
-                   currentProject.status === 'Rejected' ? 'error' :
-                   currentProject.status === 'Pending' ? 'warning' : 'default'}
-            variant="outlined"
-          />
-        </Box>
+        <StatusManagement
+          currentStatus={currentProject.status}
+          projectId={parseInt(id)}
+          onStatusUpdate={async (statusData) => {
+            await dispatch(updateProjectStatus({ 
+              projectId: parseInt(id), 
+              ...statusData
+            })).unwrap();
+            
+            // Refresh project data and logs
+            dispatch(fetchProjectById(id));
+            fetchStatusLogs();
+          }}
+          canUpdate={canUpdateStatus()}
+          loading={statusUpdateLoading}
+        />
       </Box>
 
       <Paper sx={{ p: 3, mb: 3 }}>

@@ -11,7 +11,6 @@ import {
   TableRow,
   Button,
   Box,
-  Chip,
   IconButton,
   Alert,
   CircularProgress,
@@ -22,9 +21,9 @@ import {
   Card
 } from '@mui/material';
 // Centralized utilities - eliminates DRY violations
-import { getStatusColor } from '../utils/statusUtils';
 import { formatDate as formatDateUtil } from '../utils/dateUtils';
 import { COMMON_STYLES, DIMENSIONS, SPACING, THEME_COLORS } from '../theme/constants';
+import StatusManagement from '../components/StatusManagement';
 import {
   Add as AddIcon,
   Search as SearchIcon,
@@ -35,16 +34,38 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchProjects, deleteProject } from '../store/projectSlice';
+import { fetchProjects, deleteProject, updateProjectStatus } from '../store/projectSlice';
 
 const ProjectsList = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { projects, loading, error } = useSelector(state => state.projects);
+  const { user } = useSelector(state => state.auth);
   const [searchTerm, setSearchTerm] = useState('');
+  const [localError, setLocalError] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchProjects());
+    let isMounted = true;
+    
+    const loadProjects = async () => {
+      try {
+        if (isMounted) {
+          await dispatch(fetchProjects()).unwrap();
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error('Failed to load projects:', error);
+          setLocalError('Failed to load projects. Please refresh the page.');
+        }
+      }
+    };
+
+    loadProjects();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
   }, [dispatch]);
 
   // Use centralized utilities instead of local implementations
@@ -84,15 +105,26 @@ const ProjectsList = () => {
   const handleProjectDelete = useCallback(async (projectId, projectName) => {
     if (window.confirm(`Are you sure you want to delete "${projectName}"? This action cannot be undone.`)) {
       try {
+        setLocalError(null);
         await dispatch(deleteProject(projectId)).unwrap();
         // Refresh the projects list
-        dispatch(fetchProjects());
+        await dispatch(fetchProjects()).unwrap();
       } catch (error) {
         console.error('Failed to delete project:', error);
-        alert('Failed to delete project. Please try again.');
+        setLocalError('Failed to delete project. Please try again.');
       }
     }
   }, [dispatch]);
+
+  // Clear local error when component unmounts or error changes
+  useEffect(() => {
+    if (localError) {
+      const timer = setTimeout(() => {
+        setLocalError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [localError]);
 
   if (loading) {
     return (
@@ -104,6 +136,8 @@ const ProjectsList = () => {
       </Container>
     );
   }
+
+  const displayError = error || localError;
 
   return (
     <Container maxWidth="lg" sx={{ 
@@ -208,9 +242,15 @@ const ProjectsList = () => {
         </Button>
       </Box>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
+      {displayError && (
+        <Alert 
+          severity="error" 
+          sx={{ mb: 2 }}
+          onClose={() => {
+            setLocalError(null);
+          }}
+        >
+          {displayError}
         </Alert>
       )}
 
@@ -379,11 +419,23 @@ const ProjectsList = () => {
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Chip 
-                      label={project.status || 'Draft'} 
-                      color={getStatusColor(project.status)}
-                      size="small"
-                      sx={{ textTransform: 'capitalize' }}
+                    <StatusManagement
+                      currentStatus={project.status}
+                      projectId={project.id}
+                      onStatusUpdate={async (statusData) => {
+                        try {
+                          await dispatch(updateProjectStatus({ 
+                            projectId: project.id, 
+                            ...statusData
+                          })).unwrap();
+                          await dispatch(fetchProjects()).unwrap();
+                        } catch (error) {
+                          console.error('Failed to update status:', error);
+                          setLocalError('Failed to update project status.');
+                        }
+                      }}
+                      canUpdate={user?.role === 'Admin' || user?.role === 'Verifier' || project.user_id === user?.id}
+                      compact={true}
                     />
                   </TableCell>
                   <TableCell>

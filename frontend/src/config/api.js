@@ -6,7 +6,7 @@
 // Environment-based configuration
 const config = {
   // Base API URL from environment or default
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1',
   
   // API version - can be changed globally
   apiVersion: process.env.REACT_APP_API_VERSION || 'v1',
@@ -19,53 +19,51 @@ const config = {
   retryDelay: 1000,
 };
 
-// Construct base API path
-const API_BASE = `${config.baseURL}/api/${config.apiVersion}`;
-
 /**
  * API Endpoints
  * All API endpoints defined in one place for easy maintenance
+ * Using relative URLs that will be appended to the baseURL
  */
 export const API_ENDPOINTS = {
   // Authentication endpoints
   auth: {
-    register: `${API_BASE}/auth/register`,
-    login: `${API_BASE}/auth/login`,
-    me: `${API_BASE}/auth/me`,
-    refresh: `${API_BASE}/auth/refresh`,
-    logout: `${API_BASE}/auth/logout`,
+    register: '/auth/register',
+    login: '/auth/login',
+    me: '/auth/me',
+    refresh: '/auth/refresh',
+    logout: '/auth/logout',
   },
   
   // Project endpoints
   projects: {
-    list: `${API_BASE}/projects`,
-    create: `${API_BASE}/projects`,
-    detail: (id) => `${API_BASE}/projects/${id}`,
-    update: (id) => `${API_BASE}/projects/${id}`,
-    delete: (id) => `${API_BASE}/projects/${id}`,
-    updateStatus: (id) => `${API_BASE}/projects/${id}/status`,
+    list: '/projects',
+    create: '/projects',
+    detail: (id) => `/projects/${id}`,
+    update: (id) => `/projects/${id}`,
+    delete: (id) => `/projects/${id}`,
+    updateStatus: (id) => `/projects/${id}/status`,
   },
   
   // Verification endpoints
   verification: {
-    list: `${API_BASE}/verification`,
-    create: `${API_BASE}/verification`,
-    detail: (id) => `${API_BASE}/verification/${id}`,
-    verify: (projectId) => `${API_BASE}/verification/verify/${projectId}`,
+    list: '/verification',
+    create: '/verification',
+    detail: (id) => `/verification/${id}`,
+    verify: (projectId) => `/verification/verify/${projectId}`,
   },
   
   // Satellite imagery endpoints
   satellite: {
-    upload: `${API_BASE}/satellite/images`,
-    list: (projectId) => `${API_BASE}/satellite/images?project_id=${projectId}`,
-    detail: (id) => `${API_BASE}/satellite/images/${id}`,
+    upload: '/satellite/images',
+    list: (projectId) => `/satellite/images?project_id=${projectId}`,
+    detail: (id) => `/satellite/images/${id}`,
   },
   
-  // Health and system endpoints
+  // Health and system endpoints (these need to be absolute since they don't use /api/v1)
   system: {
-    health: `${config.baseURL}/health`,
-    docs: `${API_BASE}/docs`,
-    openapi: `${config.baseURL}/openapi.json`,
+    health: 'http://localhost:8000/health',
+    docs: 'http://localhost:8000/api/v1/docs',
+    openapi: 'http://localhost:8000/openapi.json',
   },
 };
 

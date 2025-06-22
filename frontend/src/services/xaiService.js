@@ -1,308 +1,243 @@
-import apiClient from '../config/api';
-
 /**
- * XAI Service - Handles all Explainable AI API calls
- * Provides methods for generating, retrieving, and comparing AI explanations
+ * Enhanced XAI Service for Carbon Credit Verification
+ * Provides business-focused AI explanations with regulatory compliance features
  */
+
+import apiClient from './apiService';
+
 class XAIService {
+  constructor() {
+    this.baseURL = '/xai';
+  }
+
   /**
-   * Generate an AI explanation for a model prediction
-   * @param {Object} request - Explanation request parameters
-   * @param {number} request.project_id - Project ID
-   * @param {string} request.explanation_method - Method to use ("shap", "lime", "integrated_gradients", "all")
-   * @param {string} [request.prediction_id] - ID of previous prediction to explain
-   * @param {string} [request.image_path] - Path to image for explanation
-   * @returns {Promise<Object>} Explanation response
+   * Generate enhanced AI explanation with business context
    */
-  async generateExplanation(request) {
+  async generateExplanation(explanationData) {
     try {
-      const response = await apiClient.post('/api/v1/xai/generate-explanation', request);
+      const response = await apiClient.post(`${this.baseURL}/generate-explanation`, {
+        model_id: explanationData.modelId || 'forest_cover_ensemble',
+        instance_data: explanationData.instanceData,
+        explanation_method: explanationData.method || 'shap',
+        business_friendly: explanationData.businessFriendly !== false,
+        include_uncertainty: explanationData.includeUncertainty !== false
+      });
+      
       return response.data;
     } catch (error) {
       console.error('Failed to generate explanation:', error);
-      throw this.handleError(error);
+      throw new Error(error.response?.data?.detail || 'Failed to generate explanation');
     }
   }
 
   /**
-   * Retrieve a generated explanation by ID
-   * @param {string} explanationId - Explanation ID
-   * @returns {Promise<Object>} Explanation data
+   * Retrieve explanation by ID
    */
   async getExplanation(explanationId) {
     try {
-      const response = await apiClient.get(`/api/v1/xai/explanation/${explanationId}`);
+      const response = await apiClient.get(`${this.baseURL}/explanation/${explanationId}`);
       return response.data;
     } catch (error) {
       console.error('Failed to retrieve explanation:', error);
-      throw this.handleError(error);
+      throw new Error(error.response?.data?.detail || 'Failed to retrieve explanation');
     }
   }
 
   /**
-   * Compare multiple explanations
-   * @param {Object} request - Comparison request
-   * @param {string[]} request.explanation_ids - Array of explanation IDs
-   * @param {string} request.comparison_type - Type of comparison ("side_by_side", "overlay", "difference")
-   * @returns {Promise<Object>} Comparison results
+   * Compare multiple explanations with business analysis
    */
-  async compareExplanations(request) {
+  async compareExplanations(explanationIds, comparisonType = 'side_by_side') {
     try {
-      const response = await apiClient.post('/api/v1/xai/compare-explanations', request);
+      const response = await apiClient.post(`${this.baseURL}/compare-explanations`, {
+        explanation_ids: explanationIds,
+        comparison_type: comparisonType
+      });
+      
       return response.data;
     } catch (error) {
       console.error('Failed to compare explanations:', error);
-      throw this.handleError(error);
+      throw new Error(error.response?.data?.detail || 'Failed to compare explanations');
     }
   }
 
   /**
-   * Get available XAI explanation methods
-   * @returns {Promise<Object>} Available methods and their configurations
+   * Generate professional report from explanation
    */
-  async getAvailableMethods() {
+  async generateReport(explanationId, format = 'pdf', includeBusinessSummary = true) {
     try {
-      const response = await apiClient.get('/api/v1/xai/methods');
+      const response = await apiClient.post(`${this.baseURL}/generate-report`, {
+        explanation_id: explanationId,
+        format: format,
+        include_business_summary: includeBusinessSummary
+      });
+      
       return response.data;
     } catch (error) {
-      console.error('Failed to get XAI methods:', error);
-      throw this.handleError(error);
+      console.error('Failed to generate report:', error);
+      throw new Error(error.response?.data?.detail || 'Failed to generate report');
     }
-  }
-
-  /**
-   * Generate explanation for existing ML analysis
-   * @param {number} projectId - Project ID
-   * @param {string} method - XAI method to use
-   * @param {string} [predictionId] - Existing prediction ID
-   * @returns {Promise<Object>} Explanation response
-   */
-  async explainExistingPrediction(projectId, method, predictionId = null) {
-    return this.generateExplanation({
-      project_id: projectId,
-      explanation_method: method,
-      prediction_id: predictionId
-    });
-  }
-
-  /**
-   * Generate explanation for uploaded image
-   * @param {number} projectId - Project ID
-   * @param {string} method - XAI method to use
-   * @param {string} imagePath - Path to uploaded image
-   * @returns {Promise<Object>} Explanation response
-   */
-  async explainImagePrediction(projectId, method, imagePath) {
-    return this.generateExplanation({
-      project_id: projectId,
-      explanation_method: method,
-      image_path: imagePath
-    });
   }
 
   /**
    * Get explanation history for a project
-   * @param {number} projectId - Project ID
-   * @returns {Promise<Object[]>} Array of explanations for the project
    */
-  async getProjectExplanations(projectId) {
-    // Note: This would require a backend endpoint to list explanations by project
-    // For now, we'll return empty array
+  async getExplanationHistory(projectId) {
     try {
-      // Future endpoint: GET /api/v1/xai/explanations?project_id=${projectId}
-      console.warn('Project explanations endpoint not implemented yet');
-      return [];
+      const response = await apiClient.get(`${this.baseURL}/explanation-history/${projectId}`);
+      return response.data;
     } catch (error) {
-      console.error('Failed to get project explanations:', error);
-      return [];
+      console.error('Failed to retrieve explanation history:', error);
+      throw new Error(error.response?.data?.detail || 'Failed to retrieve explanation history');
     }
   }
 
   /**
-   * Export explanation results
-   * @param {string} explanationId - Explanation ID
-   * @param {string} format - Export format ("json", "pdf", "png")
-   * @returns {Promise<Blob>} Exported file
+   * Get available XAI methods and capabilities
    */
-  async exportExplanation(explanationId, format = 'json') {
+  async getAvailableMethods() {
     try {
-      // Future endpoint implementation
-      console.warn('Export explanation endpoint not implemented yet');
+      const response = await apiClient.get(`${this.baseURL}/methods`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to retrieve XAI methods:', error);
+      throw new Error(error.response?.data?.detail || 'Failed to retrieve XAI methods');
+    }
+  }
+
+  /**
+   * Download report as file
+   */
+  downloadReport(reportData, filename) {
+    try {
+      // Extract base64 data from data URL
+      const base64Data = reportData.data.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
       
-      // For now, return mock download
-      const explanation = await this.getExplanation(explanationId);
-      const blob = new Blob([JSON.stringify(explanation, null, 2)], {
-        type: 'application/json'
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { 
+        type: reportData.format === 'pdf' ? 'application/pdf' : 'application/json' 
       });
-      return blob;
-    } catch (error) {
-      console.error('Failed to export explanation:', error);
-      throw this.handleError(error);
-    }
-  }
-
-  /**
-   * Handle API errors with user-friendly messages
-   * @param {Error} error - Original error
-   * @returns {Error} Formatted error
-   */
-  handleError(error) {
-    if (error.response) {
-      const status = error.response.status;
-      const message = error.response.data?.detail || error.response.data?.message || 'Unknown error';
       
-      switch (status) {
-        case 404:
-          return new Error('Explanation not found');
-        case 403:
-          return new Error('Not authorized to access this explanation');
-        case 503:
-          return new Error('XAI service is currently unavailable');
-        case 500:
-          return new Error('Server error while processing explanation');
-        default:
-          return new Error(`Explanation service error: ${message}`);
-      }
-    } else if (error.request) {
-      return new Error('Unable to connect to XAI service');
-    } else {
-      return new Error('Failed to process explanation request');
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename || reportData.filename || `xai_report.${reportData.format}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to download report:', error);
+      throw new Error('Failed to download report');
     }
   }
 
   /**
-   * Validate explanation method
-   * @param {string} method - Method to validate
-   * @returns {boolean} Whether method is valid
+   * Format explanation for display
    */
-  isValidMethod(method) {
-    const validMethods = ['shap', 'lime', 'integrated_gradients', 'all'];
-    return validMethods.includes(method);
-  }
-
-  /**
-   * Get method display information
-   * @param {string} method - Method name
-   * @returns {Object} Method information
-   */
-  getMethodInfo(method) {
-    const methodInfo = {
-      shap: {
-        name: 'SHAP',
-        fullName: 'SHapley Additive exPlanations',
-        description: 'Feature importance using Shapley values from game theory',
-        visualizations: ['Waterfall Plot', 'Force Plot', 'Summary Plot'],
-        bestFor: 'Global feature importance and individual prediction explanation'
-      },
-      lime: {
-        name: 'LIME',
-        fullName: 'Local Interpretable Model-agnostic Explanations',
-        description: 'Local explanations for individual predictions',
-        visualizations: ['Image Segments', 'Feature Importance'],
-        bestFor: 'Understanding individual predictions in detail'
-      },
-      integrated_gradients: {
-        name: 'Integrated Gradients',
-        fullName: 'Integrated Gradients Attribution',
-        description: 'Attribution method for deep learning models',
-        visualizations: ['Attribution Map', 'Sensitivity Analysis'],
-        bestFor: 'Deep learning model interpretation and gradient analysis'
-      },
-      all: {
-        name: 'All Methods',
-        fullName: 'Comprehensive XAI Analysis',
-        description: 'Generate explanations using all available methods',
-        visualizations: ['Combined Analysis', 'Method Comparison'],
-        bestFor: 'Complete understanding and method comparison'
-      }
-    };
-
-    return methodInfo[method] || null;
-  }
-
-  /**
-   * Parse SHAP values for visualization
-   * @param {Object} shapData - Raw SHAP data from API
-   * @returns {Object} Formatted data for charts
-   */
-  formatSHAPData(shapData) {
-    if (!shapData.waterfall_data) return null;
+  formatExplanationForDisplay(explanation) {
+    if (!explanation) return null;
 
     return {
-      waterfallData: shapData.waterfall_data.map(item => ({
-        feature: item.feature,
-        value: item.value,
-        contribution: item.contribution,
-        formattedContribution: item.contribution > 0 ? `+${item.contribution.toFixed(3)}` : item.contribution.toFixed(3)
-      })),
-      featureImportance: Object.entries(shapData.feature_importance || {}).map(([feature, importance]) => ({
-        feature,
-        importance: importance,
-        percentage: (importance * 100).toFixed(1)
-      })),
-      baseValue: shapData.base_value,
-      predictedValue: shapData.predicted_value,
-      confidence: shapData.confidence
+      id: explanation.explanation_id,
+      timestamp: new Date(explanation.timestamp).toLocaleString(),
+      method: this.getMethodDisplayName(explanation.method),
+      confidence: explanation.confidence_score,
+      businessSummary: explanation.business_summary,
+      riskLevel: explanation.risk_assessment?.level || 'Unknown',
+      hasVisualizations: explanation.visualizations && Object.keys(explanation.visualizations).length > 0,
+      complianceStatus: explanation.regulatory_notes?.eu_ai_act_compliance ? 'Compliant' : 'Pending'
     };
   }
 
   /**
-   * Parse LIME values for visualization
-   * @param {Object} limeData - Raw LIME data from API
-   * @returns {Object} Formatted data for charts
+   * Get display name for XAI method
    */
-  formatLIMEData(limeData) {
-    if (!limeData.segment_importance) return null;
+  getMethodDisplayName(method) {
+    const methodMap = {
+      'shap': 'SHAP',
+      'lime': 'LIME',
+      'integrated_gradients': 'Integrated Gradients'
+    };
+    return methodMap[method] || method.toUpperCase();
+  }
+
+  /**
+   * Get confidence level description
+   */
+  getConfidenceDescription(confidence) {
+    if (confidence >= 0.9) return 'Very High';
+    if (confidence >= 0.8) return 'High';
+    if (confidence >= 0.7) return 'Medium';
+    if (confidence >= 0.6) return 'Moderate';
+    return 'Low';
+  }
+
+  /**
+   * Get risk level color
+   */
+  getRiskLevelColor(riskLevel) {
+    const colorMap = {
+      'Low': 'success',
+      'Medium': 'warning',
+      'High': 'error'
+    };
+    return colorMap[riskLevel] || 'default';
+  }
+
+  /**
+   * Validate explanation data before generation
+   */
+  validateExplanationData(data) {
+    const errors = [];
+
+    if (!data.instanceData) {
+      errors.push('Instance data is required');
+    }
+
+    if (data.method && !['shap', 'lime', 'integrated_gradients'].includes(data.method)) {
+      errors.push('Invalid explanation method');
+    }
 
     return {
-      segments: limeData.segment_importance.map(segment => ({
-        id: segment.segment_id,
-        importance: segment.importance,
-        area: segment.area_percentage,
-        type: segment.importance > 0 ? 'positive' : 'negative',
-        formattedImportance: segment.importance.toFixed(3),
-        formattedArea: `${segment.area_percentage.toFixed(1)}%`
-      })),
-      summary: {
-        totalSegments: limeData.image_segments?.total_segments || 0,
-        importantSegments: limeData.image_segments?.important_segments || 0,
-        positiveSegments: limeData.image_segments?.positive_segments || 0,
-        negativeSegments: limeData.image_segments?.negative_segments || 0
-      },
-      confidence: limeData.prediction_confidence,
-      explanation: limeData.local_explanation
+      isValid: errors.length === 0,
+      errors
     };
   }
 
   /**
-   * Parse Integrated Gradients data for visualization
-   * @param {Object} igData - Raw IG data from API
-   * @returns {Object} Formatted data for charts
+   * Create sample explanation data for testing
    */
-  formatIntegratedGradientsData(igData) {
-    if (!igData.attribution_map) return null;
-
+  createSampleExplanationData(projectId, imageData = null) {
     return {
-      attributionStats: {
-        min: igData.attribution_map.min_attribution,
-        max: igData.attribution_map.max_attribution,
-        mean: igData.attribution_map.mean_attribution,
-        std: igData.attribution_map.std_attribution
+      modelId: 'forest_cover_ensemble',
+      instanceData: {
+        project_id: projectId,
+        image_data: imageData,
+        features: {
+          ndvi: 0.7,
+          temperature: 25.5,
+          precipitation: 1200,
+          elevation: 500,
+          slope: 15,
+          aspect: 180
+        }
       },
-      pathIntegration: {
-        steps: igData.path_integration?.steps || 0,
-        baseline: igData.path_integration?.baseline || 'unknown',
-        convergence: igData.path_integration?.convergence || 0
-      },
-      sensitivity: {
-        inputSensitivity: igData.sensitivity_analysis?.input_sensitivity || 0,
-        noiseRobustness: igData.sensitivity_analysis?.noise_robustness || 0,
-        spatialCoherence: igData.sensitivity_analysis?.spatial_coherence || 0
-      }
+      method: 'shap',
+      businessFriendly: true,
+      includeUncertainty: true
     };
   }
 }
 
-// Create and export a singleton instance
+// Create and export singleton instance
 const xaiService = new XAIService();
 export default xaiService; 
