@@ -10,7 +10,8 @@ import {
   Chip,
   Paper,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Tooltip
 } from '@mui/material';
 import {
   Psychology as PsychologyIcon,
@@ -42,13 +43,31 @@ const MethodSelector = ({
     }
   };
 
+  const getMethodDisplayName = (method) => {
+    const displayNames = {
+      shap: 'SHAP',
+      lime: 'LIME', 
+      integrated_gradients: 'Integrated Gradients'
+    };
+    return displayNames[method.name] || method.display_name || method.name.toUpperCase();
+  };
+
   const getMethodDescription = (method) => {
     const descriptions = {
-      shap: 'Global feature importance with game theory foundations',
-      lime: 'Local interpretable model-agnostic explanations',
-      integrated_gradients: 'Attribution method for deep neural networks'
+      shap: 'Global feature importance analysis',
+      lime: 'Local interpretable explanations',
+      integrated_gradients: 'Deep learning attribution method'
     };
     return descriptions[method.name] || method.description || 'AI explanation method';
+  };
+
+  const getMethodFullDescription = (method) => {
+    const fullDescriptions = {
+      shap: 'SHAP (SHapley Additive exPlanations) uses game theory to explain individual predictions by computing the contribution of each feature',
+      lime: 'LIME (Local Interpretable Model-agnostic Explanations) explains predictions by learning an interpretable model locally around the prediction',
+      integrated_gradients: 'Integrated Gradients computes feature attributions by integrating gradients along a path from a baseline to the input'
+    };
+    return fullDescriptions[method.name] || getMethodDescription(method);
   };
 
   if (variant === 'cards' && !isMobile) {
@@ -60,38 +79,40 @@ const MethodSelector = ({
         <Grid container spacing={2}>
           {methods.map((method) => (
             <Grid item xs={12} sm={6} md={4} key={method.name}>
-              <Paper
-                sx={{
-                  p: 2,
-                  cursor: 'pointer',
-                  border: selectedMethod === method.name ? 2 : 1,
-                  borderColor: selectedMethod === method.name ? 'primary.main' : 'divider',
-                  '&:hover': {
-                    borderColor: 'primary.main',
-                    boxShadow: 1
-                  },
-                  transition: 'all 0.2s'
-                }}
-                onClick={() => !loading && onMethodChange(method.name)}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                  {getMethodIcon(method.name)}
-                  <Typography variant="subtitle2">
-                    {method.display_name || method.name.toUpperCase()}
+              <Tooltip title={getMethodFullDescription(method)} arrow placement="top">
+                <Paper
+                  sx={{
+                    p: 2,
+                    cursor: 'pointer',
+                    border: selectedMethod === method.name ? 2 : 1,
+                    borderColor: selectedMethod === method.name ? 'primary.main' : 'divider',
+                    '&:hover': {
+                      borderColor: 'primary.main',
+                      boxShadow: 1
+                    },
+                    transition: 'all 0.2s'
+                  }}
+                  onClick={() => !loading && onMethodChange(method.name)}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    {getMethodIcon(method.name)}
+                    <Typography variant="subtitle2">
+                      {getMethodDisplayName(method)}
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    {getMethodDescription(method)}
                   </Typography>
-                </Box>
-                <Typography variant="caption" color="text.secondary">
-                  {getMethodDescription(method)}
-                </Typography>
-                {selectedMethod === method.name && (
-                  <Chip 
-                    label="Selected" 
-                    color="primary" 
-                    size="small" 
-                    sx={{ mt: 1 }}
-                  />
-                )}
-              </Paper>
+                  {selectedMethod === method.name && (
+                    <Chip 
+                      label="Selected" 
+                      color="primary" 
+                      size="small" 
+                      sx={{ mt: 1 }}
+                    />
+                  )}
+                </Paper>
+              </Tooltip>
             </Grid>
           ))}
         </Grid>
@@ -99,10 +120,12 @@ const MethodSelector = ({
     );
   }
 
-  // Dropdown variant (default and mobile)
+  // Dropdown variant (default and mobile) - Fixed styling and text display
   return (
     <FormControl fullWidth sx={{ ...sx }}>
-      <InputLabel id="method-select-label">XAI Method</InputLabel>
+      <InputLabel id="method-select-label" sx={{ fontSize: '0.875rem' }}>
+        XAI Method
+      </InputLabel>
       <Select
         labelId="method-select-label"
         id="method-select"
@@ -111,20 +134,74 @@ const MethodSelector = ({
         onChange={(e) => onMethodChange(e.target.value)}
         disabled={loading}
         size="small"
-      >
-        {methods.map((method) => (
-          <MenuItem key={method.name} value={method.name}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {getMethodIcon(method.name)}
-              <Box>
-                <Typography variant="body2">
-                  {method.display_name || method.name.toUpperCase()}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {getMethodDescription(method)}
+        sx={{
+          '& .MuiSelect-select': {
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            pr: 4 // Space for dropdown arrow
+          }
+        }}
+        MenuProps={{
+          PaperProps: {
+            style: {
+              maxHeight: 280,
+              minWidth: '320px' // Ensure enough width for full text
+            }
+          },
+          anchorOrigin: {
+            vertical: 'bottom',
+            horizontal: 'left'
+          },
+          transformOrigin: {
+            vertical: 'top', 
+            horizontal: 'left'
+          }
+        }}
+        renderValue={(selected) => {
+          const method = methods.find(m => m.name === selected);
+          if (!method) return '';
+          
+          return (
+            <Tooltip title={getMethodFullDescription(method)} arrow>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                {getMethodIcon(method.name)}
+                <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
+                  {getMethodDisplayName(method)}
                 </Typography>
               </Box>
-            </Box>
+            </Tooltip>
+          );
+        }}
+      >
+        {methods.map((method) => (
+          <MenuItem 
+            key={method.name} 
+            value={method.name}
+            sx={{ 
+              minHeight: 60,
+              py: 1.5,
+              px: 2,
+              '&:hover': {
+                backgroundColor: 'action.hover'
+              }
+            }}
+          >
+            <Tooltip title={getMethodFullDescription(method)} arrow placement="right">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
+                <Box sx={{ color: 'primary.main', display: 'flex' }}>
+                  {getMethodIcon(method.name)}
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+                    {getMethodDisplayName(method)}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+                    {getMethodDescription(method)}
+                  </Typography>
+                </Box>
+              </Box>
+            </Tooltip>
           </MenuItem>
         ))}
       </Select>
