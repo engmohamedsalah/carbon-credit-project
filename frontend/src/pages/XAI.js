@@ -89,6 +89,9 @@ const XAI = () => {
     // UI State
     tabValue: 0,
     resultSection: new URLSearchParams(window.location.search).get('section') || 'summary',
+    visualizationTab: parseInt(new URLSearchParams(window.location.search).get('vizTab')) || 0,
+    primaryFeature: new URLSearchParams(window.location.search).get('primary') || 'forest_area',
+    interactionFeature: new URLSearchParams(window.location.search).get('interaction') || 'soil_quality',
     loading: false,
     error: null,
     success: null,
@@ -102,56 +105,7 @@ const XAI = () => {
     
     // Data state
     availableMethods: null,
-    explanationHistory: [
-      // Mock data for demonstration
-      {
-        explanation_id: 'exp_001',
-        method: 'shap',
-        timestamp: '2025-01-20T10:30:00Z',
-        confidence_score: 0.85,
-        business_summary: 'SHAP analysis reveals that forest density and satellite-derived vegetation indices are the primary drivers of carbon credit eligibility. The model shows high confidence in areas with consistent vegetation patterns and minimal human interference.',
-        visualizations: {
-          feature_importance: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
-          shap_values: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
-        },
-        risk_assessment: {
-          level: 'Low',
-          description: 'Analysis shows low risk factors with high model confidence and consistent data patterns.',
-          mitigation_recommendations: ['Continue monitoring forest health metrics', 'Validate with ground truth data quarterly']
-        }
-      },
-      {
-        explanation_id: 'exp_002', 
-        method: 'lime',
-        timestamp: '2025-01-20T09:15:00Z',
-        confidence_score: 0.72,
-        business_summary: 'LIME analysis focuses on local explanations for this specific forest region. The model identifies key features including canopy cover, soil moisture levels, and proximity to protected areas as critical factors in verification.',
-        visualizations: {
-          local_explanation: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
-        },
-        risk_assessment: {
-          level: 'Medium',
-          description: 'Some variability detected in local feature importance which may require additional validation.',
-          mitigation_recommendations: ['Increase sampling frequency', 'Cross-validate with other XAI methods']
-        }
-      },
-      {
-        explanation_id: 'exp_003',
-        method: 'integrated_gradients',
-        timestamp: '2025-01-19T16:45:00Z', 
-        confidence_score: 0.91,
-        business_summary: 'Integrated Gradients provides smooth attribution analysis showing strong correlation between multi-temporal satellite indices and carbon sequestration potential. Deep learning model shows excellent performance on this forest type.',
-        visualizations: {
-          attribution_map: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
-          gradient_flow: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
-        },
-        risk_assessment: {
-          level: 'Low',
-          description: 'Excellent model performance with smooth gradient attributions and high confidence scores.',
-          mitigation_recommendations: ['Maintain current monitoring protocols', 'Consider as reference standard for future analyses']
-        }
-      }
-    ],
+    explanationHistory: [], // Load real data from database only    ],
     selectedExplanations: [],
     comparisonResult: null,
     
@@ -205,18 +159,22 @@ const XAI = () => {
   // Load explanation history function
   const loadHistory = useCallback(async (projectId) => {
     try {
+      // Always clear data first when switching projects
+      updateState({ explanationHistory: [] });
+      
       const history = await xaiService.getExplanationHistory(projectId);
       // Only update if we have actual data from backend
       if (history && history.explanations && history.explanations.length > 0) {
         updateState({ explanationHistory: history.explanations });
         console.log('📚 Explanation history loaded:', history);
       } else {
-        console.log('📚 No backend history found, keeping existing data');
+        // No backend data found - keep empty
+        console.log('📚 No explanation history found for project:', projectId);
       }
     } catch (error) {
       console.error('Failed to load explanation history:', error);
-      // Don't clear existing data on error - keep mock data for demo
-      console.log('📚 Backend error, preserving existing explanation history');
+      // Keep empty on error - no fallback mock data
+      updateState({ explanationHistory: [] });
     }
   }, [updateState]);
 
@@ -235,12 +193,64 @@ const XAI = () => {
     loadMethods();
   }, [updateState]);
 
-  // Load explanation history when project is selected
+  // Refresh all tab data when project changes
   useEffect(() => {
     if (state.selectedProject) {
-      loadHistory(state.selectedProject);
+      // Clear all project-specific data first
+      updateState({ 
+        currentExplanation: null,
+        comparisonResult: null,
+        error: null,
+        success: `🎯 Switched to project analysis - all tabs refreshed`,
+        loading: true
+      });
+      
+      // Load fresh data for the new project
+      const refreshProjectData = async () => {
+        try {
+          // Load explanation history for this project
+          await loadHistory(state.selectedProject);
+          
+          // Clear any cached method comparisons
+          // This ensures Compare Methods tab starts fresh
+          
+          console.log(`🔄 All tabs refreshed for project: ${state.selectedProject}`);
+          
+        } catch (error) {
+          console.error('Error refreshing project data:', error);
+          updateState({ 
+            error: 'Failed to refresh project data',
+            loading: false 
+          });
+        } finally {
+          updateState({ loading: false });
+        }
+      };
+      
+      refreshProjectData();
+    } else {
+      // Clear all data when no project is selected
+      updateState({ 
+        currentExplanation: null,
+        comparisonResult: null,
+        explanationHistory: [],
+        error: null
+      });
     }
-  }, [state.selectedProject, loadHistory]);
+  }, [state.selectedProject, loadHistory, updateState]);
+
+  // Function to update URL parameters for deep linking
+  const updateUrlParams = useCallback((params) => {
+    const url = new URL(window.location);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value && value !== 'default' && value !== '') {
+        url.searchParams.set(key, value);
+      } else {
+        url.searchParams.delete(key);
+      }
+    });
+    window.history.replaceState({}, '', url);
+  }, []);
 
   // Auto-clear success messages
   useEffect(() => {
@@ -263,48 +273,45 @@ const XAI = () => {
     try {
       console.log('🔍 Generating explanation for project:', state.selectedProject);
       
-      // Simulate API delay for realistic UX
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Generate mock explanation based on selected method
-      const mockExplanation = {
-        explanation_id: `current_${Date.now()}`,
+      // Get project data for analysis
+      const selectedProjectData = filteredProjects.find(p => p.id.toString() === state.selectedProject);
+      if (!selectedProjectData) {
+        throw new Error('Selected project not found');
+      }
+
+      // Call real backend API to generate explanation
+      const explanation = await xaiService.generateExplanation({
+        instanceData: {
+          project_id: selectedProjectData.id,
+          name: selectedProjectData.name,
+          location_name: selectedProjectData.location_name,
+          area_hectares: selectedProjectData.area_hectares,
+          project_type: selectedProjectData.project_type,
+          status: selectedProjectData.status,
+          estimated_carbon_credits: selectedProjectData.estimated_carbon_credits,
+          start_date: selectedProjectData.start_date,
+          end_date: selectedProjectData.end_date
+        },
         method: state.selectedMethod,
-        timestamp: new Date().toISOString(),
-        confidence_score: state.selectedMethod === 'shap' ? 0.89 : 
-                         state.selectedMethod === 'lime' ? 0.82 : 0.91,
-        business_summary: `This analysis is based on REAL data processing including • Database project records • Uploaded document analysis • ML model predictions • Market data integration\n\n**Key Findings:**\n\n**Forest Cover Analysis:** Satellite imagery shows 95% forest coverage with healthy canopy structure using ${state.selectedMethod.toUpperCase()} analysis. Temporal analysis indicates stable growth patterns over the monitoring period.\n\n**Carbon Impact Assessment:** Estimated carbon sequestration of 15,500 tonnes CO₂e with high confidence based on forest density and species composition.\n\n**Risk Factors:** ${state.selectedMethod === 'lime' ? 'Medium' : 'Low'} risk profile with consistent data patterns and strong model agreement across validation metrics.`,
-        visualizations: {
-          feature_importance: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
-          local_explanation: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
-          prediction_confidence: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
-        },
-        risk_assessment: {
-          level: state.selectedMethod === 'lime' ? 'Medium' : 'Low',
-          description: `Analysis shows ${state.selectedMethod === 'lime' ? 'medium' : 'low'} risk factors with high model confidence and consistent data patterns. Forest health indicators are stable.`,
-          risk_score: state.selectedMethod === 'lime' ? 0.35 : 0.15,
-          factors: ['Stable forest coverage', 'Consistent growth patterns', 'High data quality'],
-          alerts: state.selectedMethod === 'lime' ? ['Local variability detected in some regions'] : [],
-          mitigation_recommendations: ['Continue quarterly monitoring', 'Maintain current protection protocols']
-        },
-        regulatory_notes: {
-          vcs_ready: 'Project meets VCS v4.2 requirements with complete documentation',
-          gold_standard: 'Aligned with Gold Standard verification protocols',
-          additional_certifications: 'Eligible for additional biodiversity credits under Plan Vivo'
-        }
-      };
-      
-      console.log('📥 Generated mock explanation:', mockExplanation);
-      
-      // Add to history as well
-      const newHistory = [mockExplanation, ...state.explanationHistory];
-      
-      updateState({ 
-        currentExplanation: mockExplanation,
-        explanationHistory: newHistory,
-        success: `${state.selectedMethod.toUpperCase()} analysis generated successfully!`,
-        tabValue: 0 // Stay on generate tab to show results
+        businessFriendly: state.businessFriendly,
+        includeUncertainty: state.includeUncertainty
       });
+      
+      if (explanation) {
+        console.log('📥 Generated real explanation from backend:', explanation);
+        
+        // Update current explanation and add to history
+        const newHistory = [explanation, ...state.explanationHistory];
+        
+        updateState({ 
+          currentExplanation: explanation,
+          explanationHistory: newHistory,
+          success: `${state.selectedMethod.toUpperCase()} analysis generated successfully from real ML models!`,
+          tabValue: 0 // Stay on generate tab to show results
+        });
+      } else {
+        throw new Error('No explanation returned from backend');
+      }
       
     } catch (error) {
       console.error('❌ Failed to generate explanation:', error);
@@ -726,6 +733,74 @@ const XAI = () => {
         </Box>
       )}
 
+      {/* Global Project Selection */}
+      <Card sx={{ 
+        mb: 3, 
+        background: 'linear-gradient(135deg, #f8faff 0%, #eef4ff 100%)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
+              🎯 Select Project for Analysis
+            </Typography>
+            {state.selectedProject && (
+              <Chip 
+                label="✓ Project Selected" 
+                size="small" 
+                color="success" 
+                variant="outlined"
+              />
+            )}
+          </Box>
+          
+          <FormControl fullWidth sx={{ maxWidth: 500 }}>
+            <InputLabel id="global-project-select-label">
+              Choose a project to analyze across all XAI methods
+            </InputLabel>
+            <Select
+              labelId="global-project-select-label"
+              value={state.selectedProject}
+              label="Choose a project to analyze across all XAI methods"
+              onChange={(e) => updateState({ selectedProject: e.target.value })}
+              disabled={state.loading}
+              sx={{ 
+                bgcolor: 'background.paper',
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: 'primary.main',
+                  }
+                }
+              }}
+            >
+              <MenuItem value="">
+                <em>Select a project...</em>
+              </MenuItem>
+              {filteredProjects.map((project) => (
+                <MenuItem key={project.id} value={project.id.toString()}>
+                  <Box sx={{ width: '100%' }}>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {project.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {project.location_name} • {project.project_type} • {project.area_hectares} hectares
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          
+          {state.selectedProject && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'success.50', borderRadius: 1 }}>
+              <Typography variant="body2" color="success.dark">
+                ✅ <strong>Project selected!</strong> This project will be used for analysis across all tabs below.
+              </Typography>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Navigation Tabs */}
       <Card sx={{ mb: 3 }}>
         <Tabs 
@@ -829,109 +904,6 @@ const XAI = () => {
               gap: { xs: 3, md: 4 },
               alignItems: 'start'
             }}>
-              {/* Project Selection */}
-              <Box sx={{ 
-                position: 'relative',
-                minHeight: '95px',
-                display: 'flex',
-                flexDirection: 'column'
-              }}>
-                <Typography variant="overline" sx={{ 
-                  mb: 1.5, 
-                  fontWeight: 700,
-                  color: 'primary.main',
-                  fontSize: '0.75rem',
-                  letterSpacing: '1px'
-                }}>
-                  Step 1: Select Project
-                </Typography>
-                <FormControl fullWidth sx={{ flex: 1 }}>
-                  <InputLabel 
-                    id="project-select-label" 
-                    sx={{ 
-                      fontSize: '0.875rem',
-                      '&.Mui-focused': {
-                        color: 'primary.main'
-                      }
-                    }}
-                  >
-                    Choose a project to analyze
-                  </InputLabel>
-                  <Select
-                    labelId="project-select-label"
-                    id="project-select"
-                    value={state.selectedProject}
-                    label="Choose a project to analyze"
-                    onChange={(e) => updateState({ selectedProject: e.target.value })}
-                    disabled={state.loading}
-                    size="medium"
-                    sx={{ 
-                      bgcolor: 'background.paper',
-                      height: '56px',
-                      borderRadius: 2,
-                      '& .MuiSelect-select': {
-                        pr: 4,
-                        display: 'flex',
-                        alignItems: 'center'
-                      },
-                      '& .MuiOutlinedInput-root': {
-                        '&:hover fieldset': {
-                          borderColor: 'primary.main',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: 'primary.main',
-                          borderWidth: 2
-                        }
-                      }
-                    }}
-                                         MenuProps={{
-                       PaperProps: {
-                         style: {
-                           maxHeight: 200,
-                           minWidth: '100%',
-                           marginTop: 4
-                         }
-                       }
-                     }}
-                  >
-                    {filteredProjects.map((project) => (
-                      <MenuItem key={project.id} value={project.id.toString()}>
-                        <Box sx={{ width: '100%' }}>
-                          <Typography variant="body1" fontWeight="500" noWrap>
-                            {project.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" noWrap>
-                            {project.location_name} • {project.area_hectares} hectares
-                          </Typography>
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                
-                {/* Success Indicator */}
-                {state.selectedProject && (
-                  <CheckCircleIcon 
-                    sx={{ 
-                      position: 'absolute', 
-                      top: 48, 
-                      right: 12, 
-                      color: 'success.main',
-                      fontSize: 20,
-                      zIndex: 1
-                    }} 
-                  />
-                )}
-                
-                {/* Help Text */}
-                <Typography variant="caption" color="text.secondary" sx={{ 
-                  mt: 1, 
-                  minHeight: '16px',
-                  fontStyle: state.selectedProject ? 'normal' : 'italic'
-                }}>
-                  {state.selectedProject ? '✓ Project selected' : 'Choose a project to analyze with AI'}
-                </Typography>
-              </Box>
 
               {/* Method Selection */}
               <Box sx={{ 
@@ -1370,7 +1342,13 @@ const XAI = () => {
                 {/* Visualizations Tab */}
                 {(state.resultSection === 'visualizations' || state.resultSection === 'all') && (
                   <Box sx={{ mt: state.resultSection === 'all' ? 4 : 0 }}>
-                    <VisualizationsTab explanation={state.currentExplanation} />
+                    <VisualizationsTab 
+                explanation={state.currentExplanation}
+                initialTab={state.visualizationTab}
+                initialPrimaryFeature={state.primaryFeature}
+                initialInteractionFeature={state.interactionFeature}
+                onUrlParamsChange={updateUrlParams}
+              />
                   </Box>
                 )}
 
@@ -1407,8 +1385,10 @@ const XAI = () => {
           minHeight: '600px'
         }}>
           <CompareMethodsTab
+            key={`compare-${state.selectedProject}`}
             currentExplanation={state.currentExplanation}
             explanationHistory={state.explanationHistory}
+            selectedProject={state.selectedProject}
             onGenerateComparison={(comparison) => {
               console.log('Generated comparison:', comparison);
               updateState({ 
@@ -1430,7 +1410,9 @@ const XAI = () => {
           minHeight: '600px'
         }}>
           <HistoryReportsTab
+            key={`history-${state.selectedProject}`}
             explanationHistory={state.explanationHistory}
+            selectedProject={state.selectedProject}
             onRefresh={() => {
               if (state.selectedProject) {
                 updateState({ loading: true });
