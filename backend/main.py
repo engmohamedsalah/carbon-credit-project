@@ -113,6 +113,24 @@ class DatabaseManager:
                     )
                 """)
                 
+                # XAI Explanations table
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS xai_explanations (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        explanation_id TEXT UNIQUE NOT NULL,
+                        project_id INTEGER NOT NULL,
+                        user_id INTEGER NOT NULL,
+                        method TEXT NOT NULL,
+                        timestamp TEXT NOT NULL,
+                        confidence_score REAL,
+                        business_summary TEXT,
+                        explanation_data TEXT, -- JSON data for the full explanation
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (project_id) REFERENCES projects (id),
+                        FOREIGN KEY (user_id) REFERENCES users (id)
+                    )
+                """)
+                
                 # Check if we need to migrate existing table
                 try:
                     cursor = conn.execute("PRAGMA table_info(projects)")
@@ -1309,6 +1327,30 @@ async def generate_enhanced_explanation(
         if "error" in explanation:
             raise HTTPException(status_code=500, detail=explanation["error"])
         
+        # Save explanation to database for persistence
+        try:
+            with db.get_connection() as conn:
+                conn.execute("""
+                    INSERT INTO xai_explanations (
+                        explanation_id, project_id, user_id, method, timestamp, 
+                        confidence_score, business_summary, explanation_data
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    explanation['explanation_id'],
+                    request.instance_data.get('project_id'),
+                    current_user.id,
+                    explanation['method'],
+                    explanation['timestamp'],
+                    explanation.get('confidence_score'),
+                    explanation.get('business_summary', ''),
+                    json.dumps(explanation)  # Store full explanation as JSON
+                ))
+                conn.commit()
+                logger.info(f"Explanation saved to database: {explanation['explanation_id']}")
+        except Exception as e:
+            logger.warning(f"Failed to save explanation to database: {e}")
+            # Don't fail the request if database save fails
+        
         logger.info(f"Enhanced XAI explanation generated: {explanation['explanation_id']}")
         
         return explanation
@@ -1374,12 +1416,20 @@ async def get_enhanced_explanation(
 ):
     """Retrieve enhanced explanation by ID"""
     try:
-        explanation = await xai_service.get_explanation(explanation_id)
-        
-        if not explanation:
-            raise HTTPException(status_code=404, detail="Explanation not found")
-        
-        return explanation
+        # Get explanation from database
+        with db.get_connection() as conn:
+            cursor = conn.execute("""
+                SELECT explanation_data FROM xai_explanations 
+                WHERE explanation_id = ? AND user_id = ?
+            """, (explanation_id, current_user.id))
+            
+            row = cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Explanation not found")
+            
+            # Parse the JSON explanation data
+            explanation = json.loads(row[0])
+            return explanation
         
     except HTTPException:
         raise
@@ -1489,20 +1539,29 @@ async def get_explanation_history(
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found or not authorized")
         
-        # Get all explanations for this project from cache
-        project_explanations = []
-        for explanation_id, explanation in xai_service.explanation_cache.items():
-            if explanation.get("instance_data", {}).get("project_id") == project_id:
+        # Get all explanations for this project from database
+        with db.get_connection() as conn:
+            cursor = conn.execute("""
+                SELECT explanation_id, method, timestamp, confidence_score, business_summary, explanation_data
+                FROM xai_explanations 
+                WHERE project_id = ? AND user_id = ?
+                ORDER BY created_at DESC
+            """, (project_id, current_user.id))
+            
+            project_explanations = []
+            for row in cursor.fetchall():
+                # Truncate business summary if too long
+                summary = row[4] or ""
+                if len(summary) > 200:
+                    summary = summary[:200] + "..."
+                    
                 project_explanations.append({
-                    "explanation_id": explanation_id,
-                    "timestamp": explanation.get("timestamp"),
-                    "method": explanation.get("method"),
-                    "confidence_score": explanation.get("confidence_score"),
-                    "business_summary": explanation.get("business_summary", "")[:200] + "..." if len(explanation.get("business_summary", "")) > 200 else explanation.get("business_summary", "")
+                    "explanation_id": row[0],
+                    "method": row[1],
+                    "timestamp": row[2],
+                    "confidence_score": row[3],
+                    "business_summary": summary
                 })
-        
-        # Sort by timestamp (newest first)
-        project_explanations.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
         
         return {
             "project_id": project_id,
