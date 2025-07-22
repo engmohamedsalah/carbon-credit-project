@@ -8,43 +8,60 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Chip
+  Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Card,
+  CardContent
 } from '@mui/material';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { fetchProjects } from '../store/projectSlice';
 import MLAnalysis from '../components/MLAnalysis';
 import apiService from '../services/apiService';
 
 const Verification = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
   
   // Get project_id from query params
   const query = new URLSearchParams(location.search);
-  const projectId = query.get('project_id');
+  const urlProjectId = query.get('project_id');
   
-  const { loading, error } = useSelector(state => state.projects);
+  const { projects, loading, error } = useSelector(state => state.projects);
+  const { user } = useSelector(state => state.auth);
+  const [selectedProjectId, setSelectedProjectId] = useState(urlProjectId || '');
   const [projectData, setProjectData] = useState(null);
   const [loadingProject, setLoadingProject] = useState(false);
   const [mlAnalysisResults, setMLAnalysisResults] = useState(null);
   
   useEffect(() => {
+    dispatch(fetchProjects());
+  }, [dispatch]);
+
+  useEffect(() => {
     const fetchProjectData = async () => {
       setLoadingProject(true);
       try {
-        const response = await apiService.get(`/projects/${projectId}`);
+        const response = await apiService.get(`/projects/${selectedProjectId}`);
         setProjectData(response.data);
       } catch (error) {
         console.error('Failed to fetch project:', error);
+        setProjectData(null);
       } finally {
         setLoadingProject(false);
       }
     };
 
-    if (projectId) {
+    if (selectedProjectId) {
       fetchProjectData();
+    } else {
+      setProjectData(null);
     }
-  }, [projectId]);
+  }, [selectedProjectId]);
 
   const handleAnalysisComplete = (results) => {
     setMLAnalysisResults(results);
@@ -85,19 +102,15 @@ const Verification = () => {
     );
   }
   
-  if (!projectData && !loadingProject) {
-    return (
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Alert severity="info">Project not found</Alert>
-      </Container>
-    );
+  if (!selectedProjectId && !loadingProject) {
+    // Show project selection interface instead of error
   }
   
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
-          AI-Powered Carbon Credit Verification
+          Verification Hub
         </Typography>
         
         {projectData && (
@@ -108,9 +121,42 @@ const Verification = () => {
         />
         )}
       </Box>
+
+      {/* Project Selection */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Select Project for Verification
+          </Typography>
+          <FormControl fullWidth>
+            <InputLabel>Choose Project</InputLabel>
+            <Select
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              label="Choose Project"
+            >
+              <MenuItem value="">
+                <em>Select a project...</em>
+              </MenuItem>
+              {Array.isArray(projects) && projects.map((project) => (
+                <MenuItem key={project.id} value={project.id}>
+                  {project.name} - {project.location_name} ({project.status})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          
+          {!selectedProjectId && (
+            <Alert severity="info" sx={{ mt: 2 }}>
+              💡 <strong>Tip:</strong> This is the Verification Hub for bulk project management. 
+              To verify individual projects, navigate to Projects → View Project → AI Verification tab.
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
       
       {/* Project Information */}
-      {projectData && (
+      {selectedProjectId && projectData && (
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom>
             Project Information
@@ -143,14 +189,16 @@ const Verification = () => {
               )}
               
       {/* ML Analysis Component */}
-      <MLAnalysis 
-        projectId={parseInt(projectId)}
-        projectData={projectData}
-        onAnalysisComplete={handleAnalysisComplete}
-      />
+      {selectedProjectId && projectData && (
+        <MLAnalysis 
+          projectId={parseInt(selectedProjectId)}
+          projectData={projectData}
+          onAnalysisComplete={handleAnalysisComplete}
+        />
+      )}
 
       {/* Analysis Summary (if completed) */}
-      {mlAnalysisResults && (
+      {selectedProjectId && mlAnalysisResults && (
         <Paper sx={{ p: 3, mt: 3 }}>
           <Typography variant="h6" gutterBottom>
             Verification Summary
@@ -187,11 +235,11 @@ const Verification = () => {
               Back to Dashboard
                   </Button>
                   
-            {projectId !== 'new' && (
+            {selectedProjectId && selectedProjectId !== 'new' && (
                   <Button 
             variant="contained" 
             color="primary"
-                onClick={() => navigate(`/projects/${projectId}`)}
+                onClick={() => navigate(`/projects/${selectedProjectId}`)}
                   >
                 View Project Details
                   </Button>

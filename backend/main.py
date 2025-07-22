@@ -941,12 +941,20 @@ async def analyze_location(
         raise HTTPException(status_code=503, detail="ML service not available")
     
     try:
-        # Verify project belongs to user
+        # Verify project exists and user has access (users can only access their own projects, admins can access all)
         with db.get_connection() as conn:
-            cursor = conn.execute(
-                "SELECT * FROM projects WHERE id = ? AND user_id = ?",
-                (request.project_id, current_user.id)
-            )
+            if current_user.role.lower() == 'admin':
+                # Admins can access all projects
+                cursor = conn.execute(
+                    "SELECT * FROM projects WHERE id = ?",
+                    (request.project_id,)
+                )
+            else:
+                # Regular users can only access their own projects
+                cursor = conn.execute(
+                    "SELECT * FROM projects WHERE id = ? AND user_id = ?",
+                    (request.project_id, current_user.id)
+                )
             project = cursor.fetchone()
             
             if not project:
