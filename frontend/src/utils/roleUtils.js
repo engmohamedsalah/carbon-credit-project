@@ -180,10 +180,10 @@ export const getMenuItemsForRole = (userRole) => {
       description: 'Manage carbon credit projects'
     },
     {
-      text: 'AI Verification',
+      text: 'Verification Hub',
       path: '/verification',
-      feature: 'VERIFICATION_WORKFLOW',
-      description: 'ML-powered satellite analysis'
+      feature: 'ADMIN_FEATURES',
+      description: 'Bulk verification management (Admin only)'
     },
     {
       text: 'Explainable AI',

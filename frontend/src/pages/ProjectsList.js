@@ -95,7 +95,7 @@ const ProjectsList = () => {
   }, [navigate]);
 
   const handleProjectVerification = useCallback((projectId) => {
-    navigate(`/verification?project_id=${projectId}`);
+    navigate(`/projects/${projectId}?tab=verification`);
   }, [navigate]);
 
   const handleProjectEdit = useCallback((projectId) => {

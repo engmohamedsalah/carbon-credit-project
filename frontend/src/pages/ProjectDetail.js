@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
@@ -34,12 +34,14 @@ import { fetchProjectById, updateProjectStatus } from '../store/projectSlice';
 import { fetchVerifications } from '../store/verificationSlice';
 import MapComponent from '../components/MapComponent';
 import StatusManagement from '../components/StatusManagement';
+import MLAnalysis from '../components/MLAnalysis';
 import apiService from '../services/apiService';
 
 const ProjectDetail = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const [tabValue, setTabValue] = useState(0);
   const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
@@ -47,6 +49,7 @@ const ProjectDetail = () => {
   const [statusReason, setStatusReason] = useState('');
   const [statusNotes, setStatusNotes] = useState('');
   const [statusLogs, setStatusLogs] = useState([]);
+  const [mlAnalysisResults, setMLAnalysisResults] = useState(null);
   
   const { currentProject, loading: projectLoading, error: projectError } = useSelector(state => state.projects);
   const { verifications, loading: verificationsLoading } = useSelector(state => state.verifications);
@@ -68,9 +71,22 @@ const ProjectDetail = () => {
     dispatch(fetchVerifications({ projectId: id }));
     fetchStatusLogs();
   }, [dispatch, id, fetchStatusLogs]);
+
+  // Handle URL tab parameter (e.g., ?tab=verification)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam === 'verification') {
+      setTabValue(1); // AI Verification tab
+    }
+  }, [location.search]);
   
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+  };
+
+  const handleAnalysisComplete = (results) => {
+    setMLAnalysisResults(results);
   };
   
   const getStatusColor = (status) => {
@@ -284,15 +300,62 @@ const ProjectDetail = () => {
       <Paper sx={{ p: 3 }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={tabValue} onChange={handleTabChange}>
-            <Tab label="Verifications" />
+            <Tab label="Verification History" />
+            <Tab label="AI Verification" />
             <Tab label="Status History" />
             <Tab label="Satellite Images" />
             <Tab label="Carbon Estimates" />
           </Tabs>
         </Box>
         
-        {/* Status History Tab */}
+        {/* AI Verification Tab */}
         {tabValue === 1 && (
+          <Box sx={{ pt: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              AI-Powered Carbon Credit Verification
+            </Typography>
+            
+            {currentProject && (
+              <MLAnalysis 
+                projectId={parseInt(id)}
+                projectData={currentProject}
+                onAnalysisComplete={handleAnalysisComplete}
+              />
+            )}
+
+            {/* Analysis Summary (if completed) */}
+            {mlAnalysisResults && (
+              <Paper sx={{ p: 3, mt: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Verification Summary
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={8}>
+                    <Typography variant="body1" gutterBottom>
+                      <strong>Recommendation:</strong> {mlAnalysisResults.eligibility?.recommendation}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      This assessment is based on machine learning analysis of satellite imagery, 
+                      location data, and forest cover patterns. Final certification requires 
+                      additional field verification and regulatory review.
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} md={4}>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="h3" color="primary">
+                        {mlAnalysisResults.eligibility?.percentage}%
+                      </Typography>
+                      <Typography variant="body2">Eligibility Score</Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Paper>
+            )}
+          </Box>
+        )}
+
+        {/* Status History Tab */}
+        {tabValue === 2 && (
           <Box sx={{ pt: 3 }}>
             <Typography variant="h6" gutterBottom>
               Status Change History
@@ -459,7 +522,7 @@ const ProjectDetail = () => {
         )}
         
         {/* Satellite Images Tab */}
-        {tabValue === 2 && (
+        {tabValue === 3 && (
           <Box sx={{ pt: 3 }}>
             <Typography variant="h6" gutterBottom>
               Satellite Images
@@ -472,7 +535,7 @@ const ProjectDetail = () => {
         )}
         
         {/* Carbon Estimates Tab */}
-        {tabValue === 3 && (
+        {tabValue === 4 && (
           <Box sx={{ pt: 3 }}>
             <Typography variant="h6" gutterBottom>
               Carbon Estimates
