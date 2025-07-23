@@ -8,13 +8,11 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  Alert,
-  Divider
+  Alert
 } from '@mui/material';
 import {
   Gavel as ComplianceIcon,
   CheckCircle as CheckCircleIcon,
-  Info as InfoIcon,
   Assignment as DocumentIcon,
   Verified as VerifiedIcon
 } from '@mui/icons-material';

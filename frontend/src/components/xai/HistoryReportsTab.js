@@ -14,7 +14,6 @@ import {
   TextField,
   InputAdornment,
   IconButton,
-  Menu,
   MenuItem,
   Checkbox,
   FormControl,
@@ -23,7 +22,6 @@ import {
   Card,
   CardContent,
   Grid,
-  Divider,
   Alert,
   Tooltip,
   Badge
@@ -31,14 +29,12 @@ import {
 import {
   History as HistoryIcon,
   Search as SearchIcon,
-  FilterList as FilterIcon,
   Download as DownloadIcon,
   Refresh as RefreshIcon,
   Assessment as AssessmentIcon,
   PictureAsPdf as PdfIcon,
   Delete as DeleteIcon,
   Archive as ArchiveIcon,
-  DateRange as DateRangeIcon,
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
   Error as ErrorIcon,
@@ -57,7 +53,6 @@ const HistoryReportsTab = ({
   const [filterMethod, setFilterMethod] = useState('all');
   const [filterConfidence, setFilterConfidence] = useState('all');
   const [selectedItems, setSelectedItems] = useState([]);
-  const [anchorEl, setAnchorEl] = useState(null);
   const [dateFilter, setDateFilter] = useState('all');
 
   const getConfidenceColor = (confidence) => {

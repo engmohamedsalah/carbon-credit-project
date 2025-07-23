@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -16,22 +16,15 @@ import {
   Alert,
   LinearProgress,
   Grid,
-  Checkbox,
-  FormControlLabel,
-  Divider,
-  Tooltip
+  Checkbox
 } from '@mui/material';
 import {
   Compare as CompareIcon,
-  TrendingUp as TrendingUpIcon,
   Assessment as AssessmentIcon,
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
   Error as ErrorIcon,
-  Speed as SpeedIcon,
-  Accuracy as AccuracyIcon,
-  Psychology as PsychologyIcon,
-  ExpandMore as ExpandMoreIcon
+  Psychology as PsychologyIcon
 } from '@mui/icons-material';
 
 const CompareMethodsTab = ({ 

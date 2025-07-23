@@ -7,16 +7,13 @@ import {
   IconButton,
   Tooltip,
   Grid,
-  Card,
-  CardContent,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   Tabs,
   Tab,
-  Alert,
-  Divider
+  Alert
 } from '@mui/material';
 import {
   BarChart as BarChartIcon,
@@ -24,7 +21,6 @@ import {
   Fullscreen as FullscreenIcon,
   Assessment as AssessmentIcon,
   ScatterPlot as ScatterPlotIcon,
-  TrendingUp as TrendingUpIcon,
   CompareArrows as CompareArrowsIcon,
   Psychology as PsychologyIcon
 } from '@mui/icons-material';
