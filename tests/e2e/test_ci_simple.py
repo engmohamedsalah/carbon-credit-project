@@ -35,10 +35,12 @@ def test_project_structure():
     ]
     
     for dir_name in essential_dirs:
-        assert os.path.exists(dir_name), f"Essential directory missing: {dir_name}"
+        dir_path = project_root / dir_name
+        assert dir_path.exists(), f"Essential directory missing: {dir_name}"
     
     for file_path in essential_files:
-        assert os.path.exists(file_path), f"Essential file missing: {file_path}"
+        file_full_path = project_root / file_path
+        assert file_full_path.exists(), f"Essential file missing: {file_path}"
     
     print("✅ Project structure test passed")
 
