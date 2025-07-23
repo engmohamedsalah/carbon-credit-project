@@ -45,7 +45,7 @@ const ProjectDetail = () => {
   const [tabValue, setTabValue] = useState(0);
   const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedStatus] = useState('');
   const [statusReason, setStatusReason] = useState('');
   const [statusNotes, setStatusNotes] = useState('');
   const [statusLogs, setStatusLogs] = useState([]);

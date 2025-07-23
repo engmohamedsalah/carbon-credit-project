@@ -20,24 +20,11 @@ import {
   MenuItem,
   Alert,
   Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
-  Paper,
   LinearProgress,
   Accordion,
   AccordionSummary,
   AccordionDetails,
   IconButton,
-  Checkbox,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Switch,
   FormControlLabel,
   Snackbar,
@@ -69,7 +56,7 @@ import xaiService from '../services/xaiService';
 import { canAccessFeature, FEATURE_ACCESS } from '../utils/roleUtils';
 import ModernEmptyState from '../components/xai/ModernEmptyState';
 import ExplanationSkeleton from '../components/xai/ExplanationSkeleton';
-import MobileComparisonTable from '../components/xai/MobileComparisonTable';
+// import MobileComparisonTable from '../components/xai/MobileComparisonTable';
 import MethodSelector from '../components/xai/MethodSelector';
 import SummaryTab from '../components/xai/SummaryTab';
 import RiskTab from '../components/xai/RiskTab';
@@ -321,26 +308,26 @@ const XAI = () => {
     }
   };
 
-  const handleCompareExplanations = async () => {
-    if (state.selectedExplanations.length < 2) {
-      updateState({ error: 'Please select at least 2 explanations to compare' });
-      return;
-    }
+  // const handleCompareExplanations = async () => {
+  //   if (state.selectedExplanations.length < 2) {
+  //     updateState({ error: 'Please select at least 2 explanations to compare' });
+  //     return;
+  //   }
 
-    updateState({ loading: true, error: null });
+  //   updateState({ loading: true, error: null });
 
-    try {
-      const comparison = await xaiService.compareExplanations(state.selectedExplanations);
-      updateState({ 
-        comparisonResult: comparison,
-        success: 'Explanations compared successfully!' 
-      });
-    } catch (error) {
-      updateState({ error: error.message });
-    } finally {
-      updateState({ loading: false });
-    }
-  };
+  //   try {
+  //     const comparison = await xaiService.compareExplanations(state.selectedExplanations);
+  //     updateState({ 
+  //       comparisonResult: comparison,
+  //       success: 'Explanations compared successfully!' 
+  //     });
+  //   } catch (error) {
+  //     updateState({ error: error.message });
+  //   } finally {
+  //     updateState({ loading: false });
+  //   }
+  // };
 
   const generateClientSideReport = (explanation, format, includeBusinessSummary) => {
     const timestamp = new Date().toLocaleString();
@@ -642,13 +629,13 @@ const XAI = () => {
     }
   };
 
-  const handleExplanationSelect = (explanationId, isSelected) => {
-    const newSelected = isSelected 
-      ? [...state.selectedExplanations, explanationId]
-      : state.selectedExplanations.filter(id => id !== explanationId);
-    
-    updateState({ selectedExplanations: newSelected });
-  };
+  // const handleExplanationSelect = (explanationId, isSelected) => {
+  //   const newSelected = isSelected 
+  //     ? [...state.selectedExplanations, explanationId]
+  //     : state.selectedExplanations.filter(id => id !== explanationId);
+  //   
+  //   updateState({ selectedExplanations: newSelected });
+  // };
 
   const getConfidenceColor = (confidence) => {
     if (confidence >= 0.8) return 'success';
@@ -656,14 +643,14 @@ const XAI = () => {
     return 'error';
   };
 
-  const getRiskLevelIcon = (level) => {
-    switch (level) {
-      case 'Low': return <CheckCircleIcon color="success" />;
-      case 'Medium': return <WarningIcon color="warning" />;
-      case 'High': return <ErrorIcon color="error" />;
-      default: return <InfoIcon />;
-    }
-  };
+  // const getRiskLevelIcon = (level) => {
+  //   switch (level) {
+  //     case 'Low': return <CheckCircleIcon color="success" />;
+  //     case 'Medium': return <WarningIcon color="warning" />;
+  //     case 'High': return <ErrorIcon color="error" />;
+  //     default: return <InfoIcon />;
+  //   }
+  // };
 
   // Error boundary effect
   useEffect(() => {

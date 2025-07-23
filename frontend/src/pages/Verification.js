@@ -32,7 +32,7 @@ const Verification = () => {
   const urlProjectId = query.get('project_id');
   
   const { projects, loading, error } = useSelector(state => state.projects);
-  const { user } = useSelector(state => state.auth);
+  // const { user } = useSelector(state => state.auth);
   const [selectedProjectId, setSelectedProjectId] = useState(urlProjectId || '');
   const [projectData, setProjectData] = useState(null);
   const [loadingProject, setLoadingProject] = useState(false);

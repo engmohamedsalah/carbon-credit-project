@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Container, 
   Typography, 
@@ -42,11 +42,7 @@ const Reports = () => {
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
-  useEffect(() => {
-    fetchProjectsAndVerifications();
-  }, []);
-
-  const fetchProjectsAndVerifications = async () => {
+  const fetchProjectsAndVerifications = useCallback(async () => {
     try {
       const [projectsResponse, verificationsResponse] = await Promise.all([
         apiService.get('/projects'),
@@ -70,7 +66,11 @@ const Reports = () => {
       setProjects([]);
       setVerifications([]);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchProjectsAndVerifications();
+  }, [fetchProjectsAndVerifications]);
 
   const showSnackbar = (message, severity = 'info') => {
     setSnackbar({ open: true, message, severity });
