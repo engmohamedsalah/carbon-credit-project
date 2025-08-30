@@ -141,6 +141,7 @@ class RealXAIService:
                 hidden_dim=[32, 64, 128],
                 kernel_size=(3, 3),
                 num_layers=3,
+                output_dim=1,  # Output dimension for binary forest/non-forest classification
                 batch_first=True
             )
             
