@@ -151,7 +151,7 @@ const SensorCard = ({ sensor, onSelect, onMenuClick, showLastReading = true }) =
               size="small" 
               onClick={(e) => {
                 e.stopPropagation();
-                onMenuClick && onMenuClick(sensor);
+                onMenuClick && onMenuClick(e, sensor);
               }}
             >
               <MoreVert />

@@ -2276,6 +2276,123 @@ async def create_iot_sensor(
         raise HTTPException(status_code=500, detail="Failed to create IoT sensor")
 
 
+@app.put("/api/v1/iot/sensors/{sensor_id}", response_model=IoTSensorResponse)
+async def update_iot_sensor(
+    sensor_id: int,
+    sensor_data: IoTSensorCreate,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Update an existing IoT sensor"""
+    try:
+        logger.info(f"Updating IoT sensor: {sensor_id} by user {current_user.id}")
+        with db.get_connection() as conn:
+            # Verify sensor exists and user has access
+            cursor = conn.execute("""
+                SELECT s.*, p.user_id FROM iot_sensors s 
+                JOIN projects p ON s.project_id = p.id 
+                WHERE s.id = ?
+            """, (sensor_id,))
+            existing_sensor = cursor.fetchone()
+            
+            if not existing_sensor:
+                raise HTTPException(status_code=404, detail="Sensor not found")
+            
+            if current_user.role != "admin" and existing_sensor[-1] != current_user.id:  # user_id is last column
+                raise HTTPException(status_code=403, detail="Not authorized to update this sensor")
+            
+            logger.info(f"Sensor verified, updating...")
+            
+            # Update sensor
+            conn.execute("""
+                UPDATE iot_sensors 
+                SET sensor_type = ?, location_lat = ?, location_lng = ?, 
+                    installation_date = ?, calibration_data = ?
+                WHERE id = ?
+            """, (
+                sensor_data.sensor_type,
+                sensor_data.location_lat,
+                sensor_data.location_lng,
+                sensor_data.installation_date,
+                json.dumps(sensor_data.calibration_data) if sensor_data.calibration_data else None,
+                sensor_id
+            ))
+            
+            logger.info(f"Sensor updated, fetching updated sensor...")
+            
+            # Get updated sensor
+            cursor = conn.execute("SELECT * FROM iot_sensors WHERE id = ?", (sensor_id,))
+            sensor_row = cursor.fetchone()
+            
+            logger.info(f"Updated sensor fetched: {sensor_row}")
+            
+            return IoTSensorResponse(
+                id=sensor_row[0],
+                sensor_id=sensor_row[1],
+                sensor_type=sensor_row[2],
+                location_lat=sensor_row[3],
+                location_lng=sensor_row[4],
+                project_id=sensor_row[5],
+                status=sensor_row[6],
+                last_reading=json.loads(sensor_row[7]) if sensor_row[7] else None,
+                installation_date=sensor_row[8],
+                created_at=sensor_row[10]
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating IoT sensor: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update IoT sensor")
+
+
+@app.delete("/api/v1/iot/sensors/{sensor_id}")
+async def delete_iot_sensor(
+    sensor_id: int,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Delete an IoT sensor"""
+    try:
+        logger.info(f"Deleting IoT sensor: {sensor_id} by user {current_user.id}")
+        with db.get_connection() as conn:
+            # Verify sensor exists and user has access
+            cursor = conn.execute("""
+                SELECT s.*, p.user_id FROM iot_sensors s 
+                JOIN projects p ON s.project_id = p.id 
+                WHERE s.id = ?
+            """, (sensor_id,))
+            sensor = cursor.fetchone()
+            
+            if not sensor:
+                raise HTTPException(status_code=404, detail="Sensor not found")
+            
+            if current_user.role != "admin" and sensor[-1] != current_user.id:  # user_id is last column
+                raise HTTPException(status_code=403, detail="Not authorized to delete this sensor")
+            
+            # Delete related readings first (foreign key constraint)
+            cursor = conn.execute("DELETE FROM sensor_readings WHERE sensor_id = ?", (sensor[1],))  # sensor[1] is sensor_id
+            readings_deleted = cursor.rowcount
+            
+            # Delete the sensor
+            cursor = conn.execute("DELETE FROM iot_sensors WHERE id = ?", (sensor_id,))
+            
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="Sensor not found")
+            
+            logger.info(f"Sensor {sensor[1]} deleted successfully with {readings_deleted} readings")
+            
+            return {
+                "message": "Sensor deleted successfully",
+                "sensor_id": sensor_id,
+                "readings_deleted": readings_deleted
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting IoT sensor: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete IoT sensor")
+
+
 @app.post("/api/v1/iot/readings", response_model=SensorReadingResponse, status_code=status.HTTP_201_CREATED)
 async def create_sensor_reading(
     reading_data: SensorReadingCreate,
