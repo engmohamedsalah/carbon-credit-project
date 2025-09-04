@@ -26,7 +26,7 @@ import {
   Cancel
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
-import { createSensor } from '../../store/iotSlice';
+import { createSensor, updateSensor } from '../../store/iotSlice';
 import { iotService } from '../../services/iotService';
 
 const sensorTypes = [
@@ -43,24 +43,55 @@ const SensorForm = ({ open, onClose, projectId, editSensor = null }) => {
   const { loading } = useSelector(state => state.iot);
   
   const [formData, setFormData] = useState({
-    sensor_id: editSensor?.sensor_id || '',
-    sensor_type: editSensor?.sensor_type || '',
-    location_lat: editSensor?.location_lat || '',
-    location_lng: editSensor?.location_lng || '',
-    installation_date: editSensor?.installation_date || new Date().toISOString().split('T')[0],
-    calibration_data: editSensor?.calibration_data || {}
+    sensor_id: '',
+    sensor_type: '',
+    location_lat: '',
+    location_lng: '',
+    installation_date: new Date().toISOString().split('T')[0],
+    calibration_data: {},
+    project_id: projectId
   });
 
   const [calibrationFields, setCalibrationFields] = useState({
-    min_value: editSensor?.calibration_data?.min_value || '',
-    max_value: editSensor?.calibration_data?.max_value || '',
-    accuracy: editSensor?.calibration_data?.accuracy || '',
-    resolution: editSensor?.calibration_data?.resolution || '',
-    calibration_date: editSensor?.calibration_data?.calibration_date || new Date().toISOString().split('T')[0]
+    min_value: '',
+    max_value: '',
+    accuracy: '',
+    resolution: '',
+    calibration_date: new Date().toISOString().split('T')[0]
   });
 
   const [errors, setErrors] = useState({});
   const [validationMessage, setValidationMessage] = useState('');
+
+  // Effect to populate form when editSensor changes
+  React.useEffect(() => {
+    if (editSensor) {
+      console.log('DEBUG - editSensor:', editSensor);
+      console.log('DEBUG - projectId prop:', projectId);
+      console.log('DEBUG - editSensor.project_id:', editSensor.project_id);
+      
+      setFormData({
+        sensor_id: editSensor.sensor_id || '',
+        sensor_type: editSensor.sensor_type || '',
+        location_lat: editSensor.location_lat || '',
+        location_lng: editSensor.location_lng || '',
+        installation_date: editSensor.installation_date || new Date().toISOString().split('T')[0],
+        calibration_data: editSensor.calibration_data || {},
+        project_id: editSensor.project_id || projectId
+      });
+      
+      const calibData = editSensor.calibration_data || {};
+      setCalibrationFields({
+        min_value: calibData.min_value || '',
+        max_value: calibData.max_value || '',
+        accuracy: calibData.accuracy || '',
+        resolution: calibData.resolution || '',
+        calibration_date: calibData.calibration_date || new Date().toISOString().split('T')[0]
+      });
+    } else {
+      resetForm();
+    }
+  }, [editSensor, projectId]);
 
   const handleChange = (field) => (event) => {
     const value = event.target.value;
@@ -131,7 +162,7 @@ const SensorForm = ({ open, onClose, projectId, editSensor = null }) => {
     try {
       const sensorData = {
         ...formData,
-        project_id: projectId,
+        project_id: formData.project_id || projectId,
         location_lat: parseFloat(formData.location_lat),
         location_lng: parseFloat(formData.location_lng),
         calibration_data: {
@@ -143,15 +174,26 @@ const SensorForm = ({ open, onClose, projectId, editSensor = null }) => {
         }
       };
 
+      console.log('DEBUG - Final sensorData being sent:', sensorData);
+      console.log('DEBUG - sensorData.project_id:', sensorData.project_id);
+
       // Validate using service function
       iotService.validateSensorData(sensorData);
       
-      await dispatch(createSensor(sensorData)).unwrap();
+      if (editSensor) {
+        // Update existing sensor
+        await dispatch(updateSensor({ sensorId: editSensor.id, updateData: sensorData })).unwrap();
+        setValidationMessage('Sensor updated successfully!');
+      } else {
+        // Create new sensor
+        await dispatch(createSensor(sensorData)).unwrap();
+        setValidationMessage('Sensor created successfully!');
+      }
+      
       onClose();
       resetForm();
-      setValidationMessage('Sensor created successfully!');
     } catch (error) {
-      setValidationMessage(error.message || 'Failed to create sensor');
+      setValidationMessage(error.message || (editSensor ? 'Failed to update sensor' : 'Failed to create sensor'));
     }
   };
 
@@ -162,7 +204,8 @@ const SensorForm = ({ open, onClose, projectId, editSensor = null }) => {
       location_lat: '',
       location_lng: '',
       installation_date: new Date().toISOString().split('T')[0],
-      calibration_data: {}
+      calibration_data: {},
+      project_id: projectId
     });
     setCalibrationFields({
       min_value: '',
@@ -401,10 +444,10 @@ const SensorForm = ({ open, onClose, projectId, editSensor = null }) => {
           <Button 
             type="submit" 
             variant="contained"
-            disabled={loading.creating}
-            startIcon={loading.creating ? <CircularProgress size={16} /> : <Save />}
+            disabled={loading.creating || loading.updating}
+            startIcon={(loading.creating || loading.updating) ? <CircularProgress size={16} /> : <Save />}
           >
-            {loading.creating ? 'Creating...' : (editSensor ? 'Update Sensor' : 'Add Sensor')}
+            {loading.creating || loading.updating ? (editSensor ? 'Updating...' : 'Creating...') : (editSensor ? 'Update Sensor' : 'Add Sensor')}
           </Button>
         </DialogActions>
       </form>

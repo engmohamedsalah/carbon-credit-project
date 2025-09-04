@@ -101,8 +101,10 @@ const IoT = () => {
   };
 
   const handleMenuClick = (event, sensor) => {
-    event.stopPropagation();
-    setAnchorEl(event.currentTarget);
+    if (event) {
+      event.stopPropagation();
+      setAnchorEl(event.currentTarget);
+    }
     setMenuSensor(sensor);
   };
 
@@ -150,7 +152,7 @@ const IoT = () => {
 
   const stats = getSensorStats();
   const filteredSensors = getFilteredSensors();
-  const canManageSensors = user?.role === 'admin' || user?.role === 'project_developer';
+  const canManageSensors = user?.role === 'admin' || user?.role === 'project_developer' || user?.role === 'Project Developer';
 
   return (
     <Container maxWidth="xl" sx={COMMON_STYLES.pageContainer}>
@@ -303,7 +305,7 @@ const IoT = () => {
                     <SensorCard
                       sensor={sensor}
                       onSelect={handleSensorSelect}
-                      onMenuClick={(sensor) => handleMenuClick(null, sensor)}
+                      onMenuClick={handleMenuClick}
                     />
                   </Grid>
                 ))}
