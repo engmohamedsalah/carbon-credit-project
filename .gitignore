@@ -150,3 +150,4 @@ data/raw/hansen/raw_tiles/
 #
 *.png
 debug_patches/ .claude/settings.local.json
+.claude/
