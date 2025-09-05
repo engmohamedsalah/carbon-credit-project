@@ -547,13 +547,83 @@ async def general_exception_handler(request: Request, exc: Exception):
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
+    blockchain_status = "connected" if blockchain_service and blockchain_service.is_connected() else "disconnected"
     return {
         "status": "healthy",
         "service": "Carbon Credit Verification API",
         "version": "2.0.0",
         "database": "SQLite",
-        "architecture": "Simplified Professional"
+        "architecture": "Simplified Professional",
+        "blockchain": blockchain_status
     }
+
+# Blockchain endpoints
+@app.get("/api/v1/blockchain/status")
+async def get_blockchain_status(current_user: UserResponse = Depends(get_current_user)):
+    """Get blockchain network status"""
+    if not blockchain_service:
+        return {"error": "Blockchain service not available"}
+    
+    return blockchain_service.get_network_info()
+
+@app.get("/api/v1/blockchain/verify")
+async def verify_certificate(
+    token_id_or_hash: str = Query(..., description="Token ID or transaction hash to verify"),
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Verify a carbon credit certificate"""
+    if not blockchain_service:
+        raise HTTPException(status_code=503, detail="Blockchain service not available")
+    
+    result = blockchain_service.verify_certificate(token_id_or_hash)
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    
+    return result
+
+@app.post("/api/v1/blockchain/mint")
+async def mint_carbon_credit(
+    project_id: int,
+    carbon_amount: int,
+    recipient_address: str = None,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Mint a carbon credit NFT (Admin only)"""
+    if current_user.role.lower() != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    if not blockchain_service:
+        raise HTTPException(status_code=503, detail="Blockchain service not available")
+    
+    # Get project details
+    with db.get_connection() as conn:
+        cursor = conn.execute("SELECT name, location FROM projects WHERE id = ?", (project_id,))
+        project = cursor.fetchone()
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Default recipient is current user's wallet (would need to be configured)
+    if not recipient_address:
+        recipient_address = "0x742d35Cc6634C0532925a3b8D7b9C67B2fc4Db13"  # Default for demo
+    
+    # Generate verification hash
+    import hashlib
+    verification_data = f"{project_id}-{carbon_amount}-{current_user.id}"
+    verification_hash = hashlib.sha256(verification_data.encode()).hexdigest()
+    
+    result = blockchain_service.mint_carbon_credit_nft(
+        recipient_address=recipient_address,
+        project_id=project_id,
+        carbon_amount=carbon_amount,
+        project_name=project['name'],
+        location=project['location'],
+        verification_hash=verification_hash
+    )
+    
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    
+    return result
 
 
 # Root endpoint
@@ -1009,6 +1079,14 @@ try:
 except ImportError as e:
     logger.error(f"❌ Failed to import Report service: {e}")
     report_service = None
+
+# Blockchain Service - Import blockchain service
+try:
+    from services.blockchain_service import blockchain_service
+    logger.info("✅ Blockchain Service imported successfully")
+except ImportError as e:
+    logger.error(f"❌ Failed to import Blockchain service: {e}")
+    blockchain_service = None
 
 
 # ML Analysis endpoints

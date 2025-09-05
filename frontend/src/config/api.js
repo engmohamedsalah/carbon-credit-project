@@ -59,6 +59,13 @@ export const API_ENDPOINTS = {
     detail: (id) => `/satellite/images/${id}`,
   },
   
+  // Blockchain endpoints
+  blockchain: {
+    status: '/blockchain/status',
+    verify: '/blockchain/verify',
+    mint: '/blockchain/mint',
+  },
+  
   // Health and system endpoints (these need to be absolute since they don't use /api/v1)
   system: {
     health: 'http://localhost:8000/health',
