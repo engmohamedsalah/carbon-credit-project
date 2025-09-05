@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Container, 
   Typography, 
@@ -13,29 +13,65 @@ import {
   List,
   ListItem,
   ListItemText,
-  Chip
+  Chip,
+  CircularProgress
 } from '@mui/material';
 import BlockIcon from '@mui/icons-material/ViewInAr';
 import SearchIcon from '@mui/icons-material/Search';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import { COMMON_STYLES } from '../theme/constants';
+import apiService from '../services/apiService';
+import { API_ENDPOINTS } from '../config/api';
 
 const Blockchain = () => {
   const [tokenId, setTokenId] = useState('');
   const [searchResult, setSearchResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [networkInfo, setNetworkInfo] = useState(null);
 
-  const handleVerifyToken = () => {
-    // Mock verification for demonstration
-    if (tokenId) {
+  useEffect(() => {
+    // Load network info on component mount
+    loadNetworkInfo();
+  }, []);
+
+  const loadNetworkInfo = async () => {
+    try {
+      const response = await apiService.get(API_ENDPOINTS.blockchain.status);
+      setNetworkInfo(response);
+    } catch (error) {
+      console.error('Failed to load network info:', error);
+      setNetworkInfo({ error: 'Failed to connect to blockchain' });
+    }
+  };
+
+  const handleVerifyToken = async () => {
+    if (!tokenId.trim()) return;
+    
+    setLoading(true);
+    try {
+      const response = await apiService.get(`${API_ENDPOINTS.blockchain.verify}?token_id_or_hash=${encodeURIComponent(tokenId)}`);
+      const data = response.data || response; // Handle both axios response object and direct data
+      
+      setSearchResult({
+        tokenId: data.token_id || tokenId,
+        isValid: true,
+        projectName: data.project_name,
+        carbonCredits: data.carbon_amount,
+        verificationDate: new Date(data.verification_date * 1000).toLocaleDateString(),
+        transactionHash: tokenId.startsWith('0x') ? tokenId : 'N/A',
+        status: data.is_retired ? 'retired' : 'active',
+        location: data.location,
+        verificationHash: data.verification_hash
+      });
+    } catch (error) {
+      console.error('Verification failed:', error);
       setSearchResult({
         tokenId: tokenId,
-        isValid: true,
-        projectName: 'Amazon Reforestation Project',
-        carbonCredits: 1250,
-        verificationDate: '2024-01-15',
-        transactionHash: '0x1234...abcd',
-        status: 'verified'
+        isValid: false,
+        error: error.response?.data?.detail || 'Verification failed'
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -63,10 +99,13 @@ const Blockchain = () => {
         </Typography>
       </Box>
 
-      <Alert severity="info" sx={{ mb: 3 }}>
+      <Alert severity={networkInfo?.connected ? "success" : "warning"} sx={{ mb: 3 }}>
         <Typography variant="body1">
-          <strong>Blockchain Integration:</strong> Certificate verification is implemented in the backend. 
-          The interactive blockchain explorer interface is under development.
+          <strong>Blockchain Status:</strong> {
+            networkInfo?.connected 
+              ? `Connected to ${networkInfo.network}. Real-time certificate verification is active.`
+              : 'Blockchain service is offline. Using demo mode for verification.'
+          }
         </Typography>
       </Alert>
 
@@ -87,52 +126,77 @@ const Blockchain = () => {
               <Button 
                 variant="contained" 
                 onClick={handleVerifyToken}
-                startIcon={<SearchIcon />}
+                startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <SearchIcon />}
+                disabled={loading || !tokenId.trim()}
                 sx={{ minWidth: 120 }}
               >
-                Verify
+                {loading ? 'Verifying...' : 'Verify'}
               </Button>
             </Box>
 
             {searchResult && (
               <Card sx={{ mt: 2 }}>
                 <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <VerifiedIcon color="success" sx={{ mr: 1 }} />
-                    <Typography variant="h6">Certificate Verified</Typography>
-                    <Chip 
-                      label={searchResult.status} 
-                      color="success" 
-                      size="small" 
-                      sx={{ ml: 2, textTransform: 'capitalize' }}
-                    />
-                  </Box>
-                  <List dense>
-                    <ListItem>
-                      <ListItemText 
-                        primary="Project Name" 
-                        secondary={searchResult.projectName} 
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText 
-                        primary="Carbon Credits" 
-                        secondary={`${searchResult.carbonCredits} tCO₂e`} 
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText 
-                        primary="Verification Date" 
-                        secondary={searchResult.verificationDate} 
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText 
-                        primary="Transaction Hash" 
-                        secondary={searchResult.transactionHash} 
-                      />
-                    </ListItem>
-                  </List>
+                  {searchResult.isValid ? (
+                    <>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <VerifiedIcon color="success" sx={{ mr: 1 }} />
+                        <Typography variant="h6">Certificate Verified</Typography>
+                        <Chip 
+                          label={searchResult.status} 
+                          color={searchResult.status === 'retired' ? 'default' : 'success'}
+                          size="small" 
+                          sx={{ ml: 2, textTransform: 'capitalize' }}
+                        />
+                      </Box>
+                      <List dense>
+                        <ListItem>
+                          <ListItemText 
+                            primary="Project Name" 
+                            secondary={searchResult.projectName} 
+                          />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemText 
+                            primary="Carbon Credits" 
+                            secondary={`${searchResult.carbonCredits} tCO₂e`} 
+                          />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemText 
+                            primary="Location" 
+                            secondary={searchResult.location} 
+                          />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemText 
+                            primary="Verification Date" 
+                            secondary={searchResult.verificationDate} 
+                          />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemText 
+                            primary="Transaction Hash" 
+                            secondary={searchResult.transactionHash} 
+                          />
+                        </ListItem>
+                        {searchResult.verificationHash && (
+                          <ListItem>
+                            <ListItemText 
+                              primary="Verification Hash" 
+                              secondary={searchResult.verificationHash.substring(0, 16) + '...'} 
+                            />
+                          </ListItem>
+                        )}
+                      </List>
+                    </>
+                  ) : (
+                    <Alert severity="error" sx={{ mt: 2 }}>
+                      <Typography variant="body1">
+                        <strong>Verification Failed:</strong> {searchResult.error}
+                      </Typography>
+                    </Alert>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -165,16 +229,30 @@ const Blockchain = () => {
               </Typography>
               <List dense>
                 <ListItem>
-                  <ListItemText primary="Network" secondary="Polygon Mainnet" />
+                  <ListItemText 
+                    primary="Network" 
+                    secondary={networkInfo ? networkInfo.network || 'Connecting...' : 'Loading...'} 
+                  />
                 </ListItem>
+                <ListItem>
+                  <ListItemText 
+                    primary="Connection Status" 
+                    secondary={networkInfo ? (networkInfo.connected ? 'Connected' : 'Disconnected') : 'Checking...'} 
+                  />
+                </ListItem>
+                {networkInfo?.latest_block && (
+                  <ListItem>
+                    <ListItemText 
+                      primary="Latest Block" 
+                      secondary={networkInfo.latest_block.toLocaleString()} 
+                    />
+                  </ListItem>
+                )}
                 <ListItem>
                   <ListItemText primary="Block Time" secondary="~2 seconds" />
                 </ListItem>
                 <ListItem>
                   <ListItemText primary="Transaction Cost" secondary="~$0.01" />
-                </ListItem>
-                <ListItem>
-                  <ListItemText primary="Energy Efficiency" secondary="99.95% less than Ethereum" />
                 </ListItem>
               </List>
             </CardContent>
