@@ -66,6 +66,13 @@ export const API_ENDPOINTS = {
     mint: '/blockchain/mint',
   },
   
+  // Settings endpoints
+  settings: {
+    get: '/settings',
+    update: '/settings',
+    changePassword: '/settings/change-password',
+  },
+  
   // Health and system endpoints (these need to be absolute since they don't use /api/v1)
   system: {
     health: 'http://localhost:8000/health',
