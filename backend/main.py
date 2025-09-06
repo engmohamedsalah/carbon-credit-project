@@ -168,6 +168,19 @@ class DatabaseManager:
                     )
                 """)
                 
+                # User Settings table
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS user_settings (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id INTEGER NOT NULL,
+                        setting_key TEXT NOT NULL,
+                        setting_value TEXT,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users (id),
+                        UNIQUE(user_id, setting_key)
+                    )
+                """)
+                
                 # Check if we need to migrate existing table
                 try:
                     cursor = conn.execute("PRAGMA table_info(projects)")
@@ -1489,6 +1502,39 @@ class ReportRequest(BaseModel):
     format: str = "pdf"
     include_business_summary: bool = True
 
+
+class UserSettingsUpdate(BaseModel):
+    email_notifications: Optional[bool] = None
+    project_notifications: Optional[bool] = None
+    security_alerts: Optional[bool] = None
+    api_key_enabled: Optional[bool] = None
+    theme: Optional[str] = None  # light, dark, auto
+    language: Optional[str] = None
+    timezone: Optional[str] = None
+
+
+class UserSettingsResponse(BaseModel):
+    email_notifications: bool
+    project_notifications: bool 
+    security_alerts: bool
+    api_key_enabled: bool
+    theme: str
+    language: str
+    timezone: str
+    api_key: Optional[str] = None
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+    
+    @field_validator('new_password')
+    @classmethod
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        return v
+
 # Enhanced XAI API Endpoints
 @app.post("/api/v1/xai/generate-explanation")
 async def generate_enhanced_explanation(
@@ -2646,6 +2692,117 @@ async def get_iot_analytics(current_user: UserResponse = Depends(get_current_use
 
 
 
+# Settings Management Endpoints
+@app.get("/api/v1/settings", response_model=UserSettingsResponse)
+async def get_user_settings(current_user: UserResponse = Depends(get_current_user)):
+    """Get user settings"""
+    try:
+        with db.get_connection() as conn:
+            # Get user settings from database
+            cursor = conn.execute("""
+                SELECT setting_key, setting_value 
+                FROM user_settings 
+                WHERE user_id = ?
+            """, (current_user.id,))
+            
+            settings_data = {row[0]: row[1] for row in cursor.fetchall()}
+            
+            # Default settings
+            defaults = {
+                'email_notifications': 'true',
+                'project_notifications': 'true',
+                'security_alerts': 'true',
+                'api_key_enabled': 'false',
+                'theme': 'light',
+                'language': 'en',
+                'timezone': 'UTC'
+            }
+            
+            # Merge with defaults
+            for key, default_value in defaults.items():
+                if key not in settings_data:
+                    settings_data[key] = default_value
+            
+            # Generate API key if enabled
+            api_key = None
+            if settings_data.get('api_key_enabled') == 'true':
+                # Generate a simple API key (in production, use a more secure method)
+                api_key = f"ccv_{secrets.token_hex(16)}"
+            
+            return UserSettingsResponse(
+                email_notifications=settings_data['email_notifications'] == 'true',
+                project_notifications=settings_data['project_notifications'] == 'true',
+                security_alerts=settings_data['security_alerts'] == 'true',
+                api_key_enabled=settings_data['api_key_enabled'] == 'true',
+                theme=settings_data['theme'],
+                language=settings_data['language'],
+                timezone=settings_data['timezone'],
+                api_key=api_key
+            )
+            
+    except Exception as e:
+        logger.error(f"Error getting user settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get user settings")
+
+
+@app.patch("/api/v1/settings", response_model=UserSettingsResponse)
+async def update_user_settings(
+    settings: UserSettingsUpdate,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Update user settings"""
+    try:
+        with db.get_connection() as conn:
+            # Update each setting that was provided
+            for setting_key, setting_value in settings.model_dump(exclude_none=True).items():
+                conn.execute("""
+                    INSERT OR REPLACE INTO user_settings (user_id, setting_key, setting_value, updated_at)
+                    VALUES (?, ?, ?, ?)
+                """, (current_user.id, setting_key, str(setting_value).lower(), datetime.now().isoformat()))
+            
+            conn.commit()
+            
+            # Return updated settings
+            return await get_user_settings(current_user)
+            
+    except Exception as e:
+        logger.error(f"Error updating user settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update user settings")
+
+
+@app.post("/api/v1/settings/change-password")
+async def change_password(
+    request: PasswordChangeRequest,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Change user password"""
+    try:
+        with db.get_connection() as conn:
+            # Verify current password
+            cursor = conn.execute("SELECT hashed_password FROM users WHERE id = ?", (current_user.id,))
+            user_data = cursor.fetchone()
+            
+            if not user_data:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            if not pwd_context.verify(request.current_password, user_data[0]):
+                raise HTTPException(status_code=400, detail="Current password is incorrect")
+            
+            # Hash new password and update
+            new_hashed_password = pwd_context.hash(request.new_password)
+            conn.execute("""
+                UPDATE users SET hashed_password = ? WHERE id = ?
+            """, (new_hashed_password, current_user.id))
+            
+            conn.commit()
+            
+            return {"message": "Password changed successfully"}
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error changing password: {e}")
+        raise HTTPException(status_code=500, detail="Failed to change password")
 
 
 if __name__ == "__main__":
