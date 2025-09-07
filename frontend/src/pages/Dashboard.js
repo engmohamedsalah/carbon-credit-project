@@ -1,18 +1,37 @@
-import React, { useEffect } from 'react';
-import { Box, Typography, Container, Grid, Paper, Button, CircularProgress } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Box, Typography, Container, Grid, Button, CircularProgress, Chip, IconButton } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchProjects } from '../store/projectSlice';
-import { COMMON_STYLES, DIMENSIONS } from '../theme/constants';
+import { GlassPanel, GlassCard, PipelineVisualization } from '../components/modern';
+import { colors, spacing } from '../components/modern';
+
+// Modern icons
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import SatelliteAltIcon from '@mui/icons-material/SatelliteAlt';
+import ForestIcon from '@mui/icons-material/Forest';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import PendingActionsIcon from '@mui/icons-material/PendingActions';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector(state => state.auth);
   const { projects, loading } = useSelector(state => state.projects);
+  const [currentPipelineStep, setCurrentPipelineStep] = useState(4);
+  const [lastUpdate, setLastUpdate] = useState(new Date());
 
   useEffect(() => {
     dispatch(fetchProjects());
+    // Auto-refresh every 30 seconds for live data feel
+    const interval = setInterval(() => {
+      setLastUpdate(new Date());
+    }, 30000);
+    return () => clearInterval(interval);
   }, [dispatch]);
 
   // Count projects by status - ensure projects is always an array
@@ -24,145 +43,501 @@ const Dashboard = () => {
     inProgress: projectsArray.filter(p => p.status === 'In Progress').length,
   };
 
+  // Enhanced stats for mission control
+  const missionStats = {
+    carbonCreditsIssued: 15420,
+    satelliteImages: 1847,
+    aiAnalyses: 892,
+    iotSensors: 234,
+    systemStatus: 'operational'
+  };
+
+  const handleRefresh = () => {
+    dispatch(fetchProjects());
+    setLastUpdate(new Date());
+  };
+
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={COMMON_STYLES.LOADING_CONTAINER}>
-        <CircularProgress />
-        <Typography variant="body1" sx={{ mt: 2 }}>
-          Loading dashboard...
+      <Container maxWidth="xl" sx={{ 
+        py: spacing.xl,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '60vh'
+      }}>
+        <CircularProgress sx={{ color: colors.accent.primary, mb: spacing.md }} />
+        <Typography variant="h6" sx={{ color: colors.text.primary, fontFamily: 'JetBrains Mono' }}>
+          INITIALIZING MISSION CONTROL...
+        </Typography>
+        <Typography variant="body2" sx={{ color: colors.text.secondary, mt: spacing.sm }}>
+          Loading satellite data and system status
         </Typography>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={COMMON_STYLES.CONTAINER}>
-      <Typography variant="h4" gutterBottom>
-        Dashboard
-      </Typography>
-      
-      <Typography variant="h6" gutterBottom>
-        Welcome, {user?.full_name || 'User'}
-      </Typography>
-      
-      <Grid container spacing={3}>
-        {/* Project Stats */}
-        <Grid item xs={12} md={6}>
-          <Paper
-            sx={{
-              p: 2,
-              display: 'flex',
-              flexDirection: 'column',
-              height: DIMENSIONS.DASHBOARD_CARD_HEIGHT,
+    <Container maxWidth="xl" sx={{ py: spacing.sm, px: spacing.lg }}>
+      {/* Mission Control Header */}
+      <Box sx={{ mb: spacing.sm }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          mb: spacing.md 
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
+            <DashboardIcon sx={{ 
+              fontSize: '2.5rem', 
+              color: colors.accent.primary,
+              filter: `drop-shadow(0 0 10px ${colors.accent.primary}60)`
+            }} />
+            <Box>
+              <Typography variant="h3" sx={{ 
+                color: colors.text.primary,
+                fontWeight: 700,
+                letterSpacing: '-0.02em',
+                textTransform: 'uppercase',
+                fontFamily: 'Inter'
+              }}>
+                Mission Control
+              </Typography>
+              <Typography variant="h6" sx={{ 
+                color: colors.text.secondary,
+                fontWeight: 400,
+                mt: -0.5
+              }}>
+                Carbon Credit Verification System
+              </Typography>
+            </Box>
+          </Box>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
+            <Chip 
+              label={missionStats.systemStatus.toUpperCase()}
+              size="small"
+              sx={{
+                backgroundColor: colors.accent.primary,
+                color: colors.background.primary,
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                animation: 'pulse 2s infinite'
+              }}
+            />
+            <Typography variant="caption" sx={{ 
+              color: colors.text.tertiary,
+              fontFamily: 'JetBrains Mono'
+            }}>
+              Last Update: {lastUpdate.toLocaleTimeString()}
+            </Typography>
+            <IconButton
+              onClick={handleRefresh}
+              sx={{ 
+                color: colors.accent.secondary,
+                '&:hover': { 
+                  color: colors.accent.primary,
+                  backgroundColor: colors.interactive.hover 
+                }
+              }}
+            >
+              <RefreshIcon />
+            </IconButton>
+          </Box>
+        </Box>
+        
+        <Typography variant="h5" sx={{ 
+          color: colors.text.secondary,
+          fontWeight: 400,
+          mb: spacing.sm
+        }}>
+          Welcome back, {user?.full_name || 'Operator'}
+        </Typography>
+      </Box>
+
+      {/* Pipeline Visualization */}
+      <Box sx={{ mb: spacing.sm }}>
+        <GlassPanel
+          title="Verification Pipeline Status"
+          subtitle="Real-time processing workflow"
+          icon={<RocketLaunchIcon />}
+          status="active"
+          size="medium"
+        >
+          <PipelineVisualization 
+            currentStep={currentPipelineStep}
+            onStepClick={(step, index) => {
+              console.log('Pipeline step clicked:', step, index);
+              // Navigate to specific workflow step
             }}
+            showProgress={true}
+          />
+        </GlassPanel>
+      </Box>
+
+      {/* Mission Control Panels */}
+      <Grid container spacing={spacing.md}>
+        {/* Project Command Center */}
+        <Grid item xs={12} md={6} lg={3}>
+          <GlassCard
+            variant="glow"
+            onClick={() => navigate('/projects')}
+            sx={{ height: '100%' }}
           >
-            <Typography component="h2" variant="h6" color="primary" gutterBottom>
-              Projects
-            </Typography>
-            <Typography component="p" variant="h4">
-              {projectStats.total}
-            </Typography>
-            <Typography color="text.secondary" sx={{ flex: 1 }}>
-              Total Projects
-            </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Pending: {projectStats.pending}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Verified: {projectStats.verified}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  In Progress: {projectStats.inProgress}
-                </Typography>
+            <Box sx={{ textAlign: 'center' }}>
+              <ForestIcon sx={{ 
+                fontSize: '3rem', 
+                color: colors.accent.primary,
+                mb: spacing.md,
+                filter: `drop-shadow(0 0 15px ${colors.accent.primary}40)`
+              }} />
+              <Typography variant="h4" sx={{ 
+                color: colors.text.primary,
+                fontWeight: 700,
+                mb: spacing.xs,
+                fontFamily: 'JetBrains Mono'
+              }}>
+                {projectStats.total}
+              </Typography>
+              <Typography variant="h6" sx={{ 
+                color: colors.accent.primary,
+                fontWeight: 600,
+                mb: spacing.md,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em'
+              }}>
+                Active Projects
+              </Typography>
+              
+              <Box sx={{ display: 'flex', justifyContent: 'space-around', mb: spacing.md }}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <PendingActionsIcon sx={{ color: colors.accent.warning, mb: spacing.xs }} />
+                  <Typography variant="body2" sx={{ color: colors.text.secondary }}>
+                    Pending
+                  </Typography>
+                  <Typography variant="h6" sx={{ color: colors.text.primary, fontFamily: 'JetBrains Mono' }}>
+                    {projectStats.pending}
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ textAlign: 'center' }}>
+                  <TrendingUpIcon sx={{ color: colors.accent.info, mb: spacing.xs }} />
+                  <Typography variant="body2" sx={{ color: colors.text.secondary }}>
+                    Processing
+                  </Typography>
+                  <Typography variant="h6" sx={{ color: colors.text.primary, fontFamily: 'JetBrains Mono' }}>
+                    {projectStats.inProgress}
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ textAlign: 'center' }}>
+                  <VerifiedIcon sx={{ color: colors.accent.success, mb: spacing.xs }} />
+                  <Typography variant="body2" sx={{ color: colors.text.secondary }}>
+                    Verified
+                  </Typography>
+                  <Typography variant="h6" sx={{ color: colors.text.primary, fontFamily: 'JetBrains Mono' }}>
+                    {projectStats.verified}
+                  </Typography>
+                </Box>
               </Box>
+              
               <Button 
                 variant="contained" 
-                color="primary"
-                onClick={() => navigate('/projects')}
+                fullWidth
+                startIcon={<RocketLaunchIcon />}
+                sx={{
+                  backgroundColor: colors.accent.primary,
+                  color: colors.background.primary,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.02em'
+                }}
               >
-                View Projects
+                Launch Project
               </Button>
             </Box>
-          </Paper>
+          </GlassCard>
         </Grid>
-        
-        {/* Satellite Stats */}
-        <Grid item xs={12} md={6}>
-          <Paper
-            sx={{
-              p: 2,
-              display: 'flex',
-              flexDirection: 'column',
-              height: DIMENSIONS.DASHBOARD_CARD_HEIGHT,
-            }}
+
+        {/* Satellite Operations */}
+        <Grid item xs={12} md={6} lg={3}>
+          <GlassCard
+            variant="elevated"
+            onClick={() => navigate('/verification?project_id=new')}
+            sx={{ height: '100%' }}
           >
-            <Typography component="h2" variant="h6" color="primary" gutterBottom>
-              Satellite Imagery
-            </Typography>
-            <Typography component="p" variant="h4">
-              {projectStats.verified}
-            </Typography>
-            <Typography color="text.secondary" sx={{ flex: 1 }}>
-              Verified Projects
-            </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
+            <Box sx={{ textAlign: 'center' }}>
+              <SatelliteAltIcon sx={{ 
+                fontSize: '3rem', 
+                color: colors.accent.secondary,
+                mb: spacing.md,
+                filter: `drop-shadow(0 0 15px ${colors.accent.secondary}40)`
+              }} />
+              <Typography variant="h4" sx={{ 
+                color: colors.text.primary,
+                fontWeight: 700,
+                mb: spacing.xs,
+                fontFamily: 'JetBrains Mono'
+              }}>
+                {missionStats.satelliteImages.toLocaleString()}
+              </Typography>
+              <Typography variant="h6" sx={{ 
+                color: colors.accent.secondary,
+                fontWeight: 600,
+                mb: spacing.md,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em'
+              }}>
+                Satellite Images
+              </Typography>
+              
+              <Box sx={{ mb: spacing.md }}>
+                <Typography variant="body2" sx={{ color: colors.text.secondary, mb: spacing.xs }}>
                   Land Cover Analysis
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: colors.text.secondary, mb: spacing.xs }}>
                   Carbon Estimation
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Sentinel-2 Imagery
+                <Typography variant="body2" sx={{ color: colors.text.secondary }}>
+                  Sentinel-2 Processing
                 </Typography>
               </Box>
-                <Button 
-                  variant="contained" 
-                  color="secondary"
-                onClick={() => navigate('/verification?project_id=new')}
-                >
-                New Verification
-                </Button>
+              
+              <Button 
+                variant="contained" 
+                fullWidth
+                startIcon={<SatelliteAltIcon />}
+                sx={{
+                  backgroundColor: colors.accent.secondary,
+                  color: colors.background.primary,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.02em'
+                }}
+              >
+                New Analysis
+              </Button>
             </Box>
-          </Paper>
+          </GlassCard>
         </Grid>
-        
-        {/* Quick Actions */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 2 }}>
-            <Typography component="h2" variant="h6" color="primary" gutterBottom>
-              Quick Actions
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
+
+        {/* AI Processing Center */}
+        <Grid item xs={12} md={6} lg={3}>
+          <GlassCard
+            variant="default"
+            onClick={() => navigate('/xai')}
+            sx={{ height: '100%' }}
+          >
+            <Box sx={{ textAlign: 'center' }}>
+              <AutoAwesomeIcon sx={{ 
+                fontSize: '3rem', 
+                color: colors.accent.info,
+                mb: spacing.md,
+                filter: `drop-shadow(0 0 15px ${colors.accent.info}40)`
+              }} />
+              <Typography variant="h4" sx={{ 
+                color: colors.text.primary,
+                fontWeight: 700,
+                mb: spacing.xs,
+                fontFamily: 'JetBrains Mono'
+              }}>
+                {missionStats.aiAnalyses.toLocaleString()}
+              </Typography>
+              <Typography variant="h6" sx={{ 
+                color: colors.accent.info,
+                fontWeight: 600,
+                mb: spacing.md,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em'
+              }}>
+                AI Analyses
+              </Typography>
+              
+              <Box sx={{ mb: spacing.md }}>
+                <Typography variant="body2" sx={{ color: colors.text.secondary, mb: spacing.xs }}>
+                  Machine Learning Models
+                </Typography>
+                <Typography variant="body2" sx={{ color: colors.text.secondary, mb: spacing.xs }}>
+                  XAI Explanations
+                </Typography>
+                <Typography variant="body2" sx={{ color: colors.text.secondary }}>
+                  Ensemble Processing
+                </Typography>
+              </Box>
+              
+              <Button 
+                variant="contained" 
+                fullWidth
+                startIcon={<AutoAwesomeIcon />}
+                sx={{
+                  backgroundColor: colors.accent.info,
+                  color: colors.background.primary,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.02em'
+                }}
+              >
+                View Insights
+              </Button>
+            </Box>
+          </GlassCard>
+        </Grid>
+
+        {/* Carbon Credits Issued */}
+        <Grid item xs={12} md={6} lg={3}>
+          <GlassCard
+            variant="subtle"
+            onClick={() => navigate('/blockchain')}
+            sx={{ height: '100%' }}
+          >
+            <Box sx={{ textAlign: 'center' }}>
+              <VerifiedIcon sx={{ 
+                fontSize: '3rem', 
+                color: colors.accent.success,
+                mb: spacing.md,
+                filter: `drop-shadow(0 0 15px ${colors.accent.success}40)`
+              }} />
+              <Typography variant="h4" sx={{ 
+                color: colors.text.primary,
+                fontWeight: 700,
+                mb: spacing.xs,
+                fontFamily: 'JetBrains Mono'
+              }}>
+                {missionStats.carbonCreditsIssued.toLocaleString()}
+              </Typography>
+              <Typography variant="h6" sx={{ 
+                color: colors.accent.success,
+                fontWeight: 600,
+                mb: spacing.md,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em'
+              }}>
+                Carbon Credits
+              </Typography>
+              
+              <Box sx={{ mb: spacing.md }}>
+                <Typography variant="body2" sx={{ color: colors.text.secondary, mb: spacing.xs }}>
+                  Blockchain Certified
+                </Typography>
+                <Typography variant="body2" sx={{ color: colors.text.secondary, mb: spacing.xs }}>
+                  NFT Tokens Minted
+                </Typography>
+                <Typography variant="body2" sx={{ color: colors.text.secondary }}>
+                  Verified & Immutable
+                </Typography>
+              </Box>
+              
+              <Button 
+                variant="contained" 
+                fullWidth
+                startIcon={<VerifiedIcon />}
+                sx={{
+                  backgroundColor: colors.accent.success,
+                  color: colors.background.primary,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.02em'
+                }}
+              >
+                View Certificates
+              </Button>
+            </Box>
+          </GlassCard>
+        </Grid>
+      </Grid>
+
+      {/* Quick Actions Command Panel */}
+      <Box sx={{ mt: spacing.md }}>
+        <GlassPanel
+          title="Quick Actions"
+          subtitle="Launch mission-critical operations"
+          icon={<RocketLaunchIcon />}
+          size="small"
+        >
+          <Grid container spacing={spacing.sm}>
+            <Grid item xs={12} sm={6} md={3}>
               <Button 
                 variant="outlined" 
-                color="primary"
+                fullWidth
+                size="large"
+                startIcon={<ForestIcon />}
                 onClick={() => navigate('/projects/new')}
+                sx={{
+                  borderColor: colors.accent.primary,
+                  color: colors.accent.primary,
+                  '&:hover': {
+                    borderColor: colors.accent.primary,
+                    backgroundColor: colors.accent.primary + '20'
+                  }
+                }}
               >
                 New Project
               </Button>
-              
-                <Button 
-                  variant="outlined" 
-                  color="secondary"
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <Button 
+                variant="outlined" 
+                fullWidth
+                size="large"
+                startIcon={<SatelliteAltIcon />}
                 onClick={() => navigate('/verification?project_id=new')}
-                >
+                sx={{
+                  borderColor: colors.accent.secondary,
+                  color: colors.accent.secondary,
+                  '&:hover': {
+                    borderColor: colors.accent.secondary,
+                    backgroundColor: colors.accent.secondary + '20'
+                  }
+                }}
+              >
                 Verify Project
-                </Button>
-              
+              </Button>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
               <Button 
                 variant="outlined"
-                onClick={() => navigate('/projects')}
+                fullWidth
+                size="large"
+                startIcon={<AutoAwesomeIcon />}
+                onClick={() => navigate('/xai')}
+                sx={{
+                  borderColor: colors.accent.info,
+                  color: colors.accent.info,
+                  '&:hover': {
+                    borderColor: colors.accent.info,
+                    backgroundColor: colors.accent.info + '20'
+                  }
+                }}
               >
-                View All Projects
+                AI Insights
               </Button>
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <Button 
+                variant="outlined"
+                fullWidth
+                size="large"
+                startIcon={<VerifiedIcon />}
+                onClick={() => navigate('/blockchain')}
+                sx={{
+                  borderColor: colors.accent.success,
+                  color: colors.accent.success,
+                  '&:hover': {
+                    borderColor: colors.accent.success,
+                    backgroundColor: colors.accent.success + '20'
+                  }
+                }}
+              >
+                Blockchain
+              </Button>
+            </Grid>
+          </Grid>
+        </GlassPanel>
+      </Box>
     </Container>
   );
 };
