@@ -229,9 +229,11 @@ const Layout = () => {
         </Box>
       </Drawer>
       
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 0, width: '100%', maxWidth: 'none' }}>
         <Toolbar />
-        <Outlet />
+        <Box sx={{ p: 2, width: '100%' }}>
+          <Outlet />
+        </Box>
       </Box>
     </Box>
   );

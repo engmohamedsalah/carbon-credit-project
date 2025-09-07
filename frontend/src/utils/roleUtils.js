@@ -3,8 +3,11 @@
 
 // Define all available roles as constants
 export const ROLES = {
-  ADMIN: 'Admin',
-  LEGACY_ADMIN: 'admin', // Legacy lowercase admin role
+  // Admin roles (legacy support)
+  ADMINISTRATOR: 'Administrator', // Standard admin role
+  ADMIN: 'admin', // Legacy lowercase admin role
+  
+  // User roles
   PROJECT_DEVELOPER: 'Project Developer',
   VERIFIER: 'Verifier',
   SCIENTIST: 'Scientist',
@@ -19,7 +22,7 @@ export const ROLES = {
 // Define role hierarchies and permissions
 export const ROLE_PERMISSIONS = {
   // Administrative roles - highest permissions
-  ADMIN_ROLES: [ROLES.ADMIN, ROLES.LEGACY_ADMIN],
+  ADMIN_ROLES: [ROLES.ADMINISTRATOR, ROLES.ADMIN],
   
   // Verification and quality assurance
   VERIFICATION_ROLES: [ROLES.VERIFIER, ROLES.AUDITOR],
@@ -130,8 +133,11 @@ export const canAccessFeature = (userRole, featureKey) => {
 export const getUserRoleDisplayName = (role) => {
   // Map internal role names to user-friendly display names
   const displayNames = {
+    // Admin roles
+    [ROLES.ADMINISTRATOR]: 'System Administrator',
     [ROLES.ADMIN]: 'Administrator',
-    [ROLES.LEGACY_ADMIN]: 'Administrator',
+    
+    // User roles
     [ROLES.PROJECT_DEVELOPER]: 'Project Developer',
     [ROLES.VERIFIER]: 'Carbon Verifier',
     [ROLES.SCIENTIST]: 'Environmental Scientist',
@@ -148,17 +154,20 @@ export const getUserRoleDisplayName = (role) => {
 
 export const getRoleDescription = (role) => {
   const descriptions = {
-    [ROLES.ADMIN]: 'Full system administration and oversight',
-    [ROLES.LEGACY_ADMIN]: 'Full system administration and oversight',
-    [ROLES.PROJECT_DEVELOPER]: 'Create and manage carbon credit projects',
-    [ROLES.VERIFIER]: 'Verify and approve carbon credit claims',
-    [ROLES.SCIENTIST]: 'Environmental analysis and research',
-    [ROLES.RESEARCHER]: 'Climate research and data analysis',
-    [ROLES.INVESTOR]: 'Investment analysis and portfolio management',
-    [ROLES.BROKER]: 'Carbon credit trading and marketplace',
-    [ROLES.REGULATOR]: 'Regulatory compliance and oversight',
-    [ROLES.MONITOR]: 'Environmental monitoring and tracking',
-    [ROLES.AUDITOR]: 'Independent verification and auditing'
+    // Admin roles - clearly differentiated
+    [ROLES.ADMINISTRATOR]: 'Complete system access and user management',
+    [ROLES.ADMIN]: 'System administration with legacy access',
+    
+    // User roles - simplified and clear
+    [ROLES.PROJECT_DEVELOPER]: 'Create and manage projects',
+    [ROLES.VERIFIER]: 'Review and verify carbon claims',
+    [ROLES.SCIENTIST]: 'Environmental data analysis',
+    [ROLES.RESEARCHER]: 'Climate research studies',
+    [ROLES.INVESTOR]: 'Investment and portfolio tracking',
+    [ROLES.BROKER]: 'Carbon credit marketplace trading',
+    [ROLES.REGULATOR]: 'Compliance monitoring and oversight',
+    [ROLES.MONITOR]: 'Environmental data monitoring',
+    [ROLES.AUDITOR]: 'Independent project auditing'
   };
   
   return descriptions[role] || 'System user';

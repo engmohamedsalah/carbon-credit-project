@@ -728,13 +728,21 @@ async def get_current_user_info(current_user: UserResponse = Depends(get_current
 # Project endpoints
 @app.get("/api/v1/projects")
 async def get_projects(current_user: UserResponse = Depends(get_current_user)):
-    """Get user's projects"""
+    """Get projects based on user role"""
     try:
         import json
         with db.get_connection() as conn:
-            cursor = conn.execute("""
-                SELECT * FROM projects WHERE user_id = ? ORDER BY created_at DESC
-            """, (current_user.id,))
+            # Role-based access control
+            if current_user.role in ['Administrator', 'Verifier']:
+                # Administrator and Verifier users can see all projects
+                cursor = conn.execute("""
+                    SELECT * FROM projects ORDER BY created_at DESC
+                """)
+            else:
+                # Project Developer and other users see only their own projects
+                cursor = conn.execute("""
+                    SELECT * FROM projects WHERE user_id = ? ORDER BY created_at DESC
+                """, (current_user.id,))
             
             projects = []
             for row in cursor.fetchall():
@@ -1323,12 +1331,20 @@ async def create_verification(
 ):
     """Create a new verification record"""
     try:
-        # Verify project belongs to user
+        # Verify project exists and user is authorized
         with db.get_connection() as conn:
-            cursor = conn.execute(
-                "SELECT * FROM projects WHERE id = ? AND user_id = ?",
-                (verification_data.project_id, current_user.id)
-            )
+            if current_user.role.lower() in ['administrator', 'verifier', 'admin']:
+                # Administrator and Verifier users can verify any project
+                cursor = conn.execute(
+                    "SELECT * FROM projects WHERE id = ?",
+                    (verification_data.project_id,)
+                )
+            else:
+                # Project Developer and other users can only verify their own projects
+                cursor = conn.execute(
+                    "SELECT * FROM projects WHERE id = ? AND user_id = ?",
+                    (verification_data.project_id, current_user.id)
+                )
             project = cursor.fetchone()
             
             if not project:
@@ -1356,7 +1372,7 @@ async def create_verification(
             if not carbon_impact:
                 # Mock calculation: assume 10-20 tons CO2/hectare/year
                 project_dict = dict(project)
-                area = project_dict.get('area_hectares', 100)
+                area = project_dict.get('area_hectares') or 100  # Handle None values
                 carbon_impact = area * (12 + (hash(str(verification_data.project_id)) % 8))
             
             # Generate certificate ID
