@@ -64,6 +64,13 @@ const NewProject = () => {
     }
   };
   
+  const handleAreaCalculated = (areaInHectares) => {
+    setFormData({
+      ...formData,
+      area_hectares: areaInHectares
+    });
+  };
+  
   const validateForm = () => {
     const errors = {};
     
@@ -199,7 +206,10 @@ const NewProject = () => {
                 value={formData.area_hectares}
                 onChange={handleChange}
                 error={!!formErrors.area_hectares}
-                helperText={formErrors.area_hectares}
+                helperText={formErrors.area_hectares || (formData.area_hectares ? 'Auto-calculated from drawn area' : 'Draw on map to auto-calculate')}
+                InputProps={{
+                  readOnly: !!geometry // Make read-only if geometry is drawn
+                }}
               />
             </Grid>
             
@@ -249,7 +259,10 @@ const NewProject = () => {
               </Typography>
               
               <Box sx={{ height: 400, mb: 2 }}>
-                <MapComponent onGeometryChange={handleGeometryChange} />
+                <MapComponent 
+                  onGeometryChange={handleGeometryChange} 
+                  onAreaCalculated={handleAreaCalculated}
+                />
               </Box>
               
               {formErrors.geometry && (

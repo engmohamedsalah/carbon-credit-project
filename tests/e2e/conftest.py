@@ -5,6 +5,7 @@ import subprocess
 import time
 import requests
 import os
+import signal
 from playwright.async_api import async_playwright
 
 
@@ -21,6 +22,20 @@ async def servers():
     """Start backend and frontend servers for testing."""
     backend_process = None
     frontend_process = None
+
+    def kill_port(port: int):
+        try:
+            p = subprocess.run(["lsof", "-ti", f":{port}"], capture_output=True, text=True)
+            if p.stdout:
+                pids = [int(pid) for pid in p.stdout.strip().splitlines() if pid.strip().isdigit()]
+                for pid in pids:
+                    try:
+                        os.kill(pid, signal.SIGKILL)
+                    except Exception:
+                        pass
+        except Exception:
+            # Best effort cleanup only
+            pass
     
     # Get the project root directory (two levels up from tests/e2e)
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -28,6 +43,11 @@ async def servers():
     frontend_dir = os.path.join(project_root, "frontend")
     
     try:
+        # Ensure clean ports before start
+        kill_port(8000)
+        kill_port(3000)
+        time.sleep(1)
+
         # Start backend server
         backend_process = subprocess.Popen(
             ["python", "main.py"],
@@ -36,7 +56,7 @@ async def servers():
         )
         
         # Wait for backend to be ready
-        for _ in range(30):  # Wait up to 30 seconds
+        for _ in range(45):  # Wait up to 45 seconds
             try:
                 response = requests.get("http://localhost:8000/health", timeout=1)
                 if response.status_code == 200:
@@ -55,7 +75,7 @@ async def servers():
         )
         
         # Wait for frontend to be ready
-        for _ in range(60):  # Wait up to 60 seconds for React to compile
+        for _ in range(90):  # Wait up to 90 seconds for React to compile
             try:
                 response = requests.get("http://localhost:3000", timeout=1)
                 if response.status_code == 200:
@@ -71,12 +91,21 @@ async def servers():
         
     finally:
         # Cleanup
-        if backend_process:
-            backend_process.terminate()
-            backend_process.wait()
-        if frontend_process:
-            frontend_process.terminate()
-            frontend_process.wait()
+        try:
+            if backend_process:
+                backend_process.terminate()
+                backend_process.wait(timeout=10)
+        except Exception:
+            pass
+        try:
+            if frontend_process:
+                frontend_process.terminate()
+                frontend_process.wait(timeout=10)
+        except Exception:
+            pass
+        # Final port cleanup
+        kill_port(8000)
+        kill_port(3000)
 
 
 @pytest_asyncio.fixture

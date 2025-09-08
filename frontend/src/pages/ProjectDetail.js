@@ -14,6 +14,8 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Tooltip,
+  IconButton,
 
   List,
   ListItem,
@@ -28,10 +30,12 @@ import {
 import {
   CheckCircle as VerifiedIcon,
   Cancel as RejectedIcon,
-  Pending as PendingIcon
+  Pending as PendingIcon,
+  ContentCopy,
+  OpenInNew
 } from '@mui/icons-material';
 import { fetchProjectById, updateProjectStatus } from '../store/projectSlice';
-import { fetchVerifications } from '../store/verificationSlice';
+import { fetchVerifications, certifyVerification } from '../store/verificationSlice';
 import MapComponent from '../components/MapComponent';
 import StatusManagement from '../components/StatusManagement';
 import MLAnalysis from '../components/MLAnalysis';
@@ -52,10 +56,12 @@ const ProjectDetail = () => {
   const [mlAnalysisResults, setMLAnalysisResults] = useState(null);
   
   const { currentProject, loading: projectLoading, error: projectError } = useSelector(state => state.projects);
-  const { verifications, loading: verificationsLoading } = useSelector(state => state.verifications);
+const { verifications, loading: verificationsLoading } = useSelector(state => state.verifications);
   const { user } = useSelector(state => state.auth);
+  const [certifyingId, setCertifyingId] = useState(null);
+  const [recipientDialog, setRecipientDialog] = useState({ open: false, verification: null, address: '' });
   
-
+  
   
   const fetchStatusLogs = useCallback(async () => {
     try {
@@ -111,7 +117,22 @@ const ProjectDetail = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      try {
+        const el = document.createElement('textarea');
+        el.value = text;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+      } catch {}
+    }
+  };
 
+  const getExplorerTxUrl = (hash) => `https://mumbai.polygonscan.com/tx/${hash}`;
 
   const handleStatusUpdate = async () => {
     if (selectedStatus === 'Rejected' && !statusReason.trim()) {
@@ -195,6 +216,27 @@ const ProjectDetail = () => {
       </Container>
     );
   }
+  
+  const openRecipientDialog = (verification) => {
+    setRecipientDialog({ open: true, verification, address: '' });
+  };
+
+  const handleConfirmCertify = async () => {
+    const v = recipientDialog.verification;
+    try {
+      setCertifyingId(v.id);
+      const amount = Math.round(v.carbon_impact || 0);
+      await dispatch(
+        certifyVerification({ projectId: v.project_id, carbonAmount: amount, recipientAddress: recipientDialog.address || undefined })
+      );
+      setRecipientDialog({ open: false, verification: null, address: '' });
+      dispatch(fetchVerifications({ projectId: id }));
+    } catch (e) {
+      console.error('Certification failed:', e);
+    } finally {
+      setCertifyingId(null);
+    }
+  };
   
   return (
     <Container maxWidth={false} sx={{ mt: 4, mb: 4, px: 3, maxWidth: '90%' }}>
@@ -504,7 +546,47 @@ const ProjectDetail = () => {
                         </Typography>
                       </Grid>
                       
-                      <Grid item xs={12}>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Blockchain
+                        </Typography>
+                        <Typography variant="body1" color={verification.blockchain_certified ? 'success.main' : 'text.secondary'}>
+                          {verification.blockchain_certified ? 'Certified' : 'Not certified'}
+                        </Typography>
+                      </Grid>
+
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant="body2" color="text.secondary">
+                          Tx Hash
+                        </Typography>
+                        {verification.certificate_id ? (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
+                              {String(verification.certificate_id).slice(0, 12)}…
+                            </Typography>
+                            <Tooltip title="Copy tx hash">
+                              <IconButton size="small" onClick={() => copyToClipboard(verification.certificate_id)}>
+                                <ContentCopy fontSize="inherit" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Open in explorer">
+                              <IconButton
+                                size="small"
+                                component="a"
+                                href={getExplorerTxUrl(verification.certificate_id)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <OpenInNew fontSize="inherit" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        ) : (
+                          <Typography variant="body1">—</Typography>
+                        )}
+                      </Grid>
+                      
+                      <Grid item xs={12} sx={{ display: 'flex', gap: 1 }}>
                         <Button 
                           variant="outlined" 
                           size="small"
@@ -512,6 +594,20 @@ const ProjectDetail = () => {
                         >
                           View Details
                         </Button>
+
+                        {user?.role?.toLowerCase() === 'admin' &&
+                         String(verification.status || '').toLowerCase() === 'approved' &&
+                         !verification.blockchain_certified && (
+                           <Button
+                             variant="contained"
+                             size="small"
+                             color="primary"
+                             disabled={certifyingId === verification.id || !verification.carbon_impact}
+                             onClick={() => openRecipientDialog(verification)}
+                           >
+                             Certify on Blockchain
+                           </Button>
+                        )}
                       </Grid>
                     </Grid>
                   </Paper>
@@ -547,6 +643,35 @@ const ProjectDetail = () => {
           </Box>
         )}
       </Paper>
+
+      {/* Recipient Address Dialog for Certification */}
+      <Dialog open={recipientDialog.open} onClose={() => setRecipientDialog({ open: false, verification: null, address: '' })}>
+        <DialogTitle>Certify on Blockchain</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Optionally specify a recipient wallet address. If left empty, the default demo address will be used.
+          </Typography>
+          <TextField
+            fullWidth
+            label="Recipient Address (0x...)"
+            placeholder="0x..."
+            value={recipientDialog.address}
+            onChange={(e) => setRecipientDialog(prev => ({ ...prev, address: e.target.value }))}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRecipientDialog({ open: false, verification: null, address: '' })}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleConfirmCertify}
+            disabled={!recipientDialog.verification || certifyingId === recipientDialog.verification?.id}
+          >
+            {certifyingId === recipientDialog.verification?.id ? 'Certifying...' : 'Certify'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Status Change Dialog */}
       <Dialog 

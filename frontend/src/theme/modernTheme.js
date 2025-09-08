@@ -172,7 +172,7 @@ export const MODERN_ANIMATIONS = {
   }
 };
 
-// Glassmorphism Component Styles
+  // Glassmorphism Component Styles
 export const GLASS_COMPONENTS = {
   card: {
     background: MODERN_COLORS.glass.background,
@@ -182,8 +182,9 @@ export const GLASS_COMPONENTS = {
     boxShadow: MODERN_SHADOWS.glass,
     transition: `all ${MODERN_ANIMATIONS.duration.normal} ${MODERN_ANIMATIONS.easing.standard}`,
     
+    // Keep hover subtle and avoid white flash
     '&:hover': {
-      background: 'rgba(255, 255, 255, 0.15)',
+      background: MODERN_COLORS.glass.background,
       transform: 'translateY(-2px)',
       boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
     }
@@ -268,6 +269,18 @@ const modernTheme = createTheme({
     success: {
       main: MODERN_COLORS.accent.success,
     },
+    // Tame hover/selection overlays to avoid white flash on dark backgrounds
+    action: {
+      hover: 'rgba(100, 255, 218, 0.06)',
+      selected: 'rgba(100, 255, 218, 0.12)',
+      focus: 'rgba(100, 255, 218, 0.16)',
+      hoverOpacity: 0.06,
+      selectedOpacity: 0.12,
+      focusOpacity: 0.16,
+      activatedOpacity: 0.12,
+      disabled: 'rgba(255,255,255,0.3)',
+      disabledBackground: 'rgba(255,255,255,0.06)'
+    },
   },
   
   typography: {
@@ -298,6 +311,29 @@ const modernTheme = createTheme({
   ],
   
   components: {
+    // Global CSS baseline
+    MuiCssBaseline: {
+      styleOverrides: {
+        'html, body, #root': {
+          height: '100%',
+        },
+        body: {
+          // Prevent width jump when vertical scrollbar appears/disappears
+          scrollbarGutter: 'stable both-edges',
+        },
+        '*': {
+          WebkitTapHighlightColor: 'transparent',
+        },
+      },
+    },
+
+    // Remove distracting ripples and pressed backgrounds globally
+    MuiButtonBase: {
+      defaultProps: {
+        disableRipple: true,
+      },
+    },
+
     MuiCard: {
       styleOverrides: {
         root: GLASS_COMPONENTS.card,
@@ -320,11 +356,73 @@ const modernTheme = createTheme({
           fontWeight: 600,
           borderRadius: MODERN_RADIUS.sm,
           ...MODERN_ANIMATIONS,
+          '&:active': { backgroundColor: 'transparent' },
         },
-        contained: GLASS_COMPONENTS.button,
+        contained: {
+          ...GLASS_COMPONENTS.button,
+          '&:hover': {
+            background: '#00E07A',
+            transform: 'translateY(-1px)',
+            boxShadow: MODERN_SHADOWS.glow,
+          }
+        },
+        outlined: {
+          '&:hover': { backgroundColor: 'rgba(100, 255, 218, 0.06)' }
+        },
+        text: {
+          '&:hover': { backgroundColor: 'rgba(100, 255, 218, 0.06)' }
+        }
       },
     },
-    
+
+    MuiIconButton: {
+      defaultProps: {
+        disableRipple: true,
+      },
+      styleOverrides: {
+        root: {
+          '&:hover': { backgroundColor: 'rgba(100, 255, 218, 0.06)' },
+          '&:active': { backgroundColor: 'transparent' },
+          '&.Mui-focusVisible': { backgroundColor: 'transparent' },
+        },
+      },
+    },
+
+    MuiTab: {
+      defaultProps: {
+        disableRipple: true,
+      },
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          '&:hover': { backgroundColor: 'transparent' },
+          '&:active': { backgroundColor: 'transparent' },
+          '&.Mui-focusVisible': { backgroundColor: 'transparent' },
+        },
+      },
+    },
+
+    MuiAccordionSummary: {
+      styleOverrides: {
+        root: {
+          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.04)' },
+          '&:active': { backgroundColor: 'transparent' },
+          '&.Mui-focusVisible': { backgroundColor: 'transparent' },
+        },
+      },
+    },
+
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          // Subtle hover/selection; avoid white overlay
+          '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.06)' },
+          '&.Mui-selected': { backgroundColor: 'rgba(25, 118, 210, 0.12)' },
+          '&.Mui-selected.Mui-focusVisible': { backgroundColor: 'rgba(25, 118, 210, 0.16)' },
+        },
+      },
+    },
+
     MuiTextField: {
       styleOverrides: {
         root: {

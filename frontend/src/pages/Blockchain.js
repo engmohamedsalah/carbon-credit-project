@@ -22,17 +22,29 @@ import VerifiedIcon from '@mui/icons-material/Verified';
 import { COMMON_STYLES } from '../theme/constants';
 import apiService from '../services/apiService';
 import { API_ENDPOINTS } from '../config/api';
+import { useLocation } from 'react-router-dom';
 
 const Blockchain = () => {
   const [tokenId, setTokenId] = useState('');
   const [searchResult, setSearchResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [networkInfo, setNetworkInfo] = useState(null);
+  const location = useLocation();
 
   useEffect(() => {
     // Load network info on component mount
     loadNetworkInfo();
   }, []);
+
+  // Auto-verify if token_id_or_hash is provided in URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const prefill = params.get('token_id_or_hash');
+    if (prefill && prefill.trim()) {
+      setTokenId(prefill);
+      handleVerifyToken(prefill);
+    }
+  }, [location.search]);
 
   const loadNetworkInfo = async () => {
     try {
@@ -44,21 +56,22 @@ const Blockchain = () => {
     }
   };
 
-  const handleVerifyToken = async () => {
-    if (!tokenId.trim()) return;
+  const handleVerifyToken = async (valueOverride) => {
+    const value = typeof valueOverride === 'string' ? valueOverride : tokenId;
+    if (!value.trim()) return;
     
     setLoading(true);
     try {
-      const response = await apiService.get(`${API_ENDPOINTS.blockchain.verify}?token_id_or_hash=${encodeURIComponent(tokenId)}`);
+      const response = await apiService.get(`${API_ENDPOINTS.blockchain.verify}?token_id_or_hash=${encodeURIComponent(value)}`);
       const data = response.data || response; // Handle both axios response object and direct data
       
       setSearchResult({
-        tokenId: data.token_id || tokenId,
+        tokenId: data.token_id || value,
         isValid: true,
         projectName: data.project_name,
         carbonCredits: data.carbon_amount,
         verificationDate: new Date(data.verification_date * 1000).toLocaleDateString(),
-        transactionHash: tokenId.startsWith('0x') ? tokenId : 'N/A',
+        transactionHash: value.startsWith('0x') ? value : 'N/A',
         status: data.is_retired ? 'retired' : 'active',
         location: data.location,
         verificationHash: data.verification_hash
@@ -66,7 +79,7 @@ const Blockchain = () => {
     } catch (error) {
       console.error('Verification failed:', error);
       setSearchResult({
-        tokenId: tokenId,
+        tokenId: value,
         isValid: false,
         error: error.response?.data?.detail || 'Verification failed'
       });

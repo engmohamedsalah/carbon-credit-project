@@ -207,7 +207,10 @@ const iotSlice = createSlice({
       })
       .addCase(fetchSensors.fulfilled, (state, action) => {
         state.loading.sensors = false;
-        state.sensors = action.payload;
+        const payload = action.payload;
+        state.sensors = Array.isArray(payload)
+          ? payload
+          : (Array.isArray(payload?.sensors) ? payload.sensors : []);
         state.lastUpdated = new Date().toISOString();
       })
       .addCase(fetchSensors.rejected, (state, action) => {

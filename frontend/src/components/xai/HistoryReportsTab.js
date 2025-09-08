@@ -202,7 +202,7 @@ const HistoryReportsTab = ({
 
   if (explanationHistory.length === 0) {
     return (
-      <Box sx={{ p: { xs: 2, md: 3 } }}>
+      <Box sx={{ p: { xs: 2, md: 3 }, width: '100%', maxWidth: 'none' }}>
         <Box sx={{ textAlign: 'center', py: 6 }}>
           <HistoryIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -223,7 +223,7 @@ const HistoryReportsTab = ({
   }
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
+    <Box sx={{ p: { xs: 2, md: 3 }, width: '100%', maxWidth: 'none' }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>

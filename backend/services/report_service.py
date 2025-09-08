@@ -26,7 +26,7 @@ class ReportService:
             # Get verification details
             cursor = conn.execute("""
                 SELECT v.*, p.name as project_name, p.location_name, p.project_type, 
-                       p.description, u.name as developer_name, u.email as developer_email
+                       p.description, u.full_name as developer_name, u.email as developer_email
                 FROM verifications v
                 JOIN projects p ON v.project_id = p.id
                 JOIN users u ON p.user_id = u.id

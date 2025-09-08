@@ -26,6 +26,17 @@ from passlib.context import CryptContext
 from fastapi import UploadFile, File
 from typing import Tuple
 
+# Import role utilities
+from utils.role_utils import (
+    is_admin, 
+    can_manage_projects, 
+    can_verify_projects, 
+    can_access_analytics,
+    can_manage_users,
+    can_access_blockchain,
+    normalize_role,
+    RolePermissions
+)
 
 # Configure logging
 logging.basicConfig(
@@ -180,7 +191,40 @@ class DatabaseManager:
                         UNIQUE(user_id, setting_key)
                     )
                 """)
-                
+
+                # Verifications table
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS verifications (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        project_id INTEGER NOT NULL,
+                        status TEXT NOT NULL,
+                        carbon_impact REAL,
+                        ai_confidence REAL,
+                        human_verified BOOLEAN DEFAULT FALSE,
+                        blockchain_certified BOOLEAN DEFAULT FALSE,
+                        certificate_id TEXT,
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (project_id) REFERENCES projects (id)
+                    )
+                """)
+
+                # Project Status Logs table
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS project_status_logs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        project_id INTEGER NOT NULL,
+                        old_status TEXT NOT NULL,
+                        new_status TEXT NOT NULL,
+                        changed_by_user_id INTEGER NOT NULL,
+                        reason TEXT,
+                        notes TEXT,
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (project_id) REFERENCES projects (id),
+                        FOREIGN KEY (changed_by_user_id) REFERENCES users (id)
+                    )
+                """)
+
                 # Check if we need to migrate existing table
                 try:
                     cursor = conn.execute("PRAGMA table_info(projects)")
@@ -200,6 +244,10 @@ class DatabaseManager:
                         
                     if 'estimated_carbon_credits' not in columns:
                         conn.execute("ALTER TABLE projects ADD COLUMN estimated_carbon_credits REAL")
+
+                    # Add geometry column if missing
+                    if 'geometry' not in columns:
+                        conn.execute("ALTER TABLE projects ADD COLUMN geometry TEXT")
                         
                 except Exception as migration_error:
                     logger.warning(f"Migration warning: {migration_error}")
@@ -476,6 +524,20 @@ def store_token(token: str, user_id: int):
         raise
 
 
+def delete_token(token: str):
+    """Delete auth token from database"""
+    try:
+        with db.get_connection() as conn:
+            conn.execute(
+                "DELETE FROM auth_tokens WHERE token = ?",
+                (token,)
+            )
+            conn.commit()
+    except Exception as e:
+        logger.error(f"Error deleting token: {e}")
+        # Don't raise further to avoid logout errors bubbling
+
+
 def get_current_user(token: str = Depends(oauth2_scheme)) -> UserResponse:
     """Get current authenticated user"""
     if token.startswith('Bearer '):
@@ -602,18 +664,33 @@ async def mint_carbon_credit(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """Mint a carbon credit NFT (Admin only)"""
-    if current_user.role.lower() != 'admin':
+    if not is_admin(current_user.role):
         raise HTTPException(status_code=403, detail="Admin access required")
     
     if not blockchain_service:
         raise HTTPException(status_code=503, detail="Blockchain service not available")
     
-    # Get project details
+    # Validate project and verification state
     with db.get_connection() as conn:
-        cursor = conn.execute("SELECT name, location FROM projects WHERE id = ?", (project_id,))
+        # Ensure project exists
+        cursor = conn.execute("SELECT name, location_name FROM projects WHERE id = ?", (project_id,))
         project = cursor.fetchone()
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
+        
+        # Ensure there's an approved verification and not already certified
+        cursor = conn.execute(
+            "SELECT id, status, blockchain_certified FROM verifications WHERE project_id = ?",
+            (project_id,)
+        )
+        verification = cursor.fetchone()
+        if not verification:
+            raise HTTPException(status_code=404, detail="No verification found for this project")
+        verification = dict(verification)
+        if verification.get("blockchain_certified"):
+            raise HTTPException(status_code=400, detail="Verification already blockchain certified")
+        if str(verification.get("status", "")).lower() not in ["approved", "verified"]:
+            raise HTTPException(status_code=400, detail="Verification must be approved before minting")
     
     # Default recipient is current user's wallet (would need to be configured)
     if not recipient_address:
@@ -624,17 +701,49 @@ async def mint_carbon_credit(
     verification_data = f"{project_id}-{carbon_amount}-{current_user.id}"
     verification_hash = hashlib.sha256(verification_data.encode()).hexdigest()
     
+    # Perform mint
     result = blockchain_service.mint_carbon_credit_nft(
         recipient_address=recipient_address,
         project_id=project_id,
-        carbon_amount=carbon_amount,
+        carbon_amount=int(carbon_amount),
         project_name=project['name'],
-        location=project['location'],
+        location=project['location_name'],
         verification_hash=verification_hash
     )
     
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
+    
+    # Persist certification result in database
+    try:
+        with db.get_connection() as conn:
+            from datetime import datetime
+            tx_hash = result.get("transaction_hash")
+            # Mark as certified and store blockchain reference (tx hash)
+            conn.execute(
+                """
+                UPDATE verifications
+                SET blockchain_certified = ?,
+                    certificate_id = ?,
+                    status = ?,
+                    updated_at = ?
+                WHERE project_id = ?
+                """,
+                (
+                    True,
+                    tx_hash or str(result.get("token_id")),
+                    "verified",
+                    datetime.now().isoformat(),
+                    project_id,
+                )
+            )
+            conn.commit()
+            cursor = conn.execute("SELECT id FROM verifications WHERE project_id = ?", (project_id,))
+            ver_row = cursor.fetchone()
+            if ver_row:
+                result["verification_id"] = ver_row[0]
+    except Exception as e:
+        logger.warning(f"Failed to persist blockchain certification: {e}")
     
     return result
 
@@ -725,6 +834,14 @@ async def get_current_user_info(current_user: UserResponse = Depends(get_current
     return current_user
 
 
+@app.post("/api/v1/auth/logout")
+async def logout(token: str = Depends(oauth2_scheme)):
+    """Logout current token"""
+    # oauth2_scheme returns the raw token string
+    delete_token(token)
+    return {"message": "Logged out"}
+
+
 # Project endpoints
 @app.get("/api/v1/projects")
 async def get_projects(current_user: UserResponse = Depends(get_current_user)):
@@ -733,7 +850,7 @@ async def get_projects(current_user: UserResponse = Depends(get_current_user)):
         import json
         with db.get_connection() as conn:
             # Role-based access control
-            if current_user.role in ['Administrator', 'Verifier']:
+            if can_verify_projects(current_user.role):
                 # Administrator and Verifier users can see all projects
                 cursor = conn.execute("""
                     SELECT * FROM projects ORDER BY created_at DESC
@@ -817,7 +934,7 @@ async def get_project(project_id: int, current_user: UserResponse = Depends(get_
             project = dict(project)
             
             # Check authorization
-            if project["user_id"] != current_user.id and current_user.role != "Admin":
+            if project["user_id"] != current_user.id and not is_admin(current_user.role):
                 raise HTTPException(status_code=403, detail="Not authorized")
             
             # Parse geometry JSON if it exists
@@ -856,7 +973,7 @@ async def update_project(
             existing_project = dict(existing_project)
             
             # Check authorization
-            if existing_project["user_id"] != current_user.id and current_user.role != "Admin":
+            if existing_project["user_id"] != current_user.id and not is_admin(current_user.role):
                 raise HTTPException(status_code=403, detail="Not authorized to update this project")
             
             # Prepare updated data
@@ -920,7 +1037,7 @@ async def delete_project(project_id: int, current_user: UserResponse = Depends(g
             project = dict(project)
             
             # Check authorization
-            if project["user_id"] != current_user.id and current_user.role != "Admin":
+            if project["user_id"] != current_user.id and not is_admin(current_user.role):
                 raise HTTPException(status_code=403, detail="Not authorized to delete this project")
             
             # Delete related verifications first (foreign key constraint)
@@ -988,8 +1105,7 @@ async def update_project_status(
                 }
             
             # Check authorization - allow verifiers and admins to update status
-            allowed_roles = ["Admin", "Verifier", "Project Developer"]
-            if project["user_id"] != current_user.id and current_user.role not in allowed_roles:
+            if project["user_id"] != current_user.id and not can_manage_projects(current_user.role) and not can_verify_projects(current_user.role):
                 raise HTTPException(status_code=403, detail="Not authorized to update project status")
             
             # Update project status
@@ -1054,7 +1170,7 @@ async def get_project_status_logs(
             
             # Check authorization - project owner, verifiers, and admins can view logs
             if (project["user_id"] != current_user.id and 
-                current_user.role not in ["Admin", "Verifier"]):
+                not can_verify_projects(current_user.role)):
                 raise HTTPException(status_code=403, detail="Not authorized to view project logs")
             
             # Get status logs with user information
@@ -1138,7 +1254,7 @@ async def analyze_location(
     try:
         # Verify project exists and user has access (users can only access their own projects, admins can access all)
         with db.get_connection() as conn:
-            if current_user.role.lower() == 'admin':
+            if is_admin(current_user.role):
                 # Admins can access all projects
                 cursor = conn.execute(
                     "SELECT * FROM projects WHERE id = ?",
@@ -1296,13 +1412,24 @@ async def get_verifications(
     """Get verification records with optional filters"""
     try:
         with db.get_connection() as conn:
-            query = """
-                SELECT v.*, p.name as project_name 
-                FROM verifications v
-                JOIN projects p ON v.project_id = p.id
-                WHERE p.user_id = ?
-            """
-            params = [current_user.id]
+            if is_admin(current_user.role):
+                # Administrator users see all verifications
+                query = """
+                    SELECT v.*, p.name as project_name 
+                    FROM verifications v
+                    JOIN projects p ON v.project_id = p.id
+                    WHERE 1=1
+                """
+                params = []
+            else:
+                # Other users see only verifications for their projects
+                query = """
+                    SELECT v.*, p.name as project_name 
+                    FROM verifications v
+                    JOIN projects p ON v.project_id = p.id
+                    WHERE p.user_id = ?
+                """
+                params = [current_user.id]
             
             if project_id:
                 query += " AND v.project_id = ?"
@@ -1333,7 +1460,7 @@ async def create_verification(
     try:
         # Verify project exists and user is authorized
         with db.get_connection() as conn:
-            if current_user.role.lower() in ['administrator', 'verifier', 'admin']:
+            if can_verify_projects(current_user.role):
                 # Administrator and Verifier users can verify any project
                 cursor = conn.execute(
                     "SELECT * FROM projects WHERE id = ?",
@@ -1460,11 +1587,20 @@ async def submit_human_review(
     try:
         with db.get_connection() as conn:
             # Verify access
-            cursor = conn.execute("""
-                SELECT v.* FROM verifications v
-                JOIN projects p ON v.project_id = p.id
-                WHERE v.id = ? AND p.user_id = ?
-            """, (verification_id, current_user.id))
+            if is_admin(current_user.role):
+                # Administrator can review any verification
+                cursor = conn.execute("""
+                    SELECT v.* FROM verifications v
+                    JOIN projects p ON v.project_id = p.id
+                    WHERE v.id = ?
+                """, (verification_id,))
+            else:
+                # Other users can only review verifications for their projects
+                cursor = conn.execute("""
+                    SELECT v.* FROM verifications v
+                    JOIN projects p ON v.project_id = p.id
+                    WHERE v.id = ? AND p.user_id = ?
+                """, (verification_id, current_user.id))
             
             verification = cursor.fetchone()
             if not verification:
@@ -1503,7 +1639,12 @@ async def submit_human_review(
 
 
 # Import Enhanced XAI Service
-from services.xai_service import xai_service
+try:
+    from services.xai_service import xai_service
+    logger.info("✅ XAI Service imported successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to import XAI service: {e}")
+    xai_service = None
 
 # Enhanced XAI Models
 class EnhancedExplanationRequest(BaseModel):
@@ -1558,6 +1699,8 @@ async def generate_enhanced_explanation(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """Generate enhanced AI explanation with business context"""
+    if xai_service is None:
+        raise HTTPException(status_code=503, detail="XAI service not available")
     try:
         # Generate explanation using enhanced XAI service
         explanation = await xai_service.generate_explanation(
@@ -1722,6 +1865,8 @@ async def compare_enhanced_explanations(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """Compare multiple enhanced explanations with business analysis"""
+    if xai_service is None:
+        raise HTTPException(status_code=503, detail="XAI service not available")
     try:
         # Generate comparison using enhanced XAI service
         comparison = await xai_service.compare_explanations(request.explanation_ids)
@@ -1745,6 +1890,8 @@ async def generate_explanation_report(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """Generate professional report from explanation"""
+    if xai_service is None:
+        raise HTTPException(status_code=503, detail="XAI service not available")
     try:
         report = await xai_service.generate_report(
             explanation_id=request.explanation_id,
@@ -1930,14 +2077,19 @@ async def download_verification_certificate(
         raise HTTPException(status_code=503, detail="Report service not available")
     
     try:
+        logger.info(f"Certificate request - verification_id: {verification_id}, user: {current_user.email}, role: {current_user.role}")
+        logger.info(f"is_admin check result: {is_admin(current_user.role)}")
+        
         with db.get_connection() as conn:
             # Verify the verification exists and user has access
-            if current_user.role.lower() == 'admin':
+            if is_admin(current_user.role):
+                logger.info("Using admin query")
                 cursor = conn.execute(
                     "SELECT project_id FROM verifications WHERE id = ?",
                     (verification_id,)
                 )
             else:
+                logger.info(f"Using user query for user_id: {current_user.id}")
                 cursor = conn.execute("""
                     SELECT v.project_id 
                     FROM verifications v
@@ -1946,6 +2098,7 @@ async def download_verification_certificate(
                 """, (verification_id, current_user.id))
             
             result = cursor.fetchone()
+            logger.info(f"Database query result: {result}")
             if not result:
                 raise HTTPException(status_code=404, detail="Verification not found or not authorized")
             
@@ -1977,7 +2130,7 @@ async def download_analytics_report(current_user: UserResponse = Depends(get_cur
         raise HTTPException(status_code=503, detail="Report service not available")
     
     # Only admins can generate analytics reports
-    if current_user.role.lower() != 'admin':
+    if not is_admin(current_user.role):
         raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
@@ -2039,7 +2192,7 @@ async def download_project_report(
     try:
         with db.get_connection() as conn:
             # Verify project exists and user has access
-            if current_user.role.lower() == 'admin':
+            if is_admin(current_user.role):
                 cursor = conn.execute("SELECT * FROM projects WHERE id = ?", (project_id,))
             else:
                 cursor = conn.execute(
@@ -2317,7 +2470,7 @@ async def get_iot_sensors(
                 params.append(sensor_type)
             
             # Check user permissions
-            if current_user.role != "admin":
+            if not is_admin(current_user.role):
                 query += " AND p.user_id = ?"
                 params.append(current_user.id)
             
@@ -2367,7 +2520,7 @@ async def create_iot_sensor(
             if not project:
                 raise HTTPException(status_code=404, detail="Project not found")
             
-            if current_user.role != "admin" and project[1] != current_user.id:
+            if not is_admin(current_user.role) and project[1] != current_user.id:
                 raise HTTPException(status_code=403, detail="Not authorized to add sensors to this project")
             
             logger.info(f"Project verified, inserting sensor...")
@@ -2437,7 +2590,7 @@ async def update_iot_sensor(
             if not existing_sensor:
                 raise HTTPException(status_code=404, detail="Sensor not found")
             
-            if current_user.role != "admin" and existing_sensor[-1] != current_user.id:  # user_id is last column
+            if not is_admin(current_user.role) and existing_sensor[-1] != current_user.id:  # user_id is last column
                 raise HTTPException(status_code=403, detail="Not authorized to update this sensor")
             
             logger.info(f"Sensor verified, updating...")
@@ -2505,7 +2658,7 @@ async def delete_iot_sensor(
             if not sensor:
                 raise HTTPException(status_code=404, detail="Sensor not found")
             
-            if current_user.role != "admin" and sensor[-1] != current_user.id:  # user_id is last column
+            if not is_admin(current_user.role) and sensor[-1] != current_user.id:  # user_id is last column
                 raise HTTPException(status_code=403, detail="Not authorized to delete this sensor")
             
             # Delete related readings first (foreign key constraint)
@@ -2548,7 +2701,7 @@ async def create_sensor_reading(
             if not sensor:
                 raise HTTPException(status_code=404, detail="Sensor not found")
             
-            if current_user.role != "admin" and sensor[1] != current_user.id:
+            if not is_admin(current_user.role) and sensor[1] != current_user.id:
                 raise HTTPException(status_code=403, detail="Not authorized to add readings to this sensor")
             
             # Insert reading
@@ -2620,7 +2773,7 @@ async def get_sensor_readings(
             if not sensor:
                 raise HTTPException(status_code=404, detail="Sensor not found")
             
-            if current_user.role != "admin" and sensor[1] != current_user.id:
+            if not is_admin(current_user.role) and sensor[1] != current_user.id:
                 raise HTTPException(status_code=403, detail="Not authorized to access this sensor")
             
             # Get readings

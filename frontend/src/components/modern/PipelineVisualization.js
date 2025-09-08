@@ -2,7 +2,7 @@
  * Pipeline Visualization Component - Interactive Workflow Display
  * Part of the Environmental Mission Control design system
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, Chip, IconButton, styled, Tooltip } from '@mui/material';
 import { colors, glass, radius, animations, shadows, spacing } from '../../theme/modernTheme';
 
@@ -17,6 +17,7 @@ import SecurityIcon from '@mui/icons-material/Security';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import InfoIcon from '@mui/icons-material/Info';
+import StepDetailsPanel from './StepDetailsPanel';
 
 const PipelineContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
@@ -223,9 +224,16 @@ const PipelineVisualization = ({
   onStepClick,
   showProgress = true,
   interactive = true,
+  autoPlay = false,
+  autoPlayInterval = 5000,
+  pauseOnHover = true,
+  loop = true,
+  syncProgressWithSelection = false,
+  showGeneratedMedia = false,
   ...props 
 }) => {
-  const [selectedStep, setSelectedStep] = useState(0); // First box selected by default
+  const [selectedStep, setSelectedStep] = useState(currentStep || 0); // initialize from currentStep if provided
+  const [isPaused, setIsPaused] = useState(false);
   
   const defaultSteps = [
     {
@@ -273,7 +281,24 @@ const PipelineVisualization = ({
   ];
   
   const pipelineSteps = steps.length > 0 ? steps : defaultSteps;
-  const progress = ((currentStep + 1) / pipelineSteps.length) * 100;
+  const effectiveStep = syncProgressWithSelection ? selectedStep : currentStep;
+  const progress = ((effectiveStep + 1) / pipelineSteps.length) * 100;
+  
+  // Auto-play slider behavior
+  useEffect(() => {
+    if (!autoPlay) return;
+    const id = setInterval(() => {
+      if (pauseOnHover && isPaused) return;
+      setSelectedStep(prev => {
+        const next = prev + 1;
+        if (next >= pipelineSteps.length) {
+          return loop ? 0 : prev;
+        }
+        return next;
+      });
+    }, autoPlayInterval);
+    return () => clearInterval(id);
+  }, [autoPlay, autoPlayInterval, isPaused, pauseOnHover, loop, pipelineSteps.length]);
   
   // Rich content for each step
   const getStepExplanation = (stepId) => {
@@ -282,8 +307,8 @@ const PipelineVisualization = ({
       satellite: "Harness cutting-edge Sentinel-2 satellite imagery with AI-powered land cover analysis to monitor forest changes in real-time across vast territories.",
       ai: "Deploy advanced machine learning models including U-Net, ConvLSTM, and ensemble algorithms to precisely quantify carbon sequestration and forest change detection.",
       iot: "Integrate ground-based IoT sensors and environmental monitors to validate satellite data with real-world measurements and create a comprehensive verification network.",
-      xai: "Leverage explainable AI with SHAP, LIME, and gradient analysis to ensure transparent, auditable decision-making that regulators and stakeholders can trust.",
-      human: "Expert verification workflow where certified carbon analysts review AI recommendations and validate critical decisions through professional oversight.",
+      xai: "Leverage explainable AI with SHAP, LIME, and Integrated Gradients to ensure transparent, auditable decision-making that regulators and stakeholders can trust.",
+      review: "Expert verification workflow where certified carbon analysts review AI recommendations and validate critical decisions through professional oversight.",
       blockchain: "Mint verified carbon credits as immutable NFT certificates on blockchain, creating transparent, tradeable, and fraud-proof digital assets."
     };
     return explanations[stepId] || "Advanced carbon credit verification process.";
@@ -318,10 +343,10 @@ const PipelineVisualization = ({
       xai: [
         { icon: "🔍", text: "SHAP Analysis" },
         { icon: "💡", text: "LIME Insights" },
-        { icon: "📋", text: "Audit Trail" },
-        { icon: "🎯", text: "Transparency" }
+        { icon: "🌈", text: "Integrated Gradients" },
+        { icon: "📋", text: "Audit Trail" }
       ],
-      human: [
+      review: [
         { icon: "👨‍💼", text: "Expert Review" },
         { icon: "✅", text: "Compliance" },
         { icon: "📝", text: "Documentation" },
@@ -341,6 +366,125 @@ const PipelineVisualization = ({
       { icon: "✅", text: "Verified" }
     ];
   };
+
+  // Lightweight per-step media previews
+  const getStepMedia = (stepId) => {
+    const baseBox = (children, extra = {}) => (
+      <Box sx={{
+        width: '100%',
+        height: 180,
+        borderRadius: radius.lg,
+        position: 'relative',
+        overflow: 'hidden',
+        p: spacing.md,
+        background: `linear-gradient(135deg, ${colors.background.tertiary}80, ${colors.background.secondary}70)`,
+        border: `1px solid ${colors.accent.secondary}30`,
+        ...extra,
+      }}>
+        {children}
+      </Box>
+    );
+
+    switch (stepId) {
+      case 'create':
+        return baseBox(
+          <>
+            {[...Array(5)].map((_, i) => (
+              <Box key={i} sx={{
+                position: 'absolute',
+                top: 20 + i * 28,
+                left: 20,
+                right: 20,
+                height: 10,
+                borderRadius: 6,
+                background: colors.interactive.hover,
+              }} />
+            ))}
+            <AccountTreeIcon sx={{ position: 'absolute', bottom: 12, right: 12, color: colors.accent.primary }} />
+          </>
+        );
+      case 'satellite':
+        return baseBox(
+          <>
+            {[...Array(6)].map((_, r) => (
+              [...Array(10)].map((_, c) => (
+                <Box key={`${r}-${c}`} sx={{
+                  position: 'absolute',
+                  top: 12 + r * 26,
+                  left: 12 + c * 26,
+                  width: 20,
+                  height: 20,
+                  borderRadius: 3,
+                  backgroundColor: (r + c) % 2 === 0 ? colors.accent.primary + '25' : colors.accent.secondary + '20',
+                }} />
+              ))
+            ))}
+            <SatelliteAltIcon sx={{ position: 'absolute', bottom: 12, right: 12, color: colors.accent.secondary }} />
+          </>
+        );
+      case 'ai':
+        return baseBox(
+          <Box sx={{ display: 'flex', alignItems: 'flex-end', height: '100%', gap: 1 }}>
+            {[40, 75, 55, 90, 65, 80].map((h, i) => (
+              <Box key={i} sx={{ width: 16, height: `${h}%`, background: `linear-gradient(180deg, ${colors.accent.info}99, ${colors.accent.info}33)`, borderRadius: 2 }} />
+            ))}
+            <PsychologyIcon sx={{ position: 'absolute', bottom: 12, right: 12, color: colors.accent.info }} />
+          </Box>
+        );
+      case 'iot':
+        return baseBox(
+          <>
+            {[...Array(4)].map((_, i) => (
+              <Box key={i} sx={{ position: 'absolute', left: 16, right: 16, top: 30 + i * 28, height: 2, background: colors.accent.secondary + '60' }} />
+            ))}
+            <SensorsIcon sx={{ position: 'absolute', bottom: 12, right: 12, color: colors.accent.secondary }} />
+          </>
+        );
+      case 'xai':
+        return baseBox(
+          <>
+            {[...Array(4)].map((_, r) => (
+              [...Array(6)].map((_, c) => (
+                <Box key={`${r}-${c}`} sx={{
+                  position: 'absolute',
+                  top: 18 + r * 36,
+                  left: 18 + c * 36,
+                  width: 22,
+                  height: 22,
+                  borderRadius: 4,
+                  background: `linear-gradient(135deg, ${colors.accent.primary}${(30 + (r + c) * 10).toString()} , ${colors.accent.secondary}30)`,
+                  opacity: 0.7,
+                }} />
+              ))
+            ))}
+            <AutoAwesomeIcon sx={{ position: 'absolute', bottom: 12, right: 12, color: colors.accent.info }} />
+          </>
+        );
+      case 'review':
+        return baseBox(
+          <>
+            {[...Array(3)].map((_, i) => (
+              <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, position: 'absolute', left: 16, top: 24 + i * 40 }}>
+                <CheckCircleIcon sx={{ fontSize: 18, color: colors.accent.success }} />
+                <Box sx={{ width: 220, height: 8, borderRadius: 6, background: colors.interactive.hover }} />
+              </Box>
+            ))}
+            <PersonIcon sx={{ position: 'absolute', bottom: 12, right: 12, color: colors.text.secondary }} />
+          </>
+        );
+      case 'blockchain':
+        return baseBox(
+          <>
+            {[...Array(8)].map((_, i) => (
+              <Box key={i} sx={{ position: 'absolute', left: 16 + i * 32, top: 80 + (i % 2 ? 8 : -8), width: 18, height: 18, borderRadius: '50%', border: `2px solid ${colors.accent.success}55` }} />
+            ))}
+            <SecurityIcon sx={{ position: 'absolute', bottom: 12, right: 12, color: colors.accent.success }} />
+          </>
+        );
+      default:
+        return baseBox(<Box />);
+    }
+  };
   
   const getStepStatus = (index) => {
     // All steps now show as completed, only selection state differs
@@ -358,7 +502,10 @@ const PipelineVisualization = ({
 
   return (
     <Box position="relative" {...props}>
-      <PipelineContainer>
+      <PipelineContainer
+        onMouseEnter={pauseOnHover ? () => setIsPaused(true) : undefined}
+        onMouseLeave={pauseOnHover ? () => setIsPaused(false) : undefined}
+      >
         {pipelineSteps.map((step, index) => (
           <React.Fragment key={step.id}>
             <Tooltip 
@@ -399,7 +546,7 @@ const PipelineVisualization = ({
             </Tooltip>
             
             {index < pipelineSteps.length - 1 && (
-              <ConnectorLine active={index < currentStep} />
+              <ConnectorLine active={index < effectiveStep} />
             )}
           </React.Fragment>
         ))}
@@ -409,212 +556,23 @@ const PipelineVisualization = ({
         )}
       </PipelineContainer>
       
-      {/* Ultra-Compact Animated Showcase */}
-      <Box
-        sx={{
-          mt: spacing.xs,
-          mx: -spacing.sm,
-          background: `linear-gradient(135deg, ${colors.background.tertiary}90, ${colors.background.secondary}95)`,
-          backdropFilter: 'blur(25px)',
-          border: `1px solid ${colors.accent.secondary}30`,
-          borderRadius: radius.xl,
-          position: 'relative',
-          overflow: 'hidden',
-          minHeight: 80,
-          transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
-          
-          '&:hover': {
-            transform: 'translateY(-4px) scale(1.02)',
-            boxShadow: `0 20px 40px ${colors.accent.primary}25`,
-            border: `1px solid ${colors.accent.secondary}50`,
-          },
-          
-          // Multiple animated layers
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: '-100%',
-            right: 0,
-            bottom: 0,
-            background: `linear-gradient(90deg, transparent, ${colors.accent.primary}15, transparent)`,
-            animation: 'sweepGlow 3s ease-in-out infinite',
-            zIndex: 1,
-          },
-          
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            top: -2,
-            left: -2,
-            right: -2,
-            bottom: -2,
-            background: `linear-gradient(45deg, ${colors.accent.primary}20, ${colors.accent.secondary}20, ${colors.accent.primary}20)`,
-            borderRadius: radius.xl,
-            zIndex: -1,
-            animation: 'borderPulse 4s ease-in-out infinite',
-          },
-          
-          '@keyframes sweepGlow': {
-            '0%': { left: '-100%' },
-            '50%': { left: '100%' },
-            '100%': { left: '100%' }
-          },
-          
-          '@keyframes borderPulse': {
-            '0%, 100%': { opacity: 0.3 },
-            '50%': { opacity: 0.8 }
-          },
-          
-          '@keyframes iconBounce': {
-            '0%, 20%, 50%, 80%, 100%': { transform: 'translateY(0) scale(1)' },
-            '40%': { transform: 'translateY(-6px) scale(1.1)' },
-            '60%': { transform: 'translateY(-3px) scale(1.05)' }
-          },
-          
-          '@keyframes textSlide': {
-            '0%': { opacity: 0, transform: 'translateX(-20px)' },
-            '100%': { opacity: 1, transform: 'translateX(0)' }
-          },
-          
-          '@keyframes badgeFloat': {
-            '0%, 100%': { transform: 'translateY(0)' },
-            '50%': { transform: 'translateY(-2px)' }
-          }
+      {/* Fancy Step Details Panel */}
+      <StepDetailsPanel
+        key={selectedStep} // Force re-mount to replay animations
+        icon={pipelineSteps[selectedStep].icon}
+        title={pipelineSteps[selectedStep].label}
+        explanation={getStepExplanation(pipelineSteps[selectedStep].id)}
+        features={getStepFeatures(pipelineSteps[selectedStep].id)}
+        stepNumber={selectedStep + 1}
+        totalSteps={pipelineSteps.length}
+        status={getStepStatus(selectedStep)}
+        primaryLabel={`Go to ${pipelineSteps[selectedStep].label}`}
+        onPrimaryAction={() => {
+          if (onStepClick) onStepClick(pipelineSteps[selectedStep], selectedStep);
         }}
-      >
-        <Box sx={{ 
-          position: 'relative', 
-          zIndex: 2,
-          p: spacing.md,
-        }}>
-          {/* Compact Header Row */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: spacing.sm, mb: spacing.sm }}>
-            {/* Animated Icon */}
-            <Box sx={{ 
-              width: 36,
-              height: 36,
-              borderRadius: '10px',
-              background: `linear-gradient(135deg, ${colors.accent.secondary}, ${colors.accent.primary})`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              animation: 'iconBounce 4s ease-in-out infinite',
-              boxShadow: `0 4px 15px ${colors.accent.primary}40`,
-              
-              '& .MuiSvgIcon-root': {
-                fontSize: '1.2rem',
-                color: colors.background.primary,
-              }
-            }}>
-              {pipelineSteps[selectedStep].icon}
-            </Box>
-            
-            {/* Title & Description - Horizontal */}
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography sx={{ 
-                color: colors.accent.secondary, 
-                fontWeight: 700,
-                fontSize: '1rem',
-                mb: spacing.xs / 2,
-                animation: 'textSlide 0.5s ease-out',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}>
-                {pipelineSteps[selectedStep].label}
-              </Typography>
-              <Typography sx={{ 
-                color: colors.text.secondary,
-                fontSize: '0.8rem',
-                lineHeight: 1.3,
-                opacity: 0.85,
-                animation: 'textSlide 0.6s ease-out',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-              }}>
-                {getStepExplanation(pipelineSteps[selectedStep].id)}
-              </Typography>
-            </Box>
-            
-            {/* Pulsing Status */}
-            <Box sx={{
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              backgroundColor: colors.accent.primary,
-              animation: 'pulse 2s infinite',
-              boxShadow: `0 0 8px ${colors.accent.primary}80`,
-              flexShrink: 0,
-            }} />
-          </Box>
-          
-          {/* Compact Feature Pills */}
-          <Box sx={{ 
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: spacing.xs,
-            justifyContent: 'space-between',
-          }}>
-            {getStepFeatures(pipelineSteps[selectedStep].id).map((feature, index) => (
-              <Box
-                key={index}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: spacing.xs / 2,
-                  px: spacing.sm,
-                  py: spacing.xs / 2,
-                  borderRadius: '20px',
-                  background: `linear-gradient(90deg, ${colors.background.tertiary}60, ${colors.background.tertiary}40)`,
-                  border: `1px solid ${colors.accent.secondary}20`,
-                  minWidth: '22%',
-                  animation: `badgeFloat ${3 + index * 0.5}s ease-in-out infinite`,
-                  animationDelay: `${index * 0.1}s`,
-                  
-                  '&:hover': {
-                    background: `linear-gradient(90deg, ${colors.accent.secondary}20, ${colors.accent.primary}15)`,
-                    border: `1px solid ${colors.accent.secondary}40`,
-                    transform: 'translateY(-1px) scale(1.05)',
-                    boxShadow: `0 2px 8px ${colors.accent.primary}30`,
-                  }
-                }}
-              >
-                <Typography sx={{ fontSize: '0.65rem', lineHeight: 1 }}>
-                  {feature.icon}
-                </Typography>
-                <Typography sx={{ 
-                  color: colors.text.secondary,
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  whiteSpace: 'nowrap',
-                }}>
-                  {feature.text}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-        
-        {/* Animated Particles */}
-        {[...Array(3)].map((_, i) => (
-          <Box key={i} sx={{
-            position: 'absolute',
-            width: 4,
-            height: 4,
-            borderRadius: '50%',
-            backgroundColor: colors.accent.secondary + '40',
-            top: `${20 + i * 30}%`,
-            right: `${10 + i * 15}%`,
-            animation: `floatingOrb ${4 + i}s ease-in-out infinite`,
-            animationDelay: `${i * 0.8}s`,
-            zIndex: 0,
-          }} />
-        ))}
-        
-      </Box>
+        media={pipelineSteps[selectedStep].media ? pipelineSteps[selectedStep].media : (showGeneratedMedia ? getStepMedia(pipelineSteps[selectedStep].id) : null)}
+        mediaLabel={`${pipelineSteps[selectedStep].label} preview`}
+      />
     </Box>
   );
 };

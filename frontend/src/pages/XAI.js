@@ -376,7 +376,7 @@ const XAI = () => {
             max-width: 1200px; 
             margin: 0 auto; 
             padding: 20px;
-            background: white;
+            background: transparent;
         }
         .header { 
             border-bottom: 3px solid #1976d2; 
@@ -679,22 +679,28 @@ const XAI = () => {
       hidden={value !== index}
       id={`xai-tabpanel-${index}`}
       aria-labelledby={`xai-tab-${index}`}
+      style={{ width: '100%' }}
       {...other}
     >
-      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+      {value === index && <Box sx={{ py: 3, width: '100%', maxWidth: 'none' }}>{children}</Box>}
     </div>
   );
 
   return (
     <Container 
-      maxWidth={false} 
+      maxWidth={false}
+      disableGutters
       sx={{ 
-        py: 4, 
-        px: { xs: 2, sm: 3, md: 4, xl: 5 },
-        // Eliminate right gutter - use full available width
-        maxWidth: 'min(1400px, 94vw)',
-        mx: 'auto',
-        width: '100%'
+        py: 4,
+        px: 3,
+        maxWidth: 'none',
+        width: '100%',
+        minWidth: '100%',
+        mx: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        alignItems: 'stretch'
       }}
     >
       {/* Header */}
@@ -722,8 +728,8 @@ const XAI = () => {
 
       {/* Global Project Selection */}
       <Card sx={{ 
-        mb: 3, 
-        background: 'linear-gradient(135deg, #f8faff 0%, #eef4ff 100%)',
+        mb: 3,
+        // inherit themed glass background
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}>
         <CardContent sx={{ p: 3 }}>
@@ -822,15 +828,14 @@ const XAI = () => {
       {/* Tab 1: Generate & Analyze */}
       <TabPanel value={state.tabValue} index={0}>
         <Box sx={{ 
-          maxWidth: '1200px', 
+          maxWidth: 'none', 
           width: '100%', 
-          mx: 'auto',
+          mx: 0,
           minHeight: '600px'
         }}>
           {/* Configuration Panel - Full-Width Responsive Design */}
         <Card sx={{ 
-          mb: 3, 
-          background: 'linear-gradient(135deg, #fafbff 0%, #f0f4ff 100%)',
+          mb: 3,
           minHeight: '320px',
           width: '100%',
           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
@@ -1003,22 +1008,22 @@ const XAI = () => {
                           cursor: (!state.selectedProject || !state.selectedMethod || state.loading) ? 'not-allowed' : 'pointer',
                           background: (state.selectedProject && state.selectedMethod) ? 
                             'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)' : 
-                            '#e0e0e0',
-                          color: (state.selectedProject && state.selectedMethod) ? '#ffffff' : 'rgba(0, 0, 0, 0.38)',
+                            'rgba(255, 255, 255, 0.08)',
+                          color: (state.selectedProject && state.selectedMethod) ? '#ffffff' : 'rgba(255, 255, 255, 0.38)',
                           boxShadow: (state.selectedProject && state.selectedMethod) ? 
                             '0 3px 6px 0 rgba(25, 118, 210, 0.3)' : 
                             'none',
                           '&:hover': {
                             background: (state.selectedProject && state.selectedMethod && !state.loading) ? 
                               'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)' :
-                              '#e0e0e0',
+                              'rgba(255, 255, 255, 0.08)',
                             boxShadow: (state.selectedProject && state.selectedMethod && !state.loading) ?
                               '0 6px 12px 0 rgba(25, 118, 210, 0.4)' :
                               'none'
                           },
                           '&:disabled': {
-                            background: '#e0e0e0',
-                            color: 'rgba(0, 0, 0, 0.38)',
+                            background: 'rgba(255, 255, 255, 0.08)',
+                            color: 'rgba(255, 255, 255, 0.38)',
                             cursor: 'not-allowed'
                           },
                           transition: 'all 0.2s ease-in-out'
@@ -1107,7 +1112,7 @@ const XAI = () => {
                  display: 'none'
                },
                '& .MuiAccordionSummary-root': {
-                 backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                 backgroundColor: 'transparent',
                  borderRadius: '8px 8px 0 0',
                  '&:focus-visible': {
                    outline: '3px solid',
@@ -1366,9 +1371,9 @@ const XAI = () => {
       {/* Tab 2: Compare & Analyze */}
       <TabPanel value={state.tabValue} index={1}>
         <Box sx={{ 
-          maxWidth: '1200px', 
+          maxWidth: 'none', 
           width: '100%', 
-          mx: 'auto',
+          mx: 0,
           minHeight: '600px'
         }}>
           <CompareMethodsTab
@@ -1391,9 +1396,9 @@ const XAI = () => {
       {/* Tab 3: History & Reports */}
       <TabPanel value={state.tabValue} index={2}>
         <Box sx={{ 
-          maxWidth: '1200px', 
+          maxWidth: 'none', 
           width: '100%', 
-          mx: 'auto',
+          mx: 0,
           minHeight: '600px'
         }}>
           <HistoryReportsTab

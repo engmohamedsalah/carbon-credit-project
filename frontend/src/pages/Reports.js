@@ -33,6 +33,7 @@ import {
 import { useSelector } from 'react-redux';
 import apiService from '../services/apiService';
 import { COMMON_STYLES } from '../theme/constants';
+import { API_CONFIG } from '../config/api';
 
 const Reports = () => {
   const { user } = useSelector(state => state.auth);
@@ -79,7 +80,7 @@ const Reports = () => {
   const downloadReport = async (endpoint, filename) => {
     setLoading(true);
     try {
-      const response = await fetch(`${apiService.defaults.baseURL}${endpoint}`, {
+      const response = await fetch(`${API_CONFIG.baseURL}${endpoint}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -265,13 +266,11 @@ const Reports = () => {
                   <ListItemText
                     primary={project ? project.name : `Project #${verification.project_id}`}
                     secondary={
-                      <Box>
-                        <Typography variant="body2" component="span">
-                          Status: {verification.status} • 
-                          Carbon Impact: {verification.carbon_impact || 'N/A'} tonnes CO₂ • 
-                          Date: {new Date(verification.created_at).toLocaleDateString()}
-                        </Typography>
-                      </Box>
+                      <Typography variant="body2" component="span">
+                        Status: {verification.status} • 
+                        Carbon Impact: {verification.carbon_impact || 'N/A'} tonnes CO₂ • 
+                        Date: {new Date(verification.created_at).toLocaleDateString()}
+                      </Typography>
                     }
                   />
                   <ListItemSecondaryAction>

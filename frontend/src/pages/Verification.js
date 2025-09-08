@@ -35,7 +35,7 @@ import {
   Tooltip,
   Fab
 } from '@mui/material';
-import {
+import { 
   CheckCircle,
   Cancel,
   Pending,
@@ -45,12 +45,15 @@ import {
   Analytics,
   FileDownload,
   Refresh,
-  Add
+  Add,
+  Verified,
+  ContentCopy,
+  OpenInNew
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { fetchProjects } from '../store/projectSlice';
-import { fetchVerifications, submitHumanReview, createVerification } from '../store/verificationSlice';
+import { fetchVerifications, submitHumanReview, createVerification, certifyVerification } from '../store/verificationSlice';
 import MLAnalysis from '../components/MLAnalysis';
 import apiService from '../services/apiService';
 
@@ -65,12 +68,15 @@ const Verification = () => {
   
   // Component state
   const [currentTab, setCurrentTab] = useState(0);
-  const [selectedProjects, setSelectedProjects] = useState([]);
+  const [selectedVerificationIds, setSelectedVerificationIds] = useState([]);
+  const [selectedProjectIds, setSelectedProjectIds] = useState([]);
   const [filterStatus, setFilterStatus] = useState('all');
   const [reviewDialog, setReviewDialog] = useState({ open: false, verification: null });
   const [bulkCreateDialog, setBulkCreateDialog] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ active: false, current: 0, total: 0 });
   const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
+  const [certifyingId, setCertifyingId] = useState(null);
+  const [recipientDialog, setRecipientDialog] = useState({ open: false, verification: null, address: '' });
   
   // Load data on mount
   useEffect(() => {
@@ -141,32 +147,40 @@ const Verification = () => {
   };
 
   // Handlers
-  const handleSelectAll = (checked) => {
+  const handleSelectAllVerifications = (checked) => {
     if (checked) {
-      setSelectedProjects(filteredVerifications.map(v => v.id));
+      setSelectedVerificationIds(filteredVerifications.map(v => v.id));
     } else {
-      setSelectedProjects([]);
+      setSelectedVerificationIds([]);
     }
   };
 
-  const handleSelectProject = (projectId, checked) => {
+  const handleSelectVerification = (verificationId, checked) => {
     if (checked) {
-      setSelectedProjects(prev => [...prev, projectId]);
+      setSelectedVerificationIds(prev => [...prev, verificationId]);
     } else {
-      setSelectedProjects(prev => prev.filter(id => id !== projectId));
+      setSelectedVerificationIds(prev => prev.filter(id => id !== verificationId));
+    }
+  };
+
+  const handleSelectProjectId = (projectId, checked) => {
+    if (checked) {
+      setSelectedProjectIds(prev => [...prev, projectId]);
+    } else {
+      setSelectedProjectIds(prev => prev.filter(id => id !== projectId));
     }
   };
 
   const handleBulkCreateVerifications = async () => {
-    setBulkProgress({ active: true, current: 0, total: selectedProjects.length });
+    setBulkProgress({ active: true, current: 0, total: selectedProjectIds.length });
     
-    for (let i = 0; i < selectedProjects.length; i++) {
-      const projectId = selectedProjects[i];
+    for (let i = 0; i < selectedProjectIds.length; i++) {
+      const projectId = selectedProjectIds[i];
       setBulkProgress(prev => ({ ...prev, current: i + 1 }));
       
       try {
         await dispatch(createVerification({ project_id: projectId }));
-        await new Promise(resolve => setTimeout(resolve, 500)); // Small delay
+        await new Promise(resolve => setTimeout(resolve, 300)); // Small delay
       } catch (error) {
         console.error(`Failed to create verification for project ${projectId}:`, error);
       }
@@ -174,7 +188,7 @@ const Verification = () => {
     
     setBulkProgress({ active: false, current: 0, total: 0 });
     setBulkCreateDialog(false);
-    setSelectedProjects([]);
+    setSelectedProjectIds([]);
     dispatch(fetchVerifications({}));
   };
 
@@ -189,6 +203,53 @@ const Verification = () => {
       dispatch(fetchVerifications({}));
     } catch (error) {
       console.error('Failed to submit review:', error);
+    }
+  };
+
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      try {
+        const el = document.createElement('textarea');
+        el.value = text;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+      } catch {}
+    }
+  };
+
+  const getExplorerTxUrl = (hash) => `https://mumbai.polygonscan.com/tx/${hash}`;
+
+  const openRecipientDialog = (verification) => {
+    setRecipientDialog({ open: true, verification, address: '' });
+  };
+
+  const handleConfirmCertify = async () => {
+    const verification = recipientDialog.verification;
+    try {
+      setCertifyingId(verification.id);
+      const amount = Math.round(verification.carbon_impact || 0);
+      if (!amount) {
+        console.warn('Carbon amount is missing for verification', verification.id);
+        return;
+      }
+      await dispatch(
+        certifyVerification({
+          projectId: verification.project_id,
+          carbonAmount: amount,
+          recipientAddress: recipientDialog.address || undefined,
+        })
+      );
+      setRecipientDialog({ open: false, verification: null, address: '' });
+      // Refresh list to reflect certification status change
+      dispatch(fetchVerifications({}));
+    } catch (error) {
+      console.error('Failed to certify verification:', error);
+    } finally {
+      setCertifyingId(null);
     }
   };
 
@@ -209,7 +270,7 @@ const Verification = () => {
   }
 
   return (
-    <Box sx={{ mt: 4, mb: 4, px: 3, maxWidth: 'none', width: '100%' }}>
+    <Box sx={{ mt: 4, mb: 4, px: 3, maxWidth: 'none', width: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
@@ -277,7 +338,7 @@ const Verification = () => {
       </Grid>
 
       {/* Tabs and Filters */}
-      <Card sx={{ mb: 3, minHeight: '600px', display: 'flex', flexDirection: 'column' }}>
+      <Card sx={{ mb: 3, minHeight: '600px', display: 'flex', flexDirection: 'column', width: '100%' }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={currentTab} onChange={(e, newValue) => setCurrentTab(newValue)}>
             <Tab label="All Verifications" />
@@ -306,10 +367,10 @@ const Verification = () => {
                   </Select>
                 </FormControl>
                 
-                {selectedProjects.length > 0 && (
+                {selectedVerificationIds.length > 0 && (
                   <Chip
-                    label={`${selectedProjects.length} selected`}
-                    onDelete={() => setSelectedProjects([])}
+                    label={`${selectedVerificationIds.length} selected`}
+                    onDelete={() => setSelectedVerificationIds([])}
                     color="primary"
                   />
                 )}
@@ -318,20 +379,22 @@ const Verification = () => {
               {/* Verifications Table Container */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 {filteredVerifications.length > 0 ? (
-                  <TableContainer component={Paper} sx={{ flex: 1 }}>
-                    <Table>
+                  <TableContainer component={Paper} sx={{ flex: 1, width: '100%' }}>
+                    <Table sx={{ width: '100%', tableLayout: 'fixed' }}>
                       <TableHead>
                         <TableRow>
                           <TableCell padding="checkbox">
                             <Checkbox
-                              checked={selectedProjects.length === filteredVerifications.length && filteredVerifications.length > 0}
-                              indeterminate={selectedProjects.length > 0 && selectedProjects.length < filteredVerifications.length}
-                              onChange={(e) => handleSelectAll(e.target.checked)}
+                              checked={selectedVerificationIds.length === filteredVerifications.length && filteredVerifications.length > 0}
+                              indeterminate={selectedVerificationIds.length > 0 && selectedVerificationIds.length < filteredVerifications.length}
+                              onChange={(e) => handleSelectAllVerifications(e.target.checked)}
                             />
                           </TableCell>
                           <TableCell>Project</TableCell>
                           <TableCell>Status</TableCell>
                           <TableCell>Created</TableCell>
+                          <TableCell>Blockchain</TableCell>
+                          <TableCell>Tx Hash</TableCell>
                           <TableCell>Score</TableCell>
                           <TableCell>Actions</TableCell>
                         </TableRow>
@@ -343,8 +406,8 @@ const Verification = () => {
                             <TableRow key={verification.id}>
                               <TableCell padding="checkbox">
                                 <Checkbox
-                                  checked={selectedProjects.includes(verification.id)}
-                                  onChange={(e) => handleSelectProject(verification.id, e.target.checked)}
+                                  checked={selectedVerificationIds.includes(verification.id)}
+                                  onChange={(e) => handleSelectVerification(verification.id, e.target.checked)}
                                 />
                               </TableCell>
                               <TableCell>
@@ -371,13 +434,45 @@ const Verification = () => {
                                 </Typography>
                               </TableCell>
                               <TableCell>
+                                <Typography variant="body2" color={verification.blockchain_certified ? 'success.main' : 'text.secondary'}>
+                                  {verification.blockchain_certified ? 'Certified' : 'Not certified'}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                {verification.certificate_id ? (
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                                      {String(verification.certificate_id).slice(0, 10)}…
+                                    </Typography>
+                                    <Tooltip title="Copy tx hash">
+                                      <IconButton size="small" onClick={() => copyToClipboard(verification.certificate_id)}>
+                                        <ContentCopy fontSize="inherit" />
+                                      </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Open in explorer">
+                                      <IconButton
+                                        size="small"
+                                        component="a"
+                                        href={getExplorerTxUrl(verification.certificate_id)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        <OpenInNew fontSize="inherit" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </Box>
+                                ) : (
+                                  <Typography variant="body2">—</Typography>
+                                )}
+                              </TableCell>
+                              <TableCell>
                                 <Typography variant="body2">
                                   {verification.eligibility_score ? `${verification.eligibility_score}%` : 'N/A'}
                                 </Typography>
                               </TableCell>
                               <TableCell>
-                                <Box sx={{ display: 'flex', gap: 1 }}>
-                                  <Tooltip title="View Details">
+                                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                                  <Tooltip title="View Project">
                                     <IconButton
                                       size="small"
                                       onClick={() => navigate(`/projects/${verification.project_id}`)}
@@ -395,6 +490,25 @@ const Verification = () => {
                                         <PlayArrow />
                                       </IconButton>
                                     </Tooltip>
+                                  )}
+
+                                  {/* Admin-only: Certify on Blockchain when approved and not yet certified */}
+                                  {user?.role?.toLowerCase() === 'admin' &&
+                                    String(verification.status || '').toLowerCase() === 'approved' &&
+                                    !verification.blockchain_certified && (
+                                      <Tooltip title={verification.carbon_impact ? "Certify on Blockchain" : "Carbon impact missing"}>
+                                        {/* span wrapper to allow disabled tooltip */}
+                                        <span>
+                                          <IconButton
+                                            size="small"
+                                            color="primary"
+                                            disabled={certifyingId === verification.id || !verification.carbon_impact}
+                                            onClick={() => openRecipientDialog(verification)}
+                                          >
+                                            <Verified />
+                                          </IconButton>
+                                        </span>
+                                      </Tooltip>
                                   )}
                                 </Box>
                               </TableCell>
@@ -637,7 +751,7 @@ const Verification = () => {
             </Typography>
             <LinearProgress 
               variant="determinate" 
-              value={(bulkProgress.current / bulkProgress.total) * 100} 
+              value={bulkProgress.total > 0 ? (bulkProgress.current / bulkProgress.total) * 100 : 0} 
             />
           </CardContent>
         </Card>
@@ -657,13 +771,13 @@ const Verification = () => {
                 <TableRow>
                   <TableCell padding="checkbox">
                     <Checkbox
-                      checked={selectedProjects.length === availableProjects.length && availableProjects.length > 0}
-                      indeterminate={selectedProjects.length > 0 && selectedProjects.length < availableProjects.length}
+                      checked={selectedProjectIds.length === availableProjects.length && availableProjects.length > 0}
+                      indeterminate={selectedProjectIds.length > 0 && selectedProjectIds.length < availableProjects.length}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedProjects(availableProjects.map(p => p.id));
+                          setSelectedProjectIds(availableProjects.map(p => p.id));
                         } else {
-                          setSelectedProjects([]);
+                          setSelectedProjectIds([]);
                         }
                       }}
                     />
@@ -678,8 +792,8 @@ const Verification = () => {
                   <TableRow key={project.id}>
                     <TableCell padding="checkbox">
                       <Checkbox
-                        checked={selectedProjects.includes(project.id)}
-                        onChange={(e) => handleSelectProject(project.id, e.target.checked)}
+                        checked={selectedProjectIds.includes(project.id)}
+                        onChange={(e) => handleSelectProjectId(project.id, e.target.checked)}
                       />
                     </TableCell>
                     <TableCell>{project.name}</TableCell>
@@ -702,9 +816,9 @@ const Verification = () => {
           <Button
             variant="contained"
             onClick={handleBulkCreateVerifications}
-            disabled={selectedProjects.length === 0}
+            disabled={selectedProjectIds.length === 0}
           >
-            Create {selectedProjects.length} Verifications
+            Create {selectedProjectIds.length} Verifications
           </Button>
         </DialogActions>
       </Dialog>
@@ -754,6 +868,35 @@ const Verification = () => {
             onClick={() => handleReview(true)}
           >
             Approve
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Recipient Address Dialog */}
+      <Dialog open={recipientDialog.open} onClose={() => setRecipientDialog({ open: false, verification: null, address: '' })}>
+        <DialogTitle>Certify on Blockchain</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Optionally specify a recipient wallet address. If left empty, the default demo address will be used.
+          </Typography>
+          <TextField
+            fullWidth
+            label="Recipient Address (0x...)"
+            placeholder="0x..."
+            value={recipientDialog.address}
+            onChange={(e) => setRecipientDialog(prev => ({ ...prev, address: e.target.value }))}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRecipientDialog({ open: false, verification: null, address: '' })}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleConfirmCertify}
+            disabled={!recipientDialog.verification || certifyingId === recipientDialog.verification?.id}
+          >
+            {certifyingId === recipientDialog.verification?.id ? 'Certifying...' : 'Certify'}
           </Button>
         </DialogActions>
       </Dialog>
