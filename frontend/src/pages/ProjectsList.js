@@ -43,6 +43,8 @@ const ProjectsList = () => {
   const { user } = useSelector(state => state.auth);
   const [searchTerm, setSearchTerm] = useState('');
   const [localError, setLocalError] = useState(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     let isMounted = true;
@@ -121,7 +123,7 @@ const ProjectsList = () => {
     if (localError) {
       const timer = setTimeout(() => {
         setLocalError(null);
-      }, 5000);
+      }, 8000); // Increased to 8 seconds for better readability
       return () => clearTimeout(timer);
     }
   }, [localError]);

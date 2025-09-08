@@ -34,7 +34,7 @@ export const createProject = createAsyncThunk(
       const response = await apiService.projects.create({
         name: projectData.name,
         location_name: projectData.location_name || 'Unknown Location',
-        area_size: parseFloat(projectData.area_hectares) || 0,
+        area_hectares: parseFloat(projectData.area_hectares) || 0,
         description: projectData.description || '',
         project_type: projectData.project_type || 'Reforestation'
       });

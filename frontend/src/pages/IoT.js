@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
   Typography,
   Box,
   Grid,
@@ -15,6 +14,7 @@ import {
   MenuItem,
   Dialog,
   DialogContent,
+  Drawer,
   Fab,
   CircularProgress,
   TextField,
@@ -43,6 +43,7 @@ import {
   deleteSensor
 } from '../store/iotSlice';
 import { COMMON_STYLES } from '../theme/constants';
+import { isAdmin, canAccessFeature, FEATURE_ACCESS } from '../utils/roleUtils';
 
 // Component imports
 import SensorCard from '../components/iot/SensorCard';
@@ -152,10 +153,10 @@ const IoT = () => {
 
   const stats = getSensorStats();
   const filteredSensors = getFilteredSensors();
-  const canManageSensors = user?.role === 'admin' || user?.role === 'project_developer' || user?.role === 'Project Developer';
+  const canManageSensors = isAdmin(user?.role) || canAccessFeature(user?.role, 'IOT_FEATURES');
 
   return (
-    <Container maxWidth="xl" sx={COMMON_STYLES.pageContainer}>
+    <Box sx={{ mt: 4, mb: 4, px: 3, maxWidth: 'none', width: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -291,9 +292,9 @@ const IoT = () => {
           <CircularProgress />
         </Box>
       ) : (
-        <Grid container spacing={3}>
+        <Grid container spacing={3} sx={{ width: '100%', m: 0 }}>
           {/* Sensors Grid */}
-          <Grid item xs={12} lg={selectedSensor ? 8 : 12}>
+          <Grid item xs={12} lg={12}>
             <Typography variant="h6" gutterBottom>
               Sensor Network ({filteredSensors.length} sensors)
             </Typography>
@@ -311,7 +312,7 @@ const IoT = () => {
                 ))}
               </Grid>
             ) : (
-              <Card>
+              <Card sx={{ width: '100%' }}>
                 <CardContent sx={{ textAlign: 'center', py: 4 }}>
                   <SensorsIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
                   <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -339,29 +340,6 @@ const IoT = () => {
             )}
           </Grid>
 
-          {/* Sensor Detail Panel */}
-          {selectedSensor && (
-            <Grid item xs={12} lg={4}>
-              <Box sx={{ position: 'sticky', top: 20 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">
-                    Sensor: {selectedSensor.sensor_id}
-                  </Typography>
-                  <Button
-                    size="small"
-                    onClick={() => dispatch(clearSelectedSensor())}
-                  >
-                    Close
-                  </Button>
-                </Box>
-                <ReadingsChart 
-                  sensorId={selectedSensor.id}
-                  sensorType={selectedSensor.sensor_type}
-                  sensor={selectedSensor}
-                />
-              </Box>
-            </Grid>
-          )}
         </Grid>
       )}
 
@@ -380,6 +358,35 @@ const IoT = () => {
         >
           <AddIcon />
         </Fab>
+      )}
+
+      {/* Sensor Detail Drawer */}
+      {selectedSensor && (
+        <Drawer
+          anchor="right"
+          open={Boolean(selectedSensor)}
+          onClose={() => dispatch(clearSelectedSensor())}
+          PaperProps={{ sx: { width: 420 } }}
+        >
+          <Box sx={{ p: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">
+                Sensor: {selectedSensor.sensor_id}
+              </Typography>
+              <Button
+                size="small"
+                onClick={() => dispatch(clearSelectedSensor())}
+              >
+                Close
+              </Button>
+            </Box>
+            <ReadingsChart 
+              sensorId={selectedSensor.id}
+              sensorType={selectedSensor.sensor_type}
+              sensor={selectedSensor}
+            />
+          </Box>
+        </Drawer>
       )}
 
       {/* Context Menu */}
@@ -419,7 +426,7 @@ const IoT = () => {
           <IoTAnalytics projectId={selectedProject} />
         </DialogContent>
       </Dialog>
-    </Container>
+    </Box>
   );
 };
 

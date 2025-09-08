@@ -7,6 +7,7 @@ import NewProject from './pages/NewProject';
 import EditProject from './pages/EditProject';
 import ProjectDetail from './pages/ProjectDetail';
 import Verification from './pages/Verification';
+import VerificationDetail from './pages/VerificationDetail';
 import XAI from './pages/XAI';
 import IoT from './pages/IoT';
 import Analytics from './pages/Analytics';
@@ -36,7 +37,7 @@ function App() {
           <Route path="projects/:id/edit" element={<EditProject />} />
           <Route path="projects/:id" element={<ProjectDetail />} />
           <Route path="verification" element={<Verification />} />
-          <Route path="verification/:id" element={<Verification />} />
+          <Route path="verification/:id" element={<VerificationDetail />} />
           <Route path="xai" element={<XAI />} />
           <Route path="iot" element={<IoT />} />
           <Route path="analytics" element={<Analytics />} />

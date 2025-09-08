@@ -14,6 +14,7 @@ export { GlassPanelCompact, GlassPanelLarge, GlassPanelBlur } from './GlassPanel
 
 // Interactive Components
 export { default as PipelineVisualization } from './PipelineVisualization';
+export { default as StepDetailsPanel } from './StepDetailsPanel';
 
 // Theme exports for convenience
 export {

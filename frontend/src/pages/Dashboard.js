@@ -172,6 +172,11 @@ const Dashboard = () => {
               // Navigate to specific workflow step
             }}
             showProgress={true}
+            autoPlay={true}
+            autoPlayInterval={5000}
+            pauseOnHover={true}
+            loop={true}
+            syncProgressWithSelection={true}
           />
         </GlassPanel>
       </Box>

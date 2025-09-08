@@ -97,6 +97,12 @@ const SensorCard = ({ sensor, onSelect, onMenuClick, showLastReading = true }) =
 
   const sensorConfig = iotService.getSensorTypeConfig(sensor.sensor_type);
 
+  // Safely format coordinates to avoid render crashes if values are not numeric
+  const lat = Number(sensor?.location_lat);
+  const lng = Number(sensor?.location_lng);
+  const latText = Number.isFinite(lat) ? lat.toFixed(4) : 'N/A';
+  const lngText = Number.isFinite(lng) ? lng.toFixed(4) : 'N/A';
+
   return (
     <Card 
       sx={{ 
@@ -163,7 +169,7 @@ const SensorCard = ({ sensor, onSelect, onMenuClick, showLastReading = true }) =
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <LocationOn sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
           <Typography variant="body2" color="text.secondary">
-            {sensor.location_lat.toFixed(4)}, {sensor.location_lng.toFixed(4)}
+            {latText}, {lngText}
           </Typography>
         </Box>
 

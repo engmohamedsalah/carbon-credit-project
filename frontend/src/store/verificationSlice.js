@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiService from '../services/apiService';
+import { API_ENDPOINTS } from '../config/api';
 
 // Async thunks
 export const fetchVerifications = createAsyncThunk(
@@ -60,10 +61,21 @@ export const submitHumanReview = createAsyncThunk(
 
 export const certifyVerification = createAsyncThunk(
   'verifications/certifyVerification',
-  async (verificationId, { rejectWithValue }) => {
+  async ({ projectId, carbonAmount, recipientAddress }, { rejectWithValue }) => {
     try {
-      const response = await apiService.verification.certify(verificationId);
-      return response.data;
+      // POST with query params since backend expects simple params, not JSON body
+      const response = await apiService.post(
+        API_ENDPOINTS.blockchain.mint,
+        null,
+        {
+          params: {
+            project_id: projectId,
+            carbon_amount: Math.round(carbonAmount || 0),
+            recipient_address: recipientAddress,
+          },
+        }
+      );
+      return response.data || response;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message || 'Failed to certify verification');
     }

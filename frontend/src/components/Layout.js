@@ -229,9 +229,9 @@ const Layout = () => {
         </Box>
       </Drawer>
       
-      <Box component="main" sx={{ flexGrow: 1, p: 0, width: '100%', maxWidth: 'none' }}>
+      <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 0, width: '100%', maxWidth: 'none', minHeight: '100vh' }}>
         <Toolbar />
-        <Box sx={{ p: 2, width: '100%' }}>
+        <Box sx={{ p: location.pathname.startsWith('/iot') ? 0 : 2, width: '100%', flex: 1 }}>
           <Outlet />
         </Box>
       </Box>

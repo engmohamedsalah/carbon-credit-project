@@ -45,7 +45,7 @@ const SummaryTab = ({ explanation }) => {
       </Box>
 
       {/* Enhanced Summary Content */}
-      <Paper sx={{ p: { xs: 3, md: 4 }, bgcolor: 'grey.50' }}>
+      <Paper sx={{ p: { xs: 3, md: 4 } }}>
         <Box sx={{
           display: 'grid',
           gridTemplateColumns: {
@@ -140,7 +140,7 @@ const SummaryTab = ({ explanation }) => {
           },
           gap: 2
         }}>
-          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.50' }}>
+          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'background.paper', border: '1px solid', borderColor: 'success.main' }}>
             <Typography variant="h4" color="success.main" sx={{ fontWeight: 700 }}>
               {(explanation.confidence_score * 100).toFixed(1)}%
             </Typography>
@@ -149,7 +149,7 @@ const SummaryTab = ({ explanation }) => {
             </Typography>
           </Paper>
           
-          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'info.50' }}>
+          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'background.paper', border: '1px solid', borderColor: 'info.main' }}>
             <Typography variant="h4" color="info.main" sx={{ fontWeight: 700 }}>
               {explanation.method?.toUpperCase() || 'AI'}
             </Typography>
@@ -158,7 +158,7 @@ const SummaryTab = ({ explanation }) => {
             </Typography>
           </Paper>
           
-          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.50' }}>
+          <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'background.paper', border: '1px solid', borderColor: 'primary.main' }}>
             <Typography variant="h4" color="primary.main" sx={{ fontWeight: 700 }}>
               {new Date(explanation.timestamp).toLocaleDateString()}
             </Typography>

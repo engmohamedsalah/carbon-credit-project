@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive API Testing Script
+Comprehensive API Testing Script (moved from project root to avoid pytest name collisions)
 Tests all Carbon Credit Verification API endpoints and verifies database integration
 """
 
@@ -403,4 +403,5 @@ def main():
     print(f"{'='*60}")
 
 if __name__ == "__main__":
-    main() 
+    main()
+

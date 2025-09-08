@@ -135,21 +135,10 @@ class TestAuthenticationFailures:
             # Submit form
             await page.click('button[type="submit"]')
             
-            # MVP may not have comprehensive client-side validation
-            # Should either show validation error OR let server handle it
-            try:
-                await expect(page.locator('.MuiAlert-message')).to_be_visible(timeout=2000)
-            except:
-                try:
-                    await expect(page.locator('[role="alert"]')).to_be_visible(timeout=1000)
-                except:
-                    try:
-                        await expect(page.locator('.error-message')).to_be_visible(timeout=1000)
-                    except:
-                        # If no client validation, should remain on register page
-                        await expect(page.locator("h2, h1")).to_be_visible()
+            # MVP: ensure we remain on the register page
+            await expect(page.locator("h2, h1")).to_be_visible()
         
-        # Should remain on register page regardless (flexible about exact text)
+        # Final check: still on register page
         await expect(page.locator("h2, h1")).to_be_visible()
     
     @pytest.mark.asyncio
@@ -166,20 +155,7 @@ class TestAuthenticationFailures:
         # Submit form
         await page.click('button[type="submit"]')
         
-        # Should show password mismatch error OR handle server-side
-        try:
-            await expect(page.locator('.MuiAlert-message')).to_be_visible(timeout=2000)
-        except:
-            try:
-                await expect(page.locator('[role="alert"]')).to_be_visible(timeout=1000)
-            except:
-                try:
-                    await expect(page.locator('.error-message')).to_be_visible(timeout=1000)
-                except:
-                    # If no client validation, should remain on register page
-                    await expect(page.locator("h2, h1")).to_be_visible()
-        
-        # Should remain on register page
+        # MVP: ensure we remain on the register page
         await expect(page.locator("h2, h1")).to_be_visible()
     
     @pytest.mark.asyncio
@@ -196,20 +172,7 @@ class TestAuthenticationFailures:
         # Submit form
         await page.click('button[type="submit"]')
         
-        # Should show password validation error OR handle server-side
-        try:
-            await expect(page.locator('.MuiAlert-message')).to_be_visible(timeout=2000)
-        except:
-            try:
-                await expect(page.locator('[role="alert"]')).to_be_visible(timeout=1000)
-            except:
-                try:
-                    await expect(page.locator('.error-message')).to_be_visible(timeout=1000)
-                except:
-                    # If no client validation, should remain on register page
-                    await expect(page.locator("h2, h1")).to_be_visible()
-        
-        # Should remain on register page
+        # MVP: ensure we remain on the register page
         await expect(page.locator("h2, h1")).to_be_visible()
     
     @pytest.mark.asyncio
@@ -221,14 +184,8 @@ class TestAuthenticationFailures:
         # Submit without filling anything
         await page.click('button[type="submit"]')
         
-        # Should either show validation error, disable button, or stay on page
-        # For MVP, just ensuring it doesn't crash is sufficient
-        try:
-            # Check if there's any error indication
-            await expect(page.locator('.MuiAlert-message, [role="alert"], .error-message')).to_be_visible(timeout=2000)
-        except:
-            # If no error shown, should at least stay on register page
-            await expect(page.locator("h2, h1")).to_be_visible()
+        # Should either show validation error or stay on page
+        await expect(page.locator("h2, h1")).to_be_visible()
         
         # Page should still be functional (not crashed)
         await expect(page.locator('input[name="email"]')).to_be_visible()

@@ -43,14 +43,8 @@ cleanup() {
 trap cleanup SIGINT SIGTERM EXIT
 
 # Initialize database if needed
-echo "🗄️  Initializing SQLite database..."
+echo "🗄️  Initializing SQLite database (handled by backend on first run)..."
 cd backend
-if [ ! -f "../database/carbon_credits.db" ]; then
-    echo "   Creating new database..."
-    python init_db.py
-else
-    echo "   ✅ Database already exists"
-fi
 
 # Start backend
 echo "🚀 Starting Backend API (with SQLite database)..."
