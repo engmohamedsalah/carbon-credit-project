@@ -301,15 +301,22 @@ const IoT = () => {
             
             {filteredSensors.length > 0 ? (
               <Grid container spacing={2}>
-                {filteredSensors.map(sensor => (
-                  <Grid item xs={12} sm={6} md={4} key={sensor.id}>
-                    <SensorCard
-                      sensor={sensor}
-                      onSelect={handleSensorSelect}
-                      onMenuClick={handleMenuClick}
-                    />
-                  </Grid>
-                ))}
+                {filteredSensors.map(sensor => {
+                  // Find the project name for this sensor
+                  const project = projects.find(p => p.id === sensor.project_id);
+                  const projectName = project?.name || 'Unknown Project';
+                  
+                  return (
+                    <Grid item xs={12} sm={6} md={4} key={sensor.id}>
+                      <SensorCard
+                        sensor={sensor}
+                        onSelect={handleSensorSelect}
+                        onMenuClick={handleMenuClick}
+                        projectName={projectName}
+                      />
+                    </Grid>
+                  );
+                })}
               </Grid>
             ) : (
               <Card sx={{ width: '100%' }}>

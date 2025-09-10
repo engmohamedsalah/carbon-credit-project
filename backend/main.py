@@ -2448,6 +2448,7 @@ async def get_carbon_impact_analytics(current_user: UserResponse = Depends(get_c
 async def get_iot_sensors(
     project_id: Optional[int] = None,
     sensor_type: Optional[str] = None,
+    status: Optional[str] = None,
     current_user: UserResponse = Depends(get_current_user)
 ):
     """Get IoT sensors with optional filtering"""
@@ -2468,6 +2469,10 @@ async def get_iot_sensors(
             if sensor_type:
                 query += " AND s.sensor_type = ?"
                 params.append(sensor_type)
+            
+            if status:
+                query += " AND s.status = ?"
+                params.append(status)
             
             # Check user permissions
             if not is_admin(current_user.role):

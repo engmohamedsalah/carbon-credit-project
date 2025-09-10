@@ -115,7 +115,7 @@ const iotSlice = createSlice({
     filters: {
       projectId: null,
       sensorType: null,
-      status: 'active'
+      status: null
     },
     pagination: {
       page: 1,
