@@ -14,14 +14,35 @@ if [ ! -d ".venv" ]; then
     exit 1
 fi
 
+# Simple cleanup function
+cleanup_ports() {
+    echo "🧹 Cleaning up ports..."
+    
+    # Kill processes on port 8000
+    for pid in $(lsof -ti:8000 2>/dev/null); do
+        echo "  Killing process $pid on port 8000"
+        kill -TERM $pid 2>/dev/null || true
+        sleep 1
+        kill -9 $pid 2>/dev/null || true
+    done
+    
+    # Kill processes on port 3000
+    for pid in $(lsof -ti:3000 2>/dev/null); do
+        echo "  Killing process $pid on port 3000"
+        kill -TERM $pid 2>/dev/null || true
+        sleep 1
+        kill -9 $pid 2>/dev/null || true
+    done
+    
+    echo "✅ Port cleanup completed"
+}
+
+# Cleanup existing processes
+cleanup_ports
+
 # Activate virtual environment
 echo "🔧 Activating virtual environment..."
 source .venv/bin/activate
-
-# Kill any existing processes on our ports
-echo "🧹 Cleaning up existing processes..."
-lsof -ti:8000 | xargs kill -9 2>/dev/null || true
-lsof -ti:3000 | xargs kill -9 2>/dev/null || true
 
 # Function to cleanup on exit
 cleanup() {
@@ -60,13 +81,13 @@ cd ..
 
 # Wait for backend to start
 echo "⏳ Waiting for backend to initialize..."
-for i in {1..15}; do
+for i in {1..30}; do
     if curl -s http://localhost:8000/health > /dev/null 2>&1; then
         echo "   ✅ Backend is ready!"
         break
     fi
-    if [ $i -eq 15 ]; then
-        echo "   ❌ Backend failed to start after 15 seconds"
+    if [ $i -eq 30 ]; then
+        echo "   ❌ Backend failed to start after 30 seconds"
         exit 1
     fi
     sleep 1
@@ -120,4 +141,4 @@ echo ""
 echo "⚠️  Press Ctrl+C to stop BOTH servers together"
 
 # Keep script running and wait for both processes
-wait 
+wait
