@@ -19,13 +19,9 @@ Key features include:
 ```
 carbon_credit_project/
 ├── backend/               # FastAPI backend
-│   ├── app/               # Application code
-│   │   ├── api/           # API endpoints
-│   │   ├── core/          # Core functionality
-│   │   ├── models/        # Database models
-│   │   ├── schemas/       # Pydantic schemas
-│   │   └── services/      # Business logic
-│   ├── main.py            # Application entry point
+│   ├── main.py            # Single-file FastAPI application
+│   ├── services/          # Business logic services
+│   ├── utils/             # Utility functions
 │   └── requirements.txt   # Python dependencies
 ├── frontend/              # React frontend
 │   ├── public/            # Static files
@@ -55,15 +51,16 @@ carbon_credit_project/
 │   ├── backend.Dockerfile # Backend Dockerfile
 │   └── frontend.Dockerfile # Frontend Dockerfile
 ├── documentation/         # Project documentation
-├── start_app.sh           # Script to start both frontend and backend
-└── start.sh               # Startup script
+├── run_app.sh             # Script to start both frontend and backend
+├── stop_app.sh            # Script to stop all services
+└── scripts/               # Additional utility scripts
 ```
 
 ## Technology Stack
 
 - **Backend**: FastAPI (Python)
-- **Frontend**: React with TypeScript
-- **Database**: PostgreSQL with PostGIS
+- **Frontend**: React with JavaScript
+- **Database**: SQLite (development), PostgreSQL with PostGIS (production)
 - **Machine Learning**: PyTorch, scikit-learn
 - **Explainable AI**: SHAP, LIME, Captum
 - **Blockchain**: Polygon (Ethereum L2)
@@ -85,19 +82,18 @@ carbon_credit_project/
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd carbon-credit-verification
+cd carbon_credit_project
 ```
 
-2. Run the startup script:
+2. Run with Docker (recommended):
 ```bash
-chmod +x start.sh
-./start.sh
+cd docker
+docker-compose up --build
 ```
 
 This will:
-- Set up the environment
 - Build and start Docker containers
-- Initialize the database
+- Initialize the PostgreSQL database with PostGIS
 - Start the application
 
 3. Access the application:
@@ -109,22 +105,36 @@ This will:
 
 If you want to run the application locally without Docker:
 
-1. Set up the local development environment:
+1. Set up the Python virtual environment:
 ```bash
-chmod +x local_dev_setup.sh
-./local_dev_setup.sh
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -r backend/requirements.txt
 ```
 
-2. Start both frontend and backend servers with a single command:
+2. Install frontend dependencies:
 ```bash
-./start_app.sh
+cd frontend
+npm install
+cd ..
+```
+
+3. Start both frontend and backend servers:
+```bash
+chmod +x run_app.sh
+./run_app.sh
 ```
 
 This will:
-- Initialize the SQLite database if needed
+- Initialize the SQLite database automatically
 - Start the backend server on port 8000
 - Start the frontend server on port 3000
 - Provide a convenient way to stop both servers with Ctrl+C
+
+To stop the servers separately:
+```bash
+./stop_app.sh
+```
 
 ## Documentation
 
