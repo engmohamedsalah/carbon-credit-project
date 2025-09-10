@@ -7,6 +7,7 @@ export const iotService = {
       const params = new URLSearchParams();
       if (filters.projectId) params.append('project_id', filters.projectId);
       if (filters.sensorType) params.append('sensor_type', filters.sensorType);
+      if (filters.status) params.append('status', filters.status);
       
       const queryString = params.toString();
       const url = queryString ? `/iot/sensors?${queryString}` : '/iot/sensors';

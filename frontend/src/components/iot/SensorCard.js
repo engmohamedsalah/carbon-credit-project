@@ -22,7 +22,7 @@ import {
 } from '@mui/icons-material';
 import { iotService } from '../../services/iotService';
 
-const SensorCard = ({ sensor, onSelect, onMenuClick, showLastReading = true }) => {
+const SensorCard = ({ sensor, onSelect, onMenuClick, showLastReading = true, projectName }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'success';
@@ -143,6 +143,11 @@ const SensorCard = ({ sensor, onSelect, onMenuClick, showLastReading = true }) =
               <Typography variant="body2" color="text.secondary">
                 {sensorConfig.label}
               </Typography>
+              {projectName && (
+                <Typography variant="caption" color="primary.main" sx={{ fontWeight: 500 }}>
+                  Project: {projectName}
+                </Typography>
+              )}
             </Box>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
