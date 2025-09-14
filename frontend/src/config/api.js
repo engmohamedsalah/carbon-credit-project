@@ -73,11 +73,11 @@ export const API_ENDPOINTS = {
     changePassword: '/settings/change-password',
   },
   
-  // Health and system endpoints (these need to be absolute since they don't use /api/v1)
+  // Health and system endpoints
   system: {
-    health: 'http://localhost:8000/health',
-    docs: 'http://localhost:8000/api/v1/docs',
-    openapi: 'http://localhost:8000/openapi.json',
+    health: process.env.NODE_ENV === 'production' ? '/health' : 'http://localhost:8000/health',
+    docs: process.env.NODE_ENV === 'production' ? '/api/v1/docs' : 'http://localhost:8000/api/v1/docs',
+    openapi: process.env.NODE_ENV === 'production' ? '/openapi.json' : 'http://localhost:8000/openapi.json',
   },
 };
 

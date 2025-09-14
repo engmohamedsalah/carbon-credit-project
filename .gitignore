@@ -154,3 +154,4 @@ debug_patches/ .claude/settings.local.json
 
 # Test results
 test-results/
+.vercel
