@@ -410,9 +410,7 @@ python -c "from services.ml_service import MLService; ml = MLService(); print('M
 
 For development/testing purposes:
 
-- **Admin User**:
-  - Username: admin@example.com
-  - Password: admin123
+- **Admin User**: provisioned via the `ADMIN_EMAIL` / `ADMIN_PASSWORD` environment variables
 
 - **Test User**:
   - Username: user@example.com

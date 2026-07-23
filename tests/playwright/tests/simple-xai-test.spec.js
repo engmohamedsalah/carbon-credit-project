@@ -9,7 +9,7 @@ test.describe('Simple XAI Integration Verification', () => {
   
   const adminUser = {
     email: 'testadmin@example.com',
-    password: 'password123'
+    password: 'changeme'
   };
 
   test('should login and access XAI page successfully', async ({ page }) => {

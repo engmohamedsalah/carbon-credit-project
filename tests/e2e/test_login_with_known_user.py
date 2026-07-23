@@ -51,14 +51,14 @@ def parse_credentials_from_users_md(text: str):
             return em.group(1).strip(), pw.group(1).strip()
 
     # Fallback: table entry with password explicitly present
-    m = re.search(r"\|\s*\*\*3\*\*\s*\|[\s\S]*?\|\s*\*\*admin@admin\.com\*\*\s*\|[\s\S]*?\|\s*\*\*Administrator\*\*[\s\S]*?\|\s*\*\*admin123\*\*\s*\|", text)
+    m = re.search(r"\|\s*\*\*3\*\*\s*\|[\s\S]*?\|\s*\*\*admin@admin\.com\*\*\s*\|[\s\S]*?\|\s*\*\*Administrator\*\*[\s\S]*?\|\s*\*\*changeme\*\*\s*\|", text)
     if m:
-        return 'admin@admin.com', 'admin123'
+        return 'admin@admin.com', 'changeme'
 
     # Another explicitly documented admin
-    m2 = re.search(r"blockchaintest@example\.com[\s\S]*?password123", text)
+    m2 = re.search(r"blockchaintest@example\.com[\s\S]*?changeme", text)
     if m2:
-        return 'blockchaintest@example.com', 'password123'
+        return 'blockchaintest@example.com', 'changeme'
 
     return None
 

@@ -90,7 +90,7 @@ def test_auth():
     # Register a new user
     register_data = {
         "email": "test@example.com",
-        "password": "password123",
+        "password": "changeme",
         "full_name": "Test User",
         "role": "project_developer"
     }
@@ -100,7 +100,7 @@ def test_auth():
     # Login
     login_data = {
         "username": "test@example.com",
-        "password": "password123"
+        "password": "changeme"
     }
     response = requests.post(f"{BASE_URL}/auth/login", data=login_data)
     assert response.status_code == 200
@@ -284,7 +284,7 @@ def test_frontend():
         
         # Enter credentials and login
         email_input.send_keys("test@example.com")
-        password_input.send_keys("password123")
+        password_input.send_keys("changeme")
         login_button.click()
         
         # Wait for dashboard to load

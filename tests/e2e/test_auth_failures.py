@@ -29,7 +29,7 @@ class TestAuthenticationFailures:
             await page.fill('input[name="email"]', "")
             await page.fill('input[name="password"]', "")
             await page.fill('input[name="email"]', email)
-            await page.fill('input[name="password"]', "password123")
+            await page.fill('input[name="password"]', "changeme")
             
             # Submit form
             await page.click('button[type="submit"]')
@@ -59,7 +59,7 @@ class TestAuthenticationFailures:
         await page.goto("http://localhost:3000/login")
         
         test_cases = [
-            {"email": "", "password": "password123"},
+            {"email": "", "password": "changeme"},
             {"email": "test@example.com", "password": ""},
             {"email": "", "password": ""},
         ]
@@ -92,7 +92,7 @@ class TestAuthenticationFailures:
         
         # Try to login with non-existent user
         await page.fill('input[name="email"]', "nonexistent@example.com")
-        await page.fill('input[name="password"]', "password123")
+        await page.fill('input[name="password"]', "changeme")
         await page.click('button[type="submit"]')
         
         # Should show invalid credentials error - but error message may vary
@@ -129,8 +129,8 @@ class TestAuthenticationFailures:
             # Clear and fill form
             await page.fill('input[name="fullName"]', "Test User")
             await page.fill('input[name="email"]', email)
-            await page.fill('input[name="password"]', "password123")
-            await page.fill('input[name="confirmPassword"]', "password123")
+            await page.fill('input[name="password"]', "changeme")
+            await page.fill('input[name="confirmPassword"]', "changeme")
             
             # Submit form
             await page.click('button[type="submit"]')
@@ -149,7 +149,7 @@ class TestAuthenticationFailures:
         # Fill form with mismatched passwords
         await page.fill('input[name="fullName"]', "Test User")
         await page.fill('input[name="email"]', "test@example.com")
-        await page.fill('input[name="password"]', "password123")
+        await page.fill('input[name="password"]', "changeme")
         await page.fill('input[name="confirmPassword"]', "differentpassword")
         
         # Submit form

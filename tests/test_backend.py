@@ -18,7 +18,7 @@ def test_auth():
     # Register a new user
     register_data = {
         "email": "testuser@example.com",
-        "password": "password123",
+        "password": "changeme",
         "full_name": "Test User",
         "role": "Project Developer"
     }
@@ -28,7 +28,7 @@ def test_auth():
     # Login
     login_data = {
         "username": "testuser@example.com",
-        "password": "password123"
+        "password": "changeme"
     }
     response = requests.post(f"{API_URL}/auth/login", data=login_data)
     assert response.status_code == 200

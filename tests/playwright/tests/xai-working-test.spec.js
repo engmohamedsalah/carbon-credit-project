@@ -9,7 +9,7 @@ test.describe('XAI System Test - Focused', () => {
   
   const adminUser = {
     email: 'testadmin@example.com',
-    password: 'password123'
+    password: 'changeme'
   };
 
   test('XAI End-to-End - Login to Real SHAP Generation', async ({ page }) => {

@@ -29,7 +29,7 @@ class BaseTestCase:
         
         login_data = {
             "username": "testadmin@example.com",
-            "password": "password123"
+            "password": "changeme"
         }
         
         # Try multiple times if rate limited
@@ -56,7 +56,7 @@ class BaseTestCase:
         
         login_data = {
             "username": "test@example.com",
-            "password": "password123"
+            "password": "changeme"
         }
         
         # Try multiple times if rate limited

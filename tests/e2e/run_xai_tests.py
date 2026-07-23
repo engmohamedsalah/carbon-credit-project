@@ -36,7 +36,7 @@ async def run_xai_api_tests():
     try:
         auth_response = requests.post("http://localhost:8000/api/v1/auth/login", json={
             "email": "testadmin@example.com",
-            "password": "password123"
+            "password": "changeme"
         })
         
         if auth_response.status_code != 200:
@@ -133,7 +133,7 @@ async def run_xai_ui_tests():
             await page.wait_for_selector('input[type="email"]', timeout=10000)
             
             await page.fill('input[type="email"]', "testadmin@example.com")
-            await page.fill('input[type="password"]', "password123")
+            await page.fill('input[type="password"]', "changeme")
             await page.click('button[type="submit"]')
             
             # Wait for login

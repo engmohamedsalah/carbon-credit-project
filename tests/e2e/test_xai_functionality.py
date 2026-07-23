@@ -24,7 +24,7 @@ class TestXAIFunctionality:
         self.frontend_url = "http://localhost:3000"
         self.test_user = {
             "email": "testadmin@example.com",
-            "password": "password123"
+            "password": "changeme"
         }
         self.test_timeout = 30000  # 30 seconds
         

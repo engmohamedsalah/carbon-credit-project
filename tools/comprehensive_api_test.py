@@ -55,7 +55,7 @@ def test_user_registration():
     users_to_register = [
         {
             "email": "alice@example.com",
-            "password": "securepassword123",
+            "password": "changeme",
             "full_name": "Alice Johnson",
             "role": "Project Developer"
         },
@@ -305,7 +305,7 @@ def test_error_cases():
             f"{API_BASE}/auth/register",
             json={
                 "email": "alice@example.com",  # Already registered
-                "password": "password123",
+                "password": "changeme",
                 "full_name": "Alice Duplicate"
             }
         )

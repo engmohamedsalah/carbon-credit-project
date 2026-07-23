@@ -77,7 +77,7 @@ def test_user_registration():
     try:
         user_data = {
             "email": f"testuser_{int(time.time())}@test.com",
-            "password": "testpassword123",
+            "password": "changeme",
             "full_name": "Test User",
             "role": "Project Developer"
         }
@@ -94,7 +94,7 @@ def test_ml_service_status():
         # First register a user to get a token
         user_data = {
             "email": f"mltest_{int(time.time())}@test.com",
-            "password": "testpassword123",
+            "password": "changeme",
             "full_name": "ML Test User",
             "role": "Project Developer"
         }
@@ -143,7 +143,7 @@ def test_analytics_endpoints():
         # Register a user
         user_data = {
             "email": f"analytics_{int(time.time())}@test.com",
-            "password": "testpassword123",
+            "password": "changeme",
             "full_name": "Analytics Test User",
             "role": "Project Developer"
         }
@@ -177,7 +177,7 @@ def test_xai_methods():
         # Register a user
         user_data = {
             "email": f"xai_{int(time.time())}@test.com",
-            "password": "testpassword123",
+            "password": "changeme",
             "full_name": "XAI Test User",
             "role": "Project Developer"
         }
@@ -202,7 +202,7 @@ def test_iot_endpoints():
         # Register a user
         user_data = {
             "email": f"iot_{int(time.time())}@test.com",
-            "password": "testpassword123",
+            "password": "changeme",
             "full_name": "IoT Test User",
             "role": "Project Developer"
         }

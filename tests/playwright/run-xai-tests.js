@@ -115,7 +115,7 @@ Examples:
 Prerequisites:
   - Backend running on http://localhost:8000
   - Frontend running on http://localhost:3000
-  - Admin user: testadmin@example.com / password123
+  - Admin user: configured via ADMIN_EMAIL / ADMIN_PASSWORD env vars
 `);
   process.exit(0);
 }

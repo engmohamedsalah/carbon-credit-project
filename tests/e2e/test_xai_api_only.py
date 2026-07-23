@@ -14,7 +14,7 @@ class XAIAPITester:
         self.backend_url = "http://localhost:8000"
         self.test_user = {
             "email": "testadmin@example.com",
-            "password": "password123"
+            "password": "changeme"
         }
         self.token = None
         

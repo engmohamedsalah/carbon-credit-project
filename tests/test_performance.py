@@ -25,7 +25,7 @@ class TestPerformance:
         """Get authentication token for testing"""
         login_data = {
             "username": "testadmin@example.com",
-            "password": "password123"
+            "password": "changeme"
         }
         response = client.post("/api/v1/auth/login", data=login_data)
         assert response.status_code == 200

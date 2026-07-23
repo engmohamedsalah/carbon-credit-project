@@ -62,7 +62,7 @@ User Request → Authentication → XAI API → ML Models → Explanation Genera
 ```bash
 POST /api/v1/auth/login
 Content-Type: application/x-www-form-urlencoded
-Body: username=testadmin@example.com&password=password123
+Body: username=$ADMIN_EMAIL&password=$ADMIN_PASSWORD
 ```
 
 ### Core XAI Endpoints

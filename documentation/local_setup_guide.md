@@ -56,9 +56,7 @@ The frontend application will be available at http://localhost:3000
 ## Using the Application
 
 1. Open your browser and navigate to http://localhost:3000
-2. Register a new account or use the default credentials:
-   - Email: admin@example.com
-   - Password: password123
+2. Register a new account, or sign in with the admin account provisioned via the `ADMIN_EMAIL` / `ADMIN_PASSWORD` environment variables
 3. Follow the user guide to create projects and verifications
 
 ## Development

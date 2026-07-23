@@ -24,7 +24,7 @@ class TestAPIComprehensive:
         """Get admin authentication token"""
         login_data = {
             "username": "testadmin@example.com",
-            "password": "password123"
+            "password": "changeme"
         }
         response = client.post("/api/v1/auth/login", data=login_data)
         assert response.status_code == 200
@@ -35,7 +35,7 @@ class TestAPIComprehensive:
         """Get regular user authentication token"""
         login_data = {
             "username": "test@example.com",
-            "password": "password123"
+            "password": "changeme"
         }
         response = client.post("/api/v1/auth/login", data=login_data)
         assert response.status_code == 200
@@ -79,7 +79,7 @@ class TestAPIComprehensive:
         """Test user registration"""
         user_data = {
             "email": "newuser@test.com",
-            "password": "testpassword123",
+            "password": "changeme",
             "full_name": "New Test User",
             "role": "Project Developer"
         }

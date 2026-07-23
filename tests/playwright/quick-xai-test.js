@@ -21,7 +21,7 @@ async function runXaiTest() {
     // Step 2: Login
     console.log('Step 2: Logging in as admin...');
     await page.fill('input[type="email"]', 'testadmin@example.com');
-    await page.fill('input[type="password"]', 'password123');
+    await page.fill('input[type="password"]', 'changeme');
     await page.click('button[type="submit"]');
     
     // Wait for redirect

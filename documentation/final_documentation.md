@@ -665,10 +665,11 @@ cd tests/e2e && python -m pytest
 ## User Accounts and Access
 
 ### Production Test Users
-- **Admin**: `testadmin@example.com` / `password123`
-- **Verifier**: `verifier@example.com` / `password123`
-- **Scientist**: `scientist@example.com` / `password123`
-- **Developer**: `alice@example.com` / `password123`
+- **Admin**: `testadmin@example.com`
+- **Verifier**: `verifier@example.com`
+- **Scientist**: `scientist@example.com`
+- **Developer**: `alice@example.com`
+- Credentials are provisioned via environment configuration (the admin from `ADMIN_EMAIL` / `ADMIN_PASSWORD`); no passwords are hardcoded.
 - **All roles represented** with appropriate permissions
 
 ## Current Limitations and Future Enhancements

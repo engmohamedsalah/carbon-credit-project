@@ -4,7 +4,7 @@
 
 This document provides specific testing scenarios for each user role to ensure system functionality and proper access control.
 
-### 🔑 **Universal Password: `testpassword123`**
+### 🔑 **Test user password: provisioned via environment/seeding (the admin from `ADMIN_EMAIL` / `ADMIN_PASSWORD`); not hardcoded here**
 
 ---
 
@@ -311,7 +311,7 @@ curl -s "http://localhost:8000/health"
 # Test login (replace with actual user)
 curl -X POST "http://localhost:8000/api/v1/auth/login" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=testadmin@example.com&password=testpassword123"
+  -d "username=$ADMIN_EMAIL&password=$ADMIN_PASSWORD"
 ```
 
 ---

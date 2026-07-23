@@ -10,7 +10,7 @@ test.describe('Real XAI Integration Tests', () => {
   // Test data
   const adminUser = {
     email: 'testadmin@example.com',
-    password: 'password123'
+    password: 'changeme'
   };
   
   const testProject = {
