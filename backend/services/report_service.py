@@ -8,7 +8,7 @@ import qrcode
 from io import BytesIO
 import os
 from datetime import datetime
-import sqlite3
+import dbdriver
 import tempfile
 
 
@@ -20,9 +20,8 @@ class ReportService:
         """Generate a professional verification certificate PDF"""
         
         # Get verification and project data
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            
+        with dbdriver.connect(self.db_path) as conn:
+
             # Get verification details
             cursor = conn.execute("""
                 SELECT v.*, p.name as project_name, p.location_name, p.project_type, 

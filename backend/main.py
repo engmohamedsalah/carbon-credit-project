@@ -3,7 +3,6 @@ Carbon Credit Verification API - Professional Edition
 Simplified architecture with SQLite database integration
 """
 import os
-import sqlite3
 import hashlib
 import secrets
 import logging
@@ -41,6 +40,8 @@ from utils.role_utils import (
 
 # Runtime configuration (env-driven; no secrets in the repo)
 from config import settings
+# DB connection factory (Turso/libSQL in prod, sqlite3 locally)
+import dbdriver
 
 # Configure logging
 logging.basicConfig(
@@ -67,13 +68,13 @@ class DatabaseManager:
     
     @contextmanager
     def get_connection(self):
-        """Get database connection with proper cleanup"""
+        """Get database connection with proper cleanup (Turso in prod, sqlite3 locally)."""
         conn = None
         try:
-            # Ensure directory exists
-            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
+            # Only the local sqlite3 file needs a directory; Turso is remote.
+            if not dbdriver.TURSO_URL:
+                os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+            conn = dbdriver.connect(self.db_path)
             yield conn
             # Explicitly commit the transaction
             conn.commit()
@@ -2873,6 +2874,11 @@ async def change_password(
     except Exception as e:
         logger.error(f"Error changing password: {e}")
         raise HTTPException(status_code=500, detail="Failed to change password")
+
+
+# Seed at import time too: Vercel serverless may not fire ASGI startup events,
+# and this runs once per cold start (a no-op after the first admin exists).
+seed_admin()
 
 
 if __name__ == "__main__":
