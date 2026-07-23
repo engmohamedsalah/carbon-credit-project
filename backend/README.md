@@ -1,6 +1,6 @@
 # Carbon Credit Verification API
 
-A professional, production-ready FastAPI backend for carbon credit verification and management.
+A FastAPI backend for carbon credit verification and management.
 
 ## 🚀 Features
 
@@ -12,7 +12,7 @@ A professional, production-ready FastAPI backend for carbon credit verification 
 - **API Documentation**: Auto-generated OpenAPI/Swagger documentation
 - **Logging**: Structured logging with configurable levels
 - **Testing Ready**: Pytest integration with async support
-- **Production Ready**: CORS, security middleware, environment configuration
+- **Deployment Support**: CORS, security middleware, environment configuration
 
 ## 🏗️ Architecture
 

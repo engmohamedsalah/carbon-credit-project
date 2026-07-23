@@ -61,6 +61,7 @@ export const API_ENDPOINTS = {
   
   // Blockchain endpoints
   blockchain: {
+    enabled: '/blockchain/enabled',
     status: '/blockchain/status',
     verify: '/blockchain/verify',
     mint: '/blockchain/mint',

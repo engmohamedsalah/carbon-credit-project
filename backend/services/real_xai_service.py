@@ -1,7 +1,13 @@
 """
-Real XAI Service for Carbon Credit Verification
-Processes REAL data - PDFs, satellite imagery, project documents
-NO DEMO OR MOCK DATA - REAL PROCESSING ONLY
+XAI Service for Carbon Credit Verification (DORMANT).
+
+This module is not currently wired into any served endpoint — the live XAI
+routes use the disabled no-op service in ``xai_service.py``. It is retained
+because it contains genuine document/image processing (PDF text extraction,
+vegetation-index calculation) and attribution scaffolding intended for a future
+pass that wires it to real per-prediction inputs. Some visualization helpers
+here still synthesize data with ``np.random`` and MUST NOT be re-connected to a
+served path without first replacing those with real model output.
 """
 
 import os
@@ -33,7 +39,7 @@ except ImportError as e:
     XAI_SERVICE_AVAILABLE = False
 
 class RealDataXAIService:
-    """Real XAI Service with actual data processing - NO DEMOS"""
+    """XAI service scaffolding (dormant; not wired into any served endpoint)."""
     
     def __init__(self):
         if not XAI_SERVICE_AVAILABLE:
@@ -44,7 +50,7 @@ class RealDataXAIService:
         self.upload_dir = Path("uploads")
         self.upload_dir.mkdir(exist_ok=True)
         
-        print("🚀 Real Data XAI Service initialized - PROCESSING REAL DATA ONLY")
+        print("XAI service scaffolding initialized (dormant)")
         
     async def generate_explanation(
         self,
@@ -788,13 +794,11 @@ COMPLIANCE STATUS:
 • VCS Ready: {business_insights.get('compliance_status', {}).get('vcs_ready', 'Unknown')}
 • Gold Standard: {business_insights.get('compliance_status', {}).get('gold_standard_ready', 'Unknown')}
 
-This analysis is based on REAL data processing including:
+This analysis draws on:
 - Database project records
-- Uploaded document analysis  
+- Uploaded document analysis
 - ML model predictions
 - Market data integration
-
-NO DEMO OR MOCK DATA USED - ALL RESULTS FROM ACTUAL DATA PROCESSING
         """.strip()
         
         return summary

@@ -22,9 +22,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line
+  ResponsiveContainer
 } from 'recharts';
 import {
   Sensors as SensorsIcon,
@@ -124,23 +122,7 @@ const IoTAnalytics = ({ projectId }) => {
     return 'error';
   };
 
-  const generateSamplePerformanceData = () => {
-    // Generate sample data for demonstration
-    const data = [];
-    for (let i = 23; i >= 0; i--) {
-      const hour = new Date();
-      hour.setHours(hour.getHours() - i);
-      data.push({
-        time: hour.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        readings: Math.floor(Math.random() * 50) + 100,
-        errors: Math.floor(Math.random() * 5),
-        uptime: Math.random() * 10 + 90
-      });
-    }
-    return data;
-  };
-
-  if (loading.analytics || !summaryStats) {
+  if (loading.analytics) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
         <CircularProgress />
@@ -148,9 +130,16 @@ const IoTAnalytics = ({ projectId }) => {
     );
   }
 
+  if (!summaryStats) {
+    return (
+      <Box sx={{ p: 2 }}>
+        <Alert severity="info">No sensor readings yet.</Alert>
+      </Box>
+    );
+  }
+
   const sensorTypeData = getSensorTypeData();
   const statusData = getStatusData();
-  const performanceData = generateSamplePerformanceData();
 
   return (
     <Box sx={{ p: 2 }}>
@@ -316,42 +305,6 @@ const IoTAnalytics = ({ projectId }) => {
                     ))}
                   </Bar>
                 </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Performance Over Time */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Network Performance (Last 24 Hours)
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" />
-                  <YAxis yAxisId="readings" orientation="left" />
-                  <YAxis yAxisId="uptime" orientation="right" />
-                  <Tooltip />
-                  <Line 
-                    yAxisId="readings" 
-                    type="monotone" 
-                    dataKey="readings" 
-                    stroke="#2196f3" 
-                    strokeWidth={2}
-                    name="Readings/Hour"
-                  />
-                  <Line 
-                    yAxisId="uptime" 
-                    type="monotone" 
-                    dataKey="uptime" 
-                    stroke="#4caf50" 
-                    strokeWidth={2}
-                    name="Uptime %"
-                  />
-                </LineChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>

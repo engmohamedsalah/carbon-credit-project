@@ -2,7 +2,9 @@
 
 ## 🎯 **Overview**
 
-This document describes the professional, scalable Role-Based Access Control system implemented for the Carbon Credit Verification platform. The system replaces hardcoded role strings with a centralized, maintainable, and enterprise-grade access control architecture.
+This document describes the Role-Based Access Control system implemented for the Carbon Credit
+Verification platform. The system replaces hardcoded role strings with a centralized,
+maintainable access-control architecture.
 
 ## 🏗️ **Architecture**
 
@@ -274,4 +276,4 @@ describe('Role-Based Access Control', () => {
 
 ---
 
-**This professional RBAC system transforms the application from a hardcoded role system to an enterprise-grade, maintainable, and scalable access control architecture.** 
+**This RBAC system replaces the hardcoded role strings with a centralized, maintainable access-control architecture.** 

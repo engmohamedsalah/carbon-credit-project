@@ -1,0 +1,11 @@
+# ML inference dependencies for the backend container (CPU-only torch to keep the image smaller).
+# The served inference chain (production_inference -> ensemble_model -> models) needs
+# torch + numpy + rasterio; the rest support preprocessing/visualisation utilities.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.2.2
+numpy==1.26.4
+rasterio==1.3.9
+scikit-learn==1.4.2
+pillow==10.3.0
+matplotlib==3.8.4
+pandas==2.2.2

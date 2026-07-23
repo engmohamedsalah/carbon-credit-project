@@ -132,7 +132,7 @@ const { verifications, loading: verificationsLoading } = useSelector(state => st
     }
   };
 
-  const getExplorerTxUrl = (hash) => `https://mumbai.polygonscan.com/tx/${hash}`;
+  const getExplorerTxUrl = (hash) => `https://amoy.polygonscan.com/tx/${hash}`;
 
   const handleStatusUpdate = async () => {
     if (selectedStatus === 'Rejected' && !statusReason.trim()) {

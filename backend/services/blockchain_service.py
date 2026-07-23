@@ -6,42 +6,50 @@ import json
 import os
 from typing import Optional, Dict, Any
 import logging
-from web3 import Web3
-# POA middleware is no longer needed in newer Web3.py versions
-from eth_account import Account
-import requests
+
+# web3/eth_account are optional: if absent, the feature is cleanly disabled
+# (endpoints return 503) rather than crashing the app on import.
+try:
+    from web3 import Web3
+    from eth_account import Account
+    WEB3_AVAILABLE = True
+except ImportError:  # pragma: no cover - depends on optional deps
+    Web3 = None
+    Account = None
+    WEB3_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
 class BlockchainService:
     def __init__(self):
-        # Use Polygon Mumbai testnet for development
-        self.rpc_url = os.getenv("POLYGON_RPC_URL", "https://rpc-mumbai.maticvigil.com")
+        # Default RPC targets the Polygon Amoy testnet (Mumbai was deprecated in 2024).
+        self.rpc_url = os.getenv("POLYGON_RPC_URL", "https://rpc-amoy.polygon.technology")
         self.private_key = os.getenv("BLOCKCHAIN_PRIVATE_KEY")
         self.contract_address = os.getenv("CONTRACT_ADDRESS")
-        
-        # Initialize Web3
-        self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
-        
-        # POA middleware is no longer needed in newer Web3.py versions for Polygon
-        
-        # Load contract ABI
-        self.contract_abi = self._load_contract_abi()
-        
-        # Initialize account if private key provided
-        if self.private_key:
-            self.account = Account.from_key(self.private_key)
-        else:
-            self.account = None
-            
-        # Initialize contract if address provided
-        if self.contract_address and self.contract_abi:
-            self.contract = self.w3.eth.contract(
-                address=self.contract_address,
-                abi=json.loads(self.contract_abi)
+
+        self.w3 = None
+        self.account = None
+        self.contract = None
+        self.contract_abi = self._load_contract_abi() if WEB3_AVAILABLE else None
+
+        if WEB3_AVAILABLE:
+            self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
+            if self.private_key:
+                self.account = Account.from_key(self.private_key)
+            if self.contract_address and self.contract_abi:
+                self.contract = self.w3.eth.contract(
+                    address=self.contract_address,
+                    abi=json.loads(self.contract_abi)
+                )
+
+        # Feature is enabled only when fully configured for real on-chain operations.
+        self.enabled = bool(WEB3_AVAILABLE and self.contract and self.account)
+        if not self.enabled:
+            logger.info(
+                "Blockchain certification disabled (web3=%s, contract=%s, account=%s) "
+                "— endpoints will report it as not configured.",
+                WEB3_AVAILABLE, bool(self.contract), bool(self.account),
             )
-        else:
-            self.contract = None
     
     def _load_contract_abi(self) -> Optional[str]:
         """Load contract ABI from blockchain_config.json"""
@@ -58,8 +66,8 @@ class BlockchainService:
     def is_connected(self) -> bool:
         """Check if connected to blockchain network"""
         try:
-            return self.w3.is_connected()
-        except:
+            return bool(self.w3 and self.w3.is_connected())
+        except Exception:
             return False
     
     def get_network_info(self) -> Dict[str, Any]:
@@ -74,7 +82,7 @@ class BlockchainService:
             return {
                 "connected": True,
                 "chain_id": chain_id,
-                "network": "Polygon Mumbai" if chain_id == 80001 else "Polygon Mainnet" if chain_id == 137 else f"Chain {chain_id}",
+                "network": "Polygon Amoy" if chain_id == 80002 else "Polygon Mainnet" if chain_id == 137 else f"Chain {chain_id}",
                 "latest_block": latest_block.number,
                 "gas_price": self.w3.eth.gas_price
             }
@@ -171,56 +179,22 @@ class BlockchainService:
             return {"error": str(e)}
     
     def verify_certificate(self, token_id_or_hash: str) -> Dict[str, Any]:
-        """Verify a carbon credit certificate by token ID or transaction hash"""
+        """Verify a carbon credit certificate by token ID or transaction hash.
+
+        Reads real on-chain state; returns an explicit error when the feature is
+        not configured. No demo/mock certificates are ever returned.
+        """
         try:
-            # Simple demo mode - return mock data for common test tokens
-            demo_tokens = {
-                "123": {
-                    "token_id": 123,
-                    "project_id": 1,
-                    "carbon_amount": 1250,
-                    "project_name": "Amazon Reforestation Project",
-                    "location": "Amazon Basin, Brazil",
-                    "verification_date": 1642204800,  # Jan 15, 2022
-                    "verification_hash": "0x7d865e959b2466918c9863afca942d0fb89d7c9ac0c99bafc3749504ded97730",
-                    "is_retired": False
-                },
-                "456": {
-                    "token_id": 456,
-                    "project_id": 2,
-                    "carbon_amount": 2500,
-                    "project_name": "Solar Farm Development",
-                    "location": "California, USA",
-                    "verification_date": 1651363200,  # May 1, 2022
-                    "verification_hash": "0x9f4e8c1b2d3a5c6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0",
-                    "is_retired": True
-                },
-                "789": {
-                    "token_id": 789,
-                    "project_id": 3,
-                    "carbon_amount": 500,
-                    "project_name": "Mangrove Restoration",
-                    "location": "Maldives",
-                    "verification_date": 1659312000,  # Aug 1, 2022
-                    "verification_hash": "0xa1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
-                    "is_retired": False
-                }
-            }
-            
-            # If it's a known demo token, return mock data
-            if token_id_or_hash in demo_tokens:
-                return demo_tokens[token_id_or_hash]
-            
+            if not self.enabled:
+                return {"error": "Blockchain certification is not configured"}
+
             # Try to parse as token ID first
             try:
                 token_id = int(token_id_or_hash)
-                if self.contract:
-                    return self.get_carbon_credit_info(token_id) or {"error": "Token not found"}
-                else:
-                    return {"error": "Contract not initialized"}
+                return self.get_carbon_credit_info(token_id) or {"error": "Token not found"}
             except ValueError:
                 pass
-            
+
             # Try as transaction hash
             if token_id_or_hash.startswith('0x'):
                 if self.w3 and self.w3.is_connected():

@@ -41,7 +41,7 @@ This is a Carbon Credit Verification SaaS application with three main tiers:
 - **Main entry**: `backend/main.py`
 - **Database**: SQLite at `database/carbon_credits.db`
 - **Services**: ML processing, XAI (Explainable AI), reporting
-- **Authentication**: OAuth2 with JWT tokens
+- **Authentication**: password login with opaque bearer tokens (server-side token store, not JWT)
 - **Rate limiting**: Built-in with slowapi
 
 ### Frontend (React + Redux)
@@ -67,7 +67,7 @@ This is a Carbon Credit Verification SaaS application with three main tiers:
 - Role-based access control (RBAC) with user roles
 - Protected routes using `components/ProtectedRoute.js`
 - Auth state managed in `store/authSlice.js`
-- Backend auth in `main.py` with password hashing and JWT
+- Backend auth in `main.py` with password hashing and server-side opaque bearer tokens
 
 ### Data Flow
 1. **Satellite imagery** → ML models → **Change detection**
@@ -124,7 +124,7 @@ This is a Carbon Credit Verification SaaS application with three main tiers:
 ## Important Notes
 
 - The application is designed for carbon credit verification using satellite imagery
-- ML models are production-ready and pre-trained (no retraining needed)
+- ML models are pre-trained prototype models (forest-cover F1 ≈ 0.49, change-detection F1 ≈ 0.60); no retraining needed to run inference
 - Virtual environment setup is required for local development
 - Docker setup provides PostgreSQL with PostGIS for spatial data
 - All sensitive configuration should use environment variables

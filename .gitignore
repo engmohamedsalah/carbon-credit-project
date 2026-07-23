@@ -1,3 +1,10 @@
+# Secrets & runtime data — NEVER commit (see docs/superpowers/specs remediation)
+*.db
+*.sqlite
+*.sqlite3
+*token*.txt
+backend/.env
+
 # Python
 __pycache__/
 *.py[cod]

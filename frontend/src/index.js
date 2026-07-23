@@ -5,7 +5,9 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import App from './App';
+import ErrorBoundary from './components/ErrorBoundary';
 import store from './store';
+import { getCurrentUser } from './store/authSlice';
 import { setupErrorHandlers } from './utils/errorUtils';
 import modernTheme from './theme/modernTheme';
 
@@ -55,16 +57,23 @@ document.head.appendChild(styleElement);
 // Setup global error handlers to suppress Chrome extension errors
 setupErrorHandlers();
 
+// Rehydrate auth on boot so a refresh keeps a returning user logged in.
+if (localStorage.getItem('token')) {
+  store.dispatch(getCurrentUser());
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <Provider store={store}>
-      <BrowserRouter>
-        <ThemeProvider theme={modernTheme}>
-          <CssBaseline />
-          <App />
-        </ThemeProvider>
-      </BrowserRouter>
-    </Provider>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <BrowserRouter>
+          <ThemeProvider theme={modernTheme}>
+            <CssBaseline />
+            <App />
+          </ThemeProvider>
+        </BrowserRouter>
+      </Provider>
+    </ErrorBoundary>
   </React.StrictMode>
 );

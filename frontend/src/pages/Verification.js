@@ -56,6 +56,7 @@ import { fetchProjects } from '../store/projectSlice';
 import { fetchVerifications, submitHumanReview, createVerification, certifyVerification } from '../store/verificationSlice';
 import MLAnalysis from '../components/MLAnalysis';
 import apiService from '../services/apiService';
+import { API_ENDPOINTS } from '../config/api';
 
 const Verification = () => {
   const navigate = useNavigate();
@@ -77,11 +78,15 @@ const Verification = () => {
   const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
   const [certifyingId, setCertifyingId] = useState(null);
   const [recipientDialog, setRecipientDialog] = useState({ open: false, verification: null, address: '' });
-  
+  const [blockchainEnabled, setBlockchainEnabled] = useState(null); // null = unknown until fetched
+
   // Load data on mount
   useEffect(() => {
     dispatch(fetchProjects());
     dispatch(fetchVerifications({}));
+    apiService.get(API_ENDPOINTS.blockchain.enabled)
+      .then(res => setBlockchainEnabled(Boolean((res.data ?? res).enabled)))
+      .catch(() => setBlockchainEnabled(false));
   }, [dispatch]);
 
   // Update stats when verifications change
@@ -221,7 +226,7 @@ const Verification = () => {
     }
   };
 
-  const getExplorerTxUrl = (hash) => `https://mumbai.polygonscan.com/tx/${hash}`;
+  const getExplorerTxUrl = (hash) => `https://amoy.polygonscan.com/tx/${hash}`;
 
   const openRecipientDialog = (verification) => {
     setRecipientDialog({ open: true, verification, address: '' });
@@ -300,6 +305,12 @@ const Verification = () => {
           )}
         </Box>
       </Box>
+
+      {user?.role?.toLowerCase() === 'admin' && blockchainEnabled === false && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          On-chain certification is not configured in this environment.
+        </Alert>
+      )}
 
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -492,8 +503,9 @@ const Verification = () => {
                                     </Tooltip>
                                   )}
 
-                                  {/* Admin-only: Certify on Blockchain when approved and not yet certified */}
+                                  {/* Admin-only: Certify on Blockchain when approved, not yet certified, and on-chain certification is configured */}
                                   {user?.role?.toLowerCase() === 'admin' &&
+                                    blockchainEnabled !== false &&
                                     String(verification.status || '').toLowerCase() === 'approved' &&
                                     !verification.blockchain_certified && (
                                       <Tooltip title={verification.carbon_impact ? "Certify on Blockchain" : "Carbon impact missing"}>
@@ -877,7 +889,7 @@ const Verification = () => {
         <DialogTitle>Certify on Blockchain</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Optionally specify a recipient wallet address. If left empty, the default demo address will be used.
+            Optionally specify a recipient wallet address. If left empty, the server's default recipient address will be used.
           </Typography>
           <TextField
             fullWidth

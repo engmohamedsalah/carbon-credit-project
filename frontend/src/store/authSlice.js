@@ -54,7 +54,8 @@ export const getCurrentUser = createAsyncThunk(
 const initialState = {
   user: null,
   isAuthenticated: false,
-  loading: false,
+  // Returning users have a token; treat auth as "checking" until getCurrentUser resolves.
+  loading: !!localStorage.getItem('token'),
   error: null,
 };
 

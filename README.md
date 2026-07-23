@@ -1,18 +1,35 @@
 # Carbon Credit Verification SaaS Application
 
-This README provides an overview of the Carbon Credit Verification SaaS application, a comprehensive solution for verifying carbon credits using satellite imagery, machine learning, and blockchain technology.
+This README provides an overview of the Carbon Credit Verification application — an **honest
+prototype** that verifies forest-related carbon projects from uploaded satellite imagery using
+trained machine-learning models, with a human-in-the-loop verification workflow.
+
+> **Status:** This is a working prototype, **not** a production or commercial product. For an
+> accurate account of what is real, what is disabled, and the real model metrics, read
+> [STATUS.md](./STATUS.md).
 
 ## Project Overview
 
-The Carbon Credit Verification SaaS application is designed to provide transparent, reliable verification of carbon sequestration projects. It combines satellite imagery analysis, machine learning, and blockchain certification to create a trustworthy system for carbon credit verification.
+The application lets a reviewer upload Sentinel-2 GeoTIFF imagery, runs genuine forest-cover and
+change-detection inference on it, computes a carbon estimate, and records a human-reviewed
+verification. Prototype-grade model performance: forest-cover F1 ≈ 0.49, change-detection
+F1 ≈ 0.60 (source: `ml/evaluation_results/*.csv`, `ml/inference/production_inference.py`).
 
-Key features include:
-- Forest cover change detection using Sentinel-2 satellite imagery
-- Carbon sequestration estimation
-- Explainable AI for transparent decision-making
-- Blockchain certification for immutable verification records
-- Human-in-the-loop verification workflow
-- Interactive mapping and visualization
+Real, working features:
+- **Authentication & RBAC** — password login with opaque bearer tokens (server-side token store,
+  not JWT) and role-based access control
+- **Project management** — create and manage carbon-credit projects
+- **Real ML inference on uploaded imagery** — forest-cover segmentation and before/after change
+  detection with trained PyTorch U-Net models
+- **Carbon estimation** — computed from real model output (IPCC above-ground biomass figure)
+- **Human-in-the-loop verification workflow** — verification records are never fabricated
+- **Interactive mapping and visualization**
+
+Not yet real / disabled (see [STATUS.md](./STATUS.md) for details):
+- **Explainable AI** — disabled in this build (the genuine code is not wired to real inputs)
+- **Coordinate-based analysis** — removed (no imagery-from-coordinates pipeline exists)
+- **Blockchain certification** — the Solidity contract is real but disabled until configured with
+  a deployed address and signing key
 
 ## Repository Structure
 

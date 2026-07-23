@@ -37,30 +37,39 @@ const commonOptions = {
   },
 };
 
+const emptyStateStyle = {
+  display: 'flex',
+  height: '100%',
+  alignItems: 'center',
+  justifyContent: 'center',
+  textAlign: 'center',
+  color: '#888',
+  padding: 16,
+};
+
+// Reports real offline-evaluation F1 scores (source: offline_evaluation).
+// There is no historical accuracy time-series, so this is a point-in-time bar, not a trend.
 export const ModelPerformanceChart = ({ data }) => {
+  // ponytail: accept either new *_f1 keys or legacy *_accuracy keys; both carry the real offline-eval F1.
+  const ml = data?.ml_performance || {};
+  const scores = [
+    { label: 'Forest Cover', value: ml.forest_cover_f1 ?? ml.forest_cover_accuracy, color: 'rgb(76, 175, 80)' },
+    { label: 'Change Detection', value: ml.change_detection_f1 ?? ml.change_detection_accuracy, color: 'rgb(33, 150, 243)' },
+  ].filter(s => s.value != null);
+
+  if (scores.length === 0) {
+    return <div style={emptyStateStyle}>No offline evaluation results yet</div>;
+  }
+
   const chartData = {
-    labels: data?.accuracy_trends?.map(d => d.date) || [],
+    labels: scores.map(s => s.label),
     datasets: [
       {
-        label: 'Forest Cover Model',
-        data: data?.accuracy_trends?.map(d => (d.forest_cover * 100).toFixed(1)) || [],
-        borderColor: 'rgb(76, 175, 80)',
-        backgroundColor: 'rgba(76, 175, 80, 0.1)',
-        tension: 0.4,
-      },
-      {
-        label: 'Change Detection Model',
-        data: data?.accuracy_trends?.map(d => (d.change_detection * 100).toFixed(1)) || [],
-        borderColor: 'rgb(33, 150, 243)',
-        backgroundColor: 'rgba(33, 150, 243, 0.1)',
-        tension: 0.4,
-      },
-      {
-        label: 'Ensemble Model',
-        data: data?.accuracy_trends?.map(d => (d.ensemble * 100).toFixed(1)) || [],
-        borderColor: 'rgb(156, 39, 176)',
-        backgroundColor: 'rgba(156, 39, 176, 0.1)',
-        tension: 0.4,
+        label: 'F1 Score (offline evaluation)',
+        data: scores.map(s => Number(s.value)),
+        backgroundColor: scores.map(s => s.color.replace('rgb', 'rgba').replace(')', ', 0.8)')),
+        borderColor: scores.map(s => s.color),
+        borderWidth: 1,
       },
     ],
   };
@@ -69,26 +78,21 @@ export const ModelPerformanceChart = ({ data }) => {
     ...commonOptions,
     scales: {
       y: {
-        beginAtZero: false,
-        min: 80,
-        max: 100,
-        ticks: {
-          callback: function(value) {
-            return value + '%';
-          }
-        }
+        beginAtZero: true,
+        max: 1,
+        title: { display: true, text: 'F1 Score' },
       },
     },
     plugins: {
       ...commonOptions.plugins,
       title: {
         display: true,
-        text: 'ML Model Accuracy Trends (Last 90 Days)',
+        text: 'Model Performance — Offline Evaluation F1',
       },
     },
   };
 
-  return <Line data={chartData} options={options} />;
+  return <Bar data={chartData} options={options} />;
 };
 
 export const ProjectStatusChart = ({ data }) => {

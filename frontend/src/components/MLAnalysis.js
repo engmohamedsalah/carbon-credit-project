@@ -10,7 +10,6 @@ import {
   CardContent,
   Typography,
   Button,
-  TextField,
   Grid,
   Alert,
   CircularProgress,
@@ -29,7 +28,6 @@ import {
 import {
   ExpandMore as ExpandMoreIcon,
   CloudUpload as UploadIcon,
-  LocationOn as LocationIcon,
   Analytics as AnalyticsIcon,
   CheckCircle as CheckIcon,
   Warning as WarningIcon,
@@ -49,7 +47,6 @@ const MLAnalysis = ({ projectId, projectData, onAnalysisComplete }) => {
   const [error, setError] = useState(null);
 
   // Form state
-  const [coordinates, setCoordinates] = useState({ latitude: '', longitude: '' });
   const [forestCoverImage, setForestCoverImage] = useState(null);
   const [beforeImage, setBeforeImage] = useState(null);
   const [afterImage, setAfterImage] = useState(null);
@@ -108,14 +105,6 @@ const MLAnalysis = ({ projectId, projectData, onAnalysisComplete }) => {
     try {
       const analysisData = {};
 
-      // Add coordinates if provided
-      if (coordinates.latitude && coordinates.longitude) {
-        analysisData.coordinates = {
-          latitude: parseFloat(coordinates.latitude),
-          longitude: parseFloat(coordinates.longitude)
-        };
-      }
-
       // Add images if provided
       if (forestCoverImage) {
         analysisData.forestCoverImage = forestCoverImage;
@@ -160,7 +149,6 @@ const MLAnalysis = ({ projectId, projectData, onAnalysisComplete }) => {
     setAnalysisResults(null);
     setEligibilityResults(null);
     setError(null);
-    setCoordinates({ latitude: '', longitude: '' });
     setForestCoverImage(null);
     setBeforeImage(null);
     setAfterImage(null);
@@ -230,47 +218,9 @@ const MLAnalysis = ({ projectId, projectData, onAnalysisComplete }) => {
             )}
 
             <Grid container spacing={3}>
-              {/* Location Analysis */}
-              <Grid item xs={12}>
-                <Accordion defaultExpanded>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="subtitle1">
-                      <LocationIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                      Location Analysis
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          label="Latitude"
-                          type="number"
-                          fullWidth
-                          value={coordinates.latitude}
-                          onChange={(e) => setCoordinates(prev => ({ ...prev, latitude: e.target.value }))}
-                          placeholder="-3.4653"
-                          helperText="Decimal degrees (e.g., -3.4653)"
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          label="Longitude"
-                          type="number"
-                          fullWidth
-                          value={coordinates.longitude}
-                          onChange={(e) => setCoordinates(prev => ({ ...prev, longitude: e.target.value }))}
-                          placeholder="-62.2159"
-                          helperText="Decimal degrees (e.g., -62.2159)"
-                        />
-                      </Grid>
-                    </Grid>
-                  </AccordionDetails>
-                </Accordion>
-              </Grid>
-
               {/* Forest Cover Analysis */}
               <Grid item xs={12}>
-                <Accordion>
+                <Accordion defaultExpanded>
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Typography variant="subtitle1">
                       <UploadIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
@@ -382,13 +332,13 @@ const MLAnalysis = ({ projectId, projectData, onAnalysisComplete }) => {
                     color="primary" 
                     size="large"
                     onClick={runAnalysis}
-                    disabled={loading || (!coordinates.latitude && !forestCoverImage && (!beforeImage || !afterImage))}
+                    disabled={loading || (!forestCoverImage && (!beforeImage || !afterImage))}
                     startIcon={loading ? <CircularProgress size={20} /> : <AnalyticsIcon />}
                   >
                     {loading ? 'Analyzing...' : 'Run ML Analysis'}
                   </Button>
                   <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                    Provide at least coordinates or images to run analysis
+                    Upload a forest-cover image or a before/after image pair to run analysis
                   </Typography>
                 </Box>
               </Grid>

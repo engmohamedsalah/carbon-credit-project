@@ -3445,6 +3445,9 @@ python -c "from services.blockchain_service import blockchain_service; print('Bl
 
 ---
 
-This comprehensive blockchain integration plan transforms your Carbon Credit Verification SaaS into a fully decentralized, immutable certification platform. The implementation provides enterprise-grade security, user-friendly interfaces, and production-ready smart contracts that will establish your platform as a leader in blockchain-based carbon credit verification.
+This document is a **plan** for blockchain-based certification. It is not yet implemented at
+runtime: the Solidity contract code is real, but certification is disabled until a contract is
+deployed and configured (see [STATUS.md](./STATUS.md)). The plan describes the intended
+decentralized certification design, contract structure, and integration approach.
 
 The plan is designed for incremental implementation with thorough testing at each stage, ensuring a robust and reliable blockchain integration that users can trust with their valuable carbon credit assets.

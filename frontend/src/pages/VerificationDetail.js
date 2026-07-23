@@ -17,9 +17,12 @@ import {
   TextField,
   Tooltip,
   IconButton,
+  Alert,
 } from '@mui/material';
 import { ArrowBack, Verified, Visibility, ContentCopy, OpenInNew } from '@mui/icons-material';
 import { fetchVerificationById, certifyVerification } from '../store/verificationSlice';
+import apiService from '../services/apiService';
+import { API_ENDPOINTS } from '../config/api';
 
 const VerificationDetail = () => {
   const { id } = useParams();
@@ -32,12 +35,19 @@ const VerificationDetail = () => {
 
   const [recipientDialog, setRecipientDialog] = useState({ open: false, address: '' });
   const [certifying, setCertifying] = useState(false);
+  const [blockchainEnabled, setBlockchainEnabled] = useState(null); // null = unknown until fetched
 
   useEffect(() => {
     if (id) {
       dispatch(fetchVerificationById(parseInt(id)));
     }
   }, [dispatch, id]);
+
+  useEffect(() => {
+    apiService.get(API_ENDPOINTS.blockchain.enabled)
+      .then(res => setBlockchainEnabled(Boolean((res.data ?? res).enabled)))
+      .catch(() => setBlockchainEnabled(false));
+  }, []);
 
   const projectName = projects?.find(p => p.id === currentVerification?.project_id)?.name;
 
@@ -56,7 +66,7 @@ const VerificationDetail = () => {
     }
   };
 
-  const getExplorerTxUrl = (hash) => `https://mumbai.polygonscan.com/tx/${hash}`;
+  const getExplorerTxUrl = (hash) => `https://amoy.polygonscan.com/tx/${hash}`;
 
   const openRecipientDialog = () => setRecipientDialog({ open: true, address: '' });
   const handleConfirmCertify = async () => {
@@ -90,6 +100,7 @@ const VerificationDetail = () => {
 
   const v = currentVerification;
   const canCertify = user?.role?.toLowerCase() === 'admin' &&
+    blockchainEnabled !== false &&
     String(v.status || '').toLowerCase() === 'approved' && !v.blockchain_certified;
 
   return (
@@ -176,13 +187,22 @@ const VerificationDetail = () => {
             </Button>
           )}
         </Box>
+
+        {user?.role?.toLowerCase() === 'admin' &&
+          blockchainEnabled === false &&
+          String(v.status || '').toLowerCase() === 'approved' &&
+          !v.blockchain_certified && (
+            <Alert severity="info" sx={{ mt: 2 }}>
+              On-chain certification is not configured in this environment.
+            </Alert>
+        )}
       </Paper>
 
       <Dialog open={recipientDialog.open} onClose={() => setRecipientDialog({ open: false, address: '' })}>
         <DialogTitle>Certify on Blockchain</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Optionally specify a recipient wallet address. If left empty, the default demo address will be used.
+            Optionally specify a recipient wallet address. If left empty, the server's default recipient address will be used.
           </Typography>
           <TextField
             fullWidth

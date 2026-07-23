@@ -1,0 +1,27 @@
+# Render blueprint for the backend (Docker) + a persistent disk for SQLite.
+# Deploy: push to GitHub, then "New > Blueprint" on Render and point it at this repo.
+# NOTE: the build host must run `git lfs pull` so the .pth model weights are real files.
+services:
+  - type: web
+    name: carbon-credit-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter            # free tier lacks persistent disk + enough RAM for torch
+    healthCheckPath: /health
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "10080"
+      - key: CORS_ORIGINS      # set to your Vercel frontend URL
+        sync: false
+      - key: ADMIN_EMAIL       # first-run admin (created once if DB empty)
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: DATABASE_PATH
+        value: /data/carbon_credits.db
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1

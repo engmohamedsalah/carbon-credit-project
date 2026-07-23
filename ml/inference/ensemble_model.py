@@ -26,6 +26,12 @@ from ml.models.convlstm_model import ConvLSTM
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# IPCC tropical forest above-ground biomass carbon density (tonnes of CARBON per hectare).
+# Source: IPCC 2006/2019 GL, tropical moist forest AGB ~300 t/ha dry biomass * 0.5 carbon fraction ≈ 150 tC/ha.
+CARBON_DENSITY_TC_PER_HA = 150
+# Molecular weight ratio CO2:C (44/12). Converts tonnes of carbon to tonnes of CO2-equivalent.
+CO2_PER_C = 3.67
+
 class CarbonCreditEnsemble(nn.Module):
     """
     Ensemble model combining three specialized models:
@@ -312,44 +318,54 @@ class CarbonCreditEnsemble(nn.Module):
         )
         return ensemble
     
-    def calculate_carbon_impact(self, 
+    def calculate_carbon_impact(self,
                                ensemble_prediction: torch.Tensor,
                                pixel_area_m2: float = 100,  # 10m x 10m Sentinel-2 pixels
-                               carbon_per_hectare: float = 150) -> Dict[str, float]:
+                               carbon_per_hectare: float = CARBON_DENSITY_TC_PER_HA) -> Dict[str, float]:
         """
-        Calculate carbon impact from ensemble predictions
-        
+        Calculate carbon impact from ensemble predictions, in tonnes of CO2-equivalent (tCO2e).
+
+        Carbon markets trade CO2-equivalent, not elemental carbon. Biomass carbon density
+        (tC/ha) is therefore converted to CO2e via the molecular weight ratio CO2:C (3.67).
+
         Args:
             ensemble_prediction: Binary prediction map [1, H, W]
             pixel_area_m2: Area per pixel in square meters
-            carbon_per_hectare: Tons of carbon per hectare of forest
-        
+            carbon_per_hectare: Biomass carbon density in tonnes of CARBON per hectare (tC/ha)
+
         Returns:
-            Dictionary with carbon impact metrics
+            Dictionary with carbon impact metrics. All carbon figures are tCO2e:
+            - total_co2e_tonnes: forest CO2e stored (tCO2e)
+            - carbon_density_tco2e_per_ha: CO2e density used (tCO2e/ha)
         """
         # Convert to binary prediction
         binary_pred = (ensemble_prediction > 0.5).float()
-        
+
         # Calculate areas
         total_pixels = binary_pred.numel()
         forest_pixels = binary_pred.sum().item()
-        
+
         total_area_m2 = total_pixels * pixel_area_m2
         forest_area_m2 = forest_pixels * pixel_area_m2
-        
+
         # Convert to hectares (1 hectare = 10,000 m²)
         total_area_ha = total_area_m2 / 10000
         forest_area_ha = forest_area_m2 / 10000
-        
-        # Calculate carbon
-        total_carbon_tons = forest_area_ha * carbon_per_hectare
-        
+
+        # Convert biomass carbon density (tC/ha) to CO2-equivalent (tCO2e/ha), then to total tCO2e
+        carbon_density_tco2e_per_ha = carbon_per_hectare * CO2_PER_C
+        total_co2e_tonnes = forest_area_ha * carbon_density_tco2e_per_ha
+
         return {
             'total_area_hectares': total_area_ha,
             'forest_area_hectares': forest_area_ha,
             'forest_coverage_percent': (forest_area_ha / total_area_ha) * 100,
-            'total_carbon_tons': total_carbon_tons,
-            'carbon_per_hectare': carbon_per_hectare
+            'total_co2e_tonnes': total_co2e_tonnes,
+            'carbon_density_tco2e_per_ha': carbon_density_tco2e_per_ha,
+            # Backward-compat aliases, now carrying the corrected tCO2e values.
+            # ponytail: keep until every consumer migrates to the *_co2e_* keys, then delete.
+            'total_carbon_tons': total_co2e_tonnes,
+            'carbon_per_hectare': carbon_density_tco2e_per_ha
         }
     
     def save_ensemble_config(self, save_path: str):
@@ -417,4 +433,13 @@ def main():
         print("   - ml/models/convlstm_fast_final.pth")
 
 if __name__ == "__main__":
-    main() 
+    # Unit self-check: 1 ha fully forested -> 150 tC/ha * 3.67 = 550.5 tCO2e.
+    # Method uses no `self`, so call it unbound with self=None (no model load required).
+    _pred = torch.ones(1, 10, 10)  # 100 pixels * 100 m² = 1 ha, all forest
+    _impact = CarbonCreditEnsemble.calculate_carbon_impact(None, _pred)
+    assert abs(_impact['total_co2e_tonnes'] - 550.5) < 1e-6, _impact
+    assert abs(_impact['carbon_density_tco2e_per_ha'] - 550.5) < 1e-6, _impact
+    assert _impact['total_carbon_tons'] == _impact['total_co2e_tonnes']  # backward-compat alias
+    print("✅ carbon unit self-check passed: 1 ha -> 550.5 tCO2e")
+
+    main()

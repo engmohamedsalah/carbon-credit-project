@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-This document provides comprehensive documentation for the Carbon Credit Verification SaaS application, developed as a production-ready system that leverages artificial intelligence, satellite imagery analysis, and modern web technologies to create a transparent, reliable system for verifying carbon credits.
+This document provides comprehensive documentation for the Carbon Credit Verification SaaS application, developed as a prototype system that leverages artificial intelligence, satellite imagery analysis, and modern web technologies to create a transparent system for verifying carbon credits.
 
-The application combines state-of-the-art machine learning models with professional web development practices to deliver a scalable, maintainable solution for carbon credit verification with human oversight and explainable AI capabilities.
+The application combines machine learning models with professional web development practices to deliver a scalable, maintainable solution for carbon credit verification with human oversight and explainable AI capabilities.
 
 ## Technology Stack Selection and Justification
 
@@ -41,7 +41,7 @@ The technology stack was carefully selected to balance performance, scalability,
 **Justification:**
 - **Component Architecture**: React's component-based architecture aligns with complex UI requirements for data visualization
 - **State Management**: Redux Toolkit provides predictable state management for complex ML analysis workflows
-- **Professional UI**: Material-UI v5 delivers enterprise-grade components with consistent styling
+- **Professional UI**: Material-UI v5 delivers consistent, well-supported UI components
 - **Ecosystem Maturity**: Extensive library ecosystem for mapping (Leaflet), visualization (Chart.js), and XAI components
 - **Performance**: React 18's concurrent features optimize rendering for data-heavy interfaces
 
@@ -108,11 +108,11 @@ The technology stack was carefully selected to balance performance, scalability,
 
 ### Database and Storage
 
-**Selected: SQLite (Development) + PostgreSQL (Production Ready)**
+**Selected: SQLite (Development) + PostgreSQL (Production Option)**
 
 **Justification:**
 - **Development Simplicity**: SQLite provides zero-configuration development environment
-- **Production Scalability**: PostgreSQL offers enterprise-grade features and horizontal scaling
+- **Production Scalability**: PostgreSQL offers advanced features and horizontal scaling
 - **GeoJSON Support**: Both databases handle spatial data well with PostGIS extension for PostgreSQL
 - **Transaction Integrity**: ACID compliance ensures data consistency for financial applications
 - **Cost Efficiency**: Open-source solutions reduce operational overhead
@@ -132,12 +132,12 @@ The technology stack was carefully selected to balance performance, scalability,
 
 ## System Architecture
 
-The application follows a modern, production-ready architecture:
+The application follows a modern, modular architecture:
 
 ### Backend Framework
 - **Framework**: FastAPI (Python) - chosen for its high performance, async capabilities, and automatic API documentation
 - **Database**: SQLite with professional connection management and error handling
-- **AI/ML**: Complete ML pipeline with 4 production-ready models (96MB total)
+- **AI/ML**: Complete ML pipeline with 4 trained models (96MB total)
   - Forest Cover U-Net (F1=0.49)
   - Change Detection Siamese U-Net (F1=0.60) 
   - ConvLSTM for temporal analysis
@@ -167,10 +167,10 @@ The application follows a modern, production-ready architecture:
 - ✅ **Data Validation**: Comprehensive input validation and error handling
 
 ### 2. Production ML Pipeline
-- ✅ **4 Trained Models**: Complete ensemble with 96MB of production-ready models
-- ✅ **Satellite Analysis**: Real-time processing of satellite imagery for forest cover analysis
+- ✅ **4 Trained Models**: Complete ensemble with 96MB of trained models (forest-cover F1≈0.49, change-detection F1≈0.60)
+- ✅ **Satellite Analysis**: Processing of satellite imagery for forest cover analysis
 - ✅ **Change Detection**: Temporal analysis between satellite image pairs
-- ✅ **Carbon Calculation**: Automated carbon sequestration estimation with 99.1% accuracy
+- ✅ **Carbon Calculation**: Automated carbon sequestration estimation via a deterministic area-based formula (no independently validated accuracy figure)
 - ✅ **Confidence Scoring**: AI confidence metrics for all predictions
 
 ### 3. Human-in-the-Loop Verification
@@ -180,20 +180,23 @@ The application follows a modern, production-ready architecture:
 - ✅ **Status Management**: Verification status tracking from pending to certified
 
 ### 4. Explainable AI (XAI) System
+
+> **Note**: The XAI service is currently **DISABLED** in the application build (`backend/services/xai_service.py` returns an explicit "not available in this build" result). The items below describe the intended design; genuine per-prediction explanations are not yet wired to real model inputs.
+
 - ✅ **Multiple XAI Methods**: SHAP, LIME, and Integrated Gradients implementations
 - ✅ **Visual Explanations**: Interactive visualizations showing AI decision reasoning
 - ✅ **Feature Importance**: Clear identification of factors influencing predictions
 - ✅ **Comparison Tools**: Side-by-side explanation method comparisons
 - ✅ **History Tracking**: XAI explanation history and versioning
 
-### 5. Enterprise Role-Based Access Control
+### 5. Role-Based Access Control
 - ✅ **Professional RBAC**: Centralized role management system
 - ✅ **Role Hierarchy**: Admin > Verifier > Scientist > Developer > Viewer
 - ✅ **Feature Access Control**: Granular permissions for different system features
 - ✅ **Dynamic Menus**: Role-based navigation with professional styling
 - ✅ **Security Integration**: Role validation throughout the application
 
-### 6. Production-Ready Infrastructure
+### 6. Infrastructure
 - ✅ **Database Integration**: Persistent SQLite with proper schema and migrations
 - ✅ **API Architecture**: RESTful APIs with comprehensive error handling
 - ✅ **Authentication System**: JWT-based authentication with secure token management
@@ -242,7 +245,7 @@ The RBAC system provides comprehensive access control with five distinct user ro
 
 ![Development Timeline](images/development_timeline.png)
 
-The development timeline shows the structured 12-week development process that led to a production-ready system, from initial foundation work through final deployment preparation.
+The development timeline shows the structured 12-week development process that produced the current prototype, from initial foundation work through final deployment preparation.
 
 ### Complete Data Flow Architecture
 
@@ -302,7 +305,7 @@ CREATE TABLE verification (
 );
 ```
 
-### API Endpoints (Production-Ready)
+### API Endpoints
 
 The backend provides comprehensive RESTful API endpoints:
 
@@ -354,9 +357,9 @@ The backend provides comprehensive RESTful API endpoints:
    - Strength: Seasonal change discrimination
 
 4. **Ensemble Integration** (12MB config)
-   - Expected Performance: F1 > 0.6
+   - Expected Performance: F1 > 0.6 (design target; the ensemble has not been benchmarked on a held-out test set)
    - Methods: Weighted average, conditional, stacked ensemble
-   - Carbon Calculation: 99.1% accuracy in impact estimation
+   - Carbon Calculation: deterministic area-based impact estimation (no independently validated accuracy figure)
 
 #### ML Pipeline Features
 - **Automatic Preprocessing**: Channel adaptation and normalization
@@ -448,7 +451,7 @@ docker-compose -f docker/docker-compose.yml up -d
 
 ### Environment Configuration
 - **Development**: SQLite database, local file storage
-- **Production Ready**: PostgreSQL configuration available
+- **Production Option**: PostgreSQL configuration available
 - **Scaling**: Horizontal scaling architecture implemented
 
 ## Testing and Quality Assurance
@@ -474,10 +477,10 @@ cd tests/e2e && python -m pytest
 ## Performance Metrics
 
 ### ML Model Performance
-- **Forest Cover Model**: F1=0.49 (Production Ready)
+- **Forest Cover Model**: F1=0.49 (Precision=0.41, Recall=0.60)
 - **Change Detection**: F1=0.60 (High Recall=0.97)
-- **Ensemble Expected**: F1 > 0.6 (Best Performance)
-- **Carbon Calculation**: 99.1% accuracy
+- **Ensemble Expected**: F1 > 0.6 (design target; not yet benchmarked)
+- **Carbon Calculation**: deterministic area-based estimate (no validated accuracy figure)
 
 ### System Performance
 - **API Response Time**: < 200ms for standard operations
@@ -500,7 +503,7 @@ cd tests/e2e && python -m pytest
 1. **Blockchain**: Framework ready but smart contracts not deployed
 2. **IoT Integration**: Planned but not yet implemented
 3. **Mobile App**: Web-responsive but no native mobile app
-4. **Advanced ML**: Current models are production-ready but could be enhanced
+4. **Advanced ML**: Current models are prototype-quality (forest-cover F1≈0.49, change-detection F1≈0.60) and need improvement before production use
 
 ### Planned Enhancements
 1. **Blockchain Deployment**: Smart contract implementation on Polygon
@@ -511,16 +514,16 @@ cd tests/e2e && python -m pytest
 
 ## Conclusion
 
-The Carbon Credit Verification SaaS application has been successfully implemented as a production-ready system that combines:
+The Carbon Credit Verification SaaS application has been implemented as a prototype system that combines:
 
 - **Professional Web Development**: Modern React frontend with FastAPI backend
-- **Production ML Pipeline**: 4 trained models with 96MB of production-ready AI
-- **Enterprise Security**: Role-based access control and secure authentication
+- **ML Pipeline**: 4 trained models (96MB) — forest-cover F1≈0.49, change-detection F1≈0.60
+- **Security**: Role-based access control and secure authentication
 - **Explainable AI**: Comprehensive XAI implementation with multiple methods
 - **Scalable Architecture**: Database-backed system ready for production scaling
 
 The system addresses the core challenges of carbon credit verification through a combination of artificial intelligence, human oversight, and transparent decision-making processes. While blockchain integration is planned for future releases, the current implementation provides a solid foundation for reliable, scalable carbon credit verification.
 
-**Total Development Achievement**: A fully functional, production-ready carbon credit verification platform with advanced AI capabilities, professional user interface, and comprehensive testing suite.
+**Total Development Achievement**: A functional carbon credit verification prototype with an ML pipeline, web user interface, and testing suite.
 
-**Ready for Production**: The system can be deployed immediately for real-world carbon credit verification workflows, with clear paths for future enhancements including blockchain integration and IoT sensor support.
+**Status**: The system provides a working foundation for carbon credit verification workflows, with clear paths for future enhancements including model improvement, blockchain integration, and IoT sensor support. It is not yet production-ready — model accuracy is limited (F1≈0.49–0.60), the ensemble is unbenchmarked, and explainable-AI features are currently disabled in the app build.

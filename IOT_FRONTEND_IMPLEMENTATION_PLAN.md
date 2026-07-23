@@ -11,7 +11,9 @@
 
 ## 📋 Executive Summary
 
-The IoT backend infrastructure is fully implemented with 8+ API endpoints, complete database schema, and production-ready services. This plan focuses on connecting the existing placeholder frontend to the operational backend, transforming the "PLANNED" status page into a fully functional IoT sensor management system.
+The IoT backend infrastructure is implemented with API endpoints and a database schema (real,
+DB-backed). This plan focuses on connecting the placeholder frontend to that backend, driven by
+real `/iot/readings` data (no simulated telemetry — see [STATUS.md](./STATUS.md)).
 
 ---
 
@@ -26,7 +28,7 @@ The IoT backend infrastructure is fully implemented with 8+ API endpoints, compl
   - `GET /api/v1/iot/analytics` - IoT analytics dashboard
   - Additional CRUD operations for sensor management
 
-- **Database Schema**: Production-ready tables
+- **Database Schema**: DB-backed tables
   - `iot_sensors` table with geolocation, calibration data
   - `sensor_readings` table with timestamped measurements
   - Foreign key relationships with projects table

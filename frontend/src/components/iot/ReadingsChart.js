@@ -57,11 +57,10 @@ const ReadingsChart = ({ sensorId, sensorType, sensor }) => {
 
   useEffect(() => {
     const sensorReadings = readings[sensorId] || [];
-    
+
     if (sensorReadings.length === 0) {
-      // Generate sample data for demo purposes
-      setChartData(generateSampleData(sensorType, timeRange));
-      setStats(calculateStats(generateSampleData(sensorType, timeRange)));
+      setChartData([]);
+      setStats(null);
       return;
     }
 
@@ -78,52 +77,6 @@ const ReadingsChart = ({ sensorId, sensorType, sensor }) => {
     setChartData(formattedData);
     setStats(calculateStats(formattedData));
   }, [readings, sensorId, sensorType, timeRange]);
-
-  const generateSampleData = (sensorType, timeRange) => {
-    const now = new Date();
-    const points = getDataPointsCount(timeRange);
-    const interval = getTimeInterval(timeRange);
-    const config = iotService.getSensorTypeConfig(sensorType);
-    
-    const data = [];
-    for (let i = points; i >= 0; i--) {
-      const timestamp = new Date(now.getTime() - (i * interval));
-      const baseValue = (config.range.min + config.range.max) / 2;
-      const variation = (config.range.max - config.range.min) * 0.3;
-      const value = baseValue + (Math.random() - 0.5) * variation + Math.sin(i / 10) * variation * 0.3;
-      
-      data.push({
-        timestamp,
-        value: Math.max(config.range.min, Math.min(config.range.max, value)),
-        battery: Math.max(60, 100 - Math.random() * 30),
-        signal: Math.max(70, 100 - Math.random() * 20),
-        formattedTime: format(timestamp, getTimeFormat(timeRange))
-      });
-    }
-    return data;
-  };
-
-  const getDataPointsCount = (range) => {
-    switch (range) {
-      case '1h': return 12; // Every 5 minutes
-      case '6h': return 24; // Every 15 minutes  
-      case '24h': return 24; // Every hour
-      case '7d': return 28; // Every 6 hours
-      case '30d': return 30; // Every day
-      default: return 24;
-    }
-  };
-
-  const getTimeInterval = (range) => {
-    switch (range) {
-      case '1h': return 5 * 60 * 1000; // 5 minutes
-      case '6h': return 15 * 60 * 1000; // 15 minutes
-      case '24h': return 60 * 60 * 1000; // 1 hour
-      case '7d': return 6 * 60 * 60 * 1000; // 6 hours
-      case '30d': return 24 * 60 * 60 * 1000; // 1 day
-      default: return 60 * 60 * 1000;
-    }
-  };
 
   const getTimeFormat = (range) => {
     switch (range) {

@@ -91,40 +91,15 @@ export const iotService = {
     }
   },
 
-  // Real-time data simulation for demo
+  // Real-time data
   async getRealtimeData(sensorId) {
     try {
-      return await apiService.get(`/iot/sensors/${sensorId}/realtime`);
+      const response = await apiService.get(`/iot/sensors/${sensorId}/realtime`);
+      return response.data;
     } catch (error) {
-      // Fallback to simulated data if endpoint doesn't exist
-      return this.generateSimulatedReading(sensorId);
+      console.error('Failed to get realtime data:', error);
+      throw error;
     }
-  },
-
-  // Helper function for simulated data
-  generateSimulatedReading(sensorId) {
-    const sensorTypes = {
-      'soil_moisture': { min: 20, max: 80, unit: '%' },
-      'co2_flux': { min: 380, max: 420, unit: 'ppm' },
-      'temperature': { min: 15, max: 35, unit: '°C' },
-      'tree_growth': { min: 0, max: 100, unit: 'cm' },
-      'humidity': { min: 40, max: 90, unit: '%' },
-      'light_intensity': { min: 0, max: 100000, unit: 'lux' }
-    };
-
-    // Simple simulation based on sensor type
-    const type = 'soil_moisture'; // Default for demo
-    const config = sensorTypes[type];
-    const value = Math.random() * (config.max - config.min) + config.min;
-
-    return {
-      sensorId,
-      value: Math.round(value * 100) / 100,
-      unit: config.unit,
-      timestamp: new Date().toISOString(),
-      battery_level: Math.floor(Math.random() * 40) + 60, // 60-100%
-      signal_strength: Math.floor(Math.random() * 30) + 70 // 70-100%
-    };
   },
 
   // Utility functions

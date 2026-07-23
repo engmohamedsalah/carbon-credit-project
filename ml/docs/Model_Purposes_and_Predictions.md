@@ -120,7 +120,7 @@ The Change Detection model flags an area as "deforested" because trees lost leav
 **Technical Details:**
 - **Input:** Combines predictions from all 3 models
 - **Output:** Final prediction + carbon impact (tons CO₂)
-- **Performance:** Expected F1 > 0.6 (25% improvement over individual models)
+- **Performance:** Expected F1 > 0.6 (design target; the ensemble has not yet been benchmarked)
 - **Methods:** Weighted average, conditional, stacked ensemble
 
 **Real Example:**
@@ -202,7 +202,7 @@ Ensemble Model combines all predictions:
 ## 🎯 **Key Benefits**
 
 ✅ **Fast:** Analyze thousands of hectares in minutes  
-✅ **Accurate:** 99.1% carbon calculation accuracy  
+✅ **Automated:** carbon figures computed directly from model outputs (deterministic area-based formula)  
 ✅ **Objective:** No human bias in forest assessment  
 ✅ **Scalable:** Can monitor entire countries  
 ✅ **Cost-effective:** No need for expensive field surveys  
@@ -215,7 +215,7 @@ Ensemble Model combines all predictions:
 | **Forest Cover** | Forest vs Non-forest | F1=0.49 | Baseline mapping |
 | **Change Detection** | Changed vs Unchanged | F1=0.60 | Spotting changes |
 | **ConvLSTM** | Real vs Seasonal change | Functional | Temporal validation |
-| **Ensemble** | Final carbon impact | F1>0.60 | Production use |
+| **Ensemble** | Final carbon impact | F1>0.6 (expected, not yet benchmarked) | Combined prediction |
 
 ## 🔗 **Integration with Carbon Markets**
 

@@ -119,7 +119,7 @@ Three primary action buttons for efficient workflow:
 
 ### Status: ✅ **FULLY IMPLEMENTED & OPERATIONAL**
 
-Complete project lifecycle management with professional enterprise-grade interface.
+Project lifecycle management interface.
 
 #### Core Features:
 
@@ -174,7 +174,7 @@ interface Project {
 
 ### Status: ✅ **FULLY IMPLEMENTED & OPERATIONAL**
 
-Advanced ML analysis system with 4 production-ready models for comprehensive satellite imagery analysis.
+ML analysis system with trained prototype models (forest-cover F1 ≈ 0.49, change-detection F1 ≈ 0.60) for uploaded satellite imagery.
 
 #### ML Model Suite (96MB Total):
 
@@ -512,7 +512,7 @@ Comprehensive settings management for user accounts, system preferences, and adm
 
 ### Status: ✅ **FULLY IMPLEMENTED & OPERATIONAL**
 
-Comprehensive authentication system with enterprise-grade security features.
+Authentication system with password login, opaque bearer tokens, and role-based access.
 
 #### Authentication Features:
 
@@ -607,7 +607,7 @@ DIMENSIONS = {
 
 ### Status: ✅ **FULLY IMPLEMENTED & OPERATIONAL**
 
-Enterprise-grade performance optimizations and monitoring.
+Performance optimizations and monitoring.
 
 #### React Performance:
 
@@ -682,7 +682,7 @@ Professional development practices with comprehensive testing coverage.
 1. **Dashboard**: Complete overview and quick actions
 2. **Projects**: Full CRUD with professional interface
 3. **AI Verification**: 4-model ML system operational
-4. **Authentication**: Enterprise-grade security
+4. **Authentication**: password login with opaque bearer tokens and RBAC
 5. **Design System**: Professional UI components
 
 ### ⚠️ Backend Ready, Frontend Placeholder (4/9 modules)
@@ -705,11 +705,11 @@ Professional development practices with comprehensive testing coverage.
 
 ### Code Quality Metrics:
 - **DRY Compliance**: 90% reduction in code duplication
-- **Architecture Score**: 9.5/10 enterprise-grade structure
+- **Architecture**: modular structure with shared utilities
 - **Performance**: 15-20% bundle size reduction
 - **Test Coverage**: Comprehensive E2E testing framework
 - **Accessibility**: WCAG 2.1 AA compliance
-- **Security**: JWT authentication with role-based access
+- **Security**: opaque bearer-token authentication with role-based access
 
 ### Engineering Excellence:
 - **Separation of Concerns**: Clean architecture implementation
@@ -751,26 +751,22 @@ Professional development practices with comprehensive testing coverage.
 
 ## 🌟 Conclusion
 
-The Carbon Credit Verification System represents a **production-ready, enterprise-grade platform** that successfully combines AI-powered satellite analysis, blockchain certification, and human expertise into a comprehensive verification solution.
+The Carbon Credit Verification System is an **honest prototype** that combines real ML inference
+on uploaded satellite imagery with a human-in-the-loop verification workflow. See
+[STATUS.md](./STATUS.md) for an accurate account of what is real vs. disabled.
 
 ### Current Capabilities:
-- ✅ **5/9 modules fully operational** with professional interfaces
-- ✅ **4 production ML models** (96MB) integrated and functional
-- ✅ **Complete project management** workflow
-- ✅ **Enterprise-grade authentication** and security
-- ✅ **Professional UI/UX** with accessibility compliance
+- ✅ **Authentication** — password login, opaque bearer tokens, RBAC
+- ✅ **Project management** workflow
+- ✅ **Real ML inference** on uploaded imagery (forest-cover F1 ≈ 0.49, change-detection F1 ≈ 0.60)
+- ✅ **Human-in-the-loop verification** (no fabricated AI scores)
 
-### Strategic Position:
-The system is **immediately deployable** for carbon credit verification with the core workflow fully functional. The remaining 4 modules have backend infrastructure ready and can be rapidly deployed with frontend integration.
+### Not yet real / disabled:
+- Explainable AI is disabled in this build (genuine code not wired to real inputs)
+- Coordinate-based analysis removed (no imagery-from-coordinates pipeline)
+- Blockchain certification disabled until a contract is deployed and configured
 
-### Competitive Advantages:
-1. **AI Transparency**: Explainable AI for regulatory compliance
-2. **Comprehensive Coverage**: Satellite + IoT + Human verification
-3. **Blockchain Immutability**: Tamper-proof certification
-4. **Professional Interface**: Enterprise-grade user experience
-5. **Scalable Architecture**: Cloud-native horizontal scaling
-
-This documentation demonstrates a **complete, professional carbon credit verification platform** ready for production deployment and commercial use.
+This is a demonstration/development prototype, not a commercial deployment.
 
 ---
 

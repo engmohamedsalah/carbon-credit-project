@@ -142,11 +142,11 @@ const Analytics = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <Speed sx={{ color: 'orange', mr: 1 }} />
                 <Typography variant="h6">
-                  {((dashboardData?.ml_performance?.overall_confidence || 0) * 100).toFixed(1)}%
+                  {((performanceData?.confidence_distribution?.average_confidence || 0) * 100).toFixed(1)}%
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
-                ML Confidence
+                Avg AI Confidence
               </Typography>
             </CardContent>
           </Card>
@@ -215,17 +215,40 @@ const Analytics = () => {
                   ))}
                 </Grid>
                 <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>
-                  ML Performance
+                  Model Performance (Offline Evaluation F1)
                 </Typography>
-                <Typography variant="body2">
-                  Forest Cover: {((dashboardData?.ml_performance?.forest_cover_accuracy || 0) * 100).toFixed(1)}%
-                </Typography>
-                <Typography variant="body2">
-                  Change Detection: {((dashboardData?.ml_performance?.change_detection_accuracy || 0) * 100).toFixed(1)}%
-                </Typography>
-                <Typography variant="body2">
-                  Models Processed: {dashboardData?.ml_performance?.models_processed || 0}
-                </Typography>
+                {(() => {
+                  // ponytail: accept either new *_f1 keys or legacy *_accuracy keys; both carry the real offline-eval F1 the backend now returns.
+                  const ml = dashboardData?.ml_performance || {};
+                  const forestF1 = ml.forest_cover_f1 ?? ml.forest_cover_accuracy;
+                  const changeF1 = ml.change_detection_f1 ?? ml.change_detection_accuracy;
+                  if (forestF1 == null && changeF1 == null) {
+                    return (
+                      <Typography variant="body2" color="text.secondary">
+                        No offline evaluation results yet
+                      </Typography>
+                    );
+                  }
+                  return (
+                    <>
+                      {forestF1 != null && (
+                        <Typography variant="body2">
+                          Forest Cover F1: {Number(forestF1).toFixed(3)}
+                        </Typography>
+                      )}
+                      {changeF1 != null && (
+                        <Typography variant="body2">
+                          Change Detection F1: {Number(changeF1).toFixed(3)}
+                        </Typography>
+                      )}
+                      {ml.source && (
+                        <Typography variant="caption" color="text.secondary" component="div">
+                          Source: {ml.source}
+                        </Typography>
+                      )}
+                    </>
+                  );
+                })()}
               </Box>
             </Paper>
           </Grid>
@@ -236,37 +259,18 @@ const Analytics = () => {
         <Grid container spacing={3}>
           <Grid item xs={12}>
             <Paper sx={{ p: 2, height: 400 }}>
-              <ModelPerformanceChart data={performanceData} />
+              <ModelPerformanceChart data={dashboardData} />
             </Paper>
           </Grid>
-          
+
           <Grid item xs={12} md={6}>
             <Paper sx={{ p: 2, height: 300 }}>
               <Typography variant="h6" gutterBottom>
                 Processing Metrics
               </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="body2">
-                    <strong>Average Time:</strong> {performanceData?.processing_metrics?.avg_processing_time}s
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">
-                    <strong>Median Time:</strong> {performanceData?.processing_metrics?.median_processing_time}s
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">
-                    <strong>Fastest:</strong> {performanceData?.processing_metrics?.fastest_processing}s
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2">
-                    <strong>Slowest:</strong> {performanceData?.processing_metrics?.slowest_processing}s
-                  </Typography>
-                </Grid>
-              </Grid>
+              <Typography variant="body2" color="text.secondary">
+                No processing-time data yet
+              </Typography>
             </Paper>
           </Grid>
 

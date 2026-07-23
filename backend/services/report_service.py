@@ -237,29 +237,33 @@ class ReportService:
         story.append(Paragraph("EXECUTIVE SUMMARY", styles['Heading2']))
         
         summary_data = analytics_data.get('dashboard', {})
+        ml_perf = summary_data.get('ml_performance', {})
+        forest_f1 = ml_perf.get('forest_cover_f1', 0)
+        change_f1 = ml_perf.get('change_detection_f1', 0)
         summary_text = f"""
-        The Carbon Credit Verification System has processed {summary_data.get('total_projects', 0)} projects 
-        with {summary_data.get('total_verifications', 0)} completed verifications. The system has verified 
-        {summary_data.get('total_carbon_impact', 0):.2f} tonnes of CO₂ equivalent carbon impact with an 
-        average ML model confidence of {(summary_data.get('ml_performance', {}).get('overall_confidence', 0) * 100):.1f}%.
+        The Carbon Credit Verification System has processed {summary_data.get('total_projects', 0)} projects
+        with {summary_data.get('total_verifications', 0)} completed verifications, covering
+        {summary_data.get('total_carbon_impact', 0):.2f} tonnes of CO₂ equivalent (applicant-estimated).
+        Model performance is reported from offline evaluation: forest-cover F1 {forest_f1:.2f},
+        change-detection F1 {change_f1:.2f}.
         """
-        
+
         story.append(Paragraph(summary_text, styles['Normal']))
         story.append(Spacer(1, 20))
 
         # Key Metrics
         story.append(Paragraph("KEY PERFORMANCE INDICATORS", styles['Heading2']))
-        
+
         kpi_data = [
-            ['Metric', 'Value', 'Performance'],
-            ['Total Projects', str(summary_data.get('total_projects', 0)), 'Growing'],
-            ['Verified Projects', str(len([s for s in summary_data.get('project_status', {}).keys() if s == 'Verified'])), 'Good'],
-            ['Total Carbon Impact', f"{summary_data.get('total_carbon_impact', 0):.2f} tonnes CO₂", 'Excellent'],
-            ['ML Model Accuracy', f"{(summary_data.get('ml_performance', {}).get('forest_cover_accuracy', 0) * 100):.1f}%", 'Excellent'],
-            ['System Reliability', '99.9%', 'Excellent'],
+            ['Metric', 'Value'],
+            ['Total Projects', str(summary_data.get('total_projects', 0))],
+            ['Verified Projects', str(len([s for s in summary_data.get('project_status', {}).keys() if s == 'Verified']))],
+            ['Total Carbon Impact (estimated)', f"{summary_data.get('total_carbon_impact', 0):.2f} tonnes CO₂e"],
+            ['Forest-Cover F1 (offline eval)', f"{forest_f1:.2f}"],
+            ['Change-Detection F1 (offline eval)', f"{change_f1:.2f}"],
         ]
-        
-        kpi_table = Table(kpi_data, colWidths=[2.5*inch, 2*inch, 1.5*inch])
+
+        kpi_table = Table(kpi_data, colWidths=[3.5*inch, 2.5*inch])
         kpi_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),

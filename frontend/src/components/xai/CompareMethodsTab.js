@@ -14,7 +14,6 @@ import {
   Card,
   CardContent,
   Alert,
-  LinearProgress,
   Grid,
   Checkbox
 } from '@mui/material';
@@ -27,16 +26,20 @@ import {
   Psychology as PsychologyIcon
 } from '@mui/icons-material';
 
-const CompareMethodsTab = ({ 
-  currentExplanation, 
-  explanationHistory, 
+import xaiService from '../../services/xaiService';
+
+const CompareMethodsTab = ({
+  currentExplanation,
+  explanationHistory,
   onGenerateComparison,
-  loading = false 
+  loading = false
 }) => {
   const [selectedExplanations, setSelectedExplanations] = useState([]);
   const [comparisonResult, setComparisonResult] = useState(null);
+  const [compareError, setCompareError] = useState(null);
 
-  // Available XAI methods information
+  // Available XAI methods information (qualitative descriptions only — no
+  // fabricated benchmark numbers)
   const methodInfo = {
     shap: {
       name: 'SHAP',
@@ -44,10 +47,7 @@ const CompareMethodsTab = ({
       description: 'Game theory-based feature attribution',
       strengths: ['Theoretically grounded', 'Consistent', 'Global insights'],
       weaknesses: ['Computationally expensive', 'Complex interpretation'],
-      useCase: 'Comprehensive feature importance analysis',
-      accuracy: 95,
-      speed: 60,
-      interpretability: 90
+      useCase: 'Comprehensive feature importance analysis'
     },
     lime: {
       name: 'LIME',
@@ -55,10 +55,7 @@ const CompareMethodsTab = ({
       description: 'Local surrogate model explanations',
       strengths: ['Model-agnostic', 'Fast execution', 'Local focus'],
       weaknesses: ['Instance-specific only', 'Unstable results'],
-      useCase: 'Quick local explanations for individual predictions',
-      accuracy: 80,
-      speed: 90,
-      interpretability: 85
+      useCase: 'Quick local explanations for individual predictions'
     },
     integrated_gradients: {
       name: 'Integrated Gradients',
@@ -66,10 +63,7 @@ const CompareMethodsTab = ({
       description: 'Path-based gradient attribution method',
       strengths: ['Deep learning friendly', 'Smooth attributions', 'Axiomatically sound'],
       weaknesses: ['Requires baseline selection', 'Neural network specific'],
-      useCase: 'Deep learning model explanations with smooth attributions',
-      accuracy: 88,
-      speed: 75,
-      interpretability: 82
+      useCase: 'Deep learning model explanations with smooth attributions'
     }
   };
 
@@ -97,32 +91,24 @@ const CompareMethodsTab = ({
     if (selectedExplanations.length < 2) {
       return;
     }
-    
-    // Generate mock comparison result
-    const selectedItems = explanationHistory.filter(exp => 
-      selectedExplanations.includes(exp.explanation_id)
-    );
-    
-    const comparison = {
-      methods_compared: selectedItems.map(item => item.method),
-      confidence_comparison: selectedItems.map(item => ({
-        method: item.method,
-        confidence: item.confidence_score,
-        timestamp: item.timestamp
-      })),
-      recommendation: selectedItems.reduce((best, current) => 
-        current.confidence_score > best.confidence_score ? current : best
-      ),
-      differences: [
-        'SHAP provides more comprehensive global insights',
-        'LIME offers faster computation for local explanations',
-        'Confidence scores vary based on model complexity'
-      ]
-    };
-    
-    setComparisonResult(comparison);
-    if (onGenerateComparison) {
-      onGenerateComparison(comparison);
+
+    setComparisonResult(null);
+    setCompareError(null);
+
+    // Comparison is computed by the backend from real explanations. We never
+    // fabricate results client-side; a 503 surfaces an honest disabled message.
+    try {
+      const comparison = await xaiService.compareExplanations(selectedExplanations);
+      setComparisonResult(comparison);
+      if (onGenerateComparison) {
+        onGenerateComparison(comparison);
+      }
+    } catch (error) {
+      setCompareError(
+        error.disabled
+          ? 'Method comparison is not available in this build.'
+          : error.message || 'Failed to compare explanations'
+      );
     }
   };
 
@@ -194,39 +180,6 @@ const CompareMethodsTab = ({
                   <Typography variant="body2" sx={{ mb: 2, lineHeight: 1.5 }}>
                     {info.description}
                   </Typography>
-
-                  {/* Performance Metrics */}
-                  <Box sx={{ mb: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="caption">Accuracy</Typography>
-                      <Typography variant="caption" fontWeight={600}>{info.accuracy}%</Typography>
-                    </Box>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={info.accuracy} 
-                      sx={{ height: 4, mb: 1 }}
-                    />
-                    
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="caption">Speed</Typography>
-                      <Typography variant="caption" fontWeight={600}>{info.speed}%</Typography>
-                    </Box>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={info.speed} 
-                      sx={{ height: 4, mb: 1 }}
-                    />
-                    
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="caption">Interpretability</Typography>
-                      <Typography variant="caption" fontWeight={600}>{info.interpretability}%</Typography>
-                    </Box>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={info.interpretability} 
-                      sx={{ height: 4 }}
-                    />
-                  </Box>
 
                   <Typography variant="caption" color="primary" sx={{ fontWeight: 600 }}>
                     Best for: {info.useCase}
@@ -318,6 +271,12 @@ const CompareMethodsTab = ({
             </Typography>
           )}
         </Box>
+
+        {compareError && (
+          <Alert severity="info" sx={{ mt: 3 }}>
+            {compareError}
+          </Alert>
+        )}
       </Paper>
 
       {/* Comparison Results */}
@@ -333,7 +292,7 @@ const CompareMethodsTab = ({
               Methods Compared:
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {comparisonResult.methods_compared.map((method, index) => (
+              {comparisonResult.methods_compared?.map((method, index) => (
                 <Chip 
                   key={index}
                   label={methodInfo[method]?.name || method.toUpperCase()}
@@ -351,7 +310,7 @@ const CompareMethodsTab = ({
               Confidence Comparison:
             </Typography>
             <Grid container spacing={2}>
-              {comparisonResult.confidence_comparison.map((item, index) => (
+              {comparisonResult.confidence_comparison?.map((item, index) => (
                 <Grid item xs={12} sm={6} md={4} key={index}>
                   <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
                     <Typography variant="subtitle2" fontWeight={600}>
@@ -370,30 +329,34 @@ const CompareMethodsTab = ({
           </Box>
 
           {/* Recommendation */}
-          <Alert severity="info" sx={{ mb: 3 }}>
-            <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-              Recommended Method:
-            </Typography>
-            <Typography variant="body2">
-              <strong>{methodInfo[comparisonResult.recommendation.method]?.name}</strong> shows 
-              the highest confidence score ({(comparisonResult.recommendation.confidence_score * 100).toFixed(1)}%) 
-              for this analysis.
-            </Typography>
-          </Alert>
+          {comparisonResult.recommendation && (
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                Recommended Method:
+              </Typography>
+              <Typography variant="body2">
+                <strong>{methodInfo[comparisonResult.recommendation.method]?.name}</strong> shows
+                the highest confidence score ({(comparisonResult.recommendation.confidence_score * 100).toFixed(1)}%)
+                for this analysis.
+              </Typography>
+            </Alert>
+          )}
 
           {/* Key Differences */}
-          <Box>
-            <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-              Key Differences:
-            </Typography>
-            <Box component="ul" sx={{ pl: 2, m: 0 }}>
-              {comparisonResult.differences.map((diff, index) => (
-                <Typography component="li" variant="body2" key={index} sx={{ mb: 1 }}>
-                  {diff}
-                </Typography>
-              ))}
+          {comparisonResult.differences?.length > 0 && (
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+                Key Differences:
+              </Typography>
+              <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                {comparisonResult.differences.map((diff, index) => (
+                  <Typography component="li" variant="body2" key={index} sx={{ mb: 1 }}>
+                    {diff}
+                  </Typography>
+                ))}
+              </Box>
             </Box>
-          </Box>
+          )}
         </Paper>
       )}
     </Box>

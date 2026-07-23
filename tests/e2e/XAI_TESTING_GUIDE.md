@@ -4,6 +4,8 @@
 
 This guide explains how to test the XAI (Explainable AI) functionality in the Carbon Credit Verification SaaS application. The XAI system provides business-friendly AI explanations with regulatory compliance features.
 
+> **Current status:** The XAI service is **DISABLED** in the application build (`backend/services/xai_service.py` returns an explicit "Explainability is not available in this build" result). The endpoints and flows described below are the intended design. Until the service is re-enabled and wired to real per-prediction inputs, these calls return an "unavailable" response, so this guide documents expected behavior rather than a live feature.
+
 ## XAI Testing Flow
 
 ### 1. **System Architecture Flow**
@@ -265,4 +267,4 @@ Login → Dashboard → XAI Page → Tab Selection → Form Interaction → Resu
 
 ## Conclusion
 
-The XAI testing suite provides comprehensive coverage of the explainable AI functionality, ensuring that business users can trust and understand AI decisions in carbon credit verification. The tests validate both technical functionality and business requirements, making the system production-ready for enterprise deployment. 
+The XAI testing suite documents comprehensive coverage of the explainable AI functionality, so that business users can trust and understand AI decisions in carbon credit verification once the feature is live. Note that the XAI service is currently disabled in the application build, so these tests describe the intended behavior rather than a live capability; they will report "unavailable" until the service is re-enabled and wired to real per-prediction inputs. 

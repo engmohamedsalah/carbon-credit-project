@@ -59,10 +59,10 @@ The pipeline architecture diagram shows:
 - **Model 3**: ConvLSTM for temporal analysis
 - **Model 4**: Ensemble integration (Expected F1>0.6)
 
-### **📈 Performance Metrics**
+### **📈 Target Metrics (design goals)**
 - **Throughput**: 1000+ hectares/minute
 - **Latency**: <30 seconds end-to-end
-- **Accuracy**: 99.1% carbon calculation precision
+- **Carbon calculation**: deterministic area-based CO₂ estimate (no validated accuracy figure)
 - **Uptime**: 99.9% availability
 
 ### **🔗 Data Flow**

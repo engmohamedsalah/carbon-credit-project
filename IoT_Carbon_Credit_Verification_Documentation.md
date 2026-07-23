@@ -4,6 +4,8 @@
 
 This document provides a comprehensive analysis of the IoT sensor integration in the Carbon Credit Verification SaaS application, detailing how real-time sensor data enhances the accuracy and reliability of carbon credit calculations and verification decisions. The system combines satellite imagery analysis with ground-based IoT sensors to create a robust, transparent, and automated verification process.
 
+> **Implementation status:** The IoT sensor integration described in this document is a **design proposal**. It has **not** been implemented or deployed in the current application build. All sensor specifications, algorithms, and performance figures below describe the intended design and its targets — they are **not** measured results from a running system.
+
 ## Table of Contents
 
 1. [System Architecture Overview](#1-system-architecture-overview)
@@ -802,57 +804,41 @@ async def get_iot_validation_metrics(
 
 #### 7.1.1 Accuracy Metrics
 
-| **Metric** | **Target** | **Current Performance** | **Validation Method** |
-|------------|------------|------------------------|----------------------|
-| **Carbon Estimation Accuracy** | >90% | 94.2% | Cross-validation with field measurements |
-| **Fraud Detection Rate** | >95% | 97.8% | Historical fraud case analysis |
-| **False Positive Rate** | <5% | 3.1% | Expert review validation |
-| **Sensor Data Quality** | >95% | 96.7% | Automated quality checks |
-| **Satellite-IoT Agreement** | >85% | 89.4% | Statistical correlation analysis |
+> The figures below are **design targets**. The "Status" column reflects that the IoT integration has not been built, so no performance has been measured.
+
+| **Metric** | **Target** | **Status** | **Planned Validation Method** |
+|------------|------------|------------|----------------------|
+| **Carbon Estimation Accuracy** | >90% | Not yet measured — IoT integration not implemented | Cross-validation with field measurements |
+| **Fraud Detection Rate** | >95% | Not yet measured | Historical fraud case analysis |
+| **False Positive Rate** | <5% | Not yet measured | Expert review validation |
+| **Sensor Data Quality** | >95% | Not yet measured | Automated quality checks |
+| **Satellite-IoT Agreement** | >85% | Not yet measured | Statistical correlation analysis |
 
 #### 7.1.2 Operational Metrics
 
-| **Metric** | **Target** | **Current Performance** | **Improvement Plan** |
-|------------|------------|------------------------|----------------------|
-| **Processing Time** | <24 hours | 18.5 hours | Optimize ML pipeline |
-| **System Uptime** | >99.5% | 99.8% | Redundancy improvements |
-| **Sensor Network Uptime** | >95% | 94.3% | Battery management optimization |
-| **Data Transmission Success** | >99% | 98.7% | Network infrastructure upgrade |
-| **Expert Review Turnaround** | <7 days | 5.2 days | Workflow optimization |
+| **Metric** | **Target** | **Status** | **Improvement Plan** |
+|------------|------------|------------|----------------------|
+| **Processing Time** | <24 hours | Not yet measured | Optimize ML pipeline |
+| **System Uptime** | >99.5% | Not yet measured | Redundancy improvements |
+| **Sensor Network Uptime** | >95% | Not yet measured | Battery management optimization |
+| **Data Transmission Success** | >99% | Not yet measured | Network infrastructure upgrade |
+| **Expert Review Turnaround** | <7 days | Not yet measured | Workflow optimization |
 
 ### 7.2 Validation Studies
 
-#### 7.2.1 Field Validation Campaign (2024)
+#### 7.2.1 Planned Field Validation Campaign
 
-**Methodology**: 
-- 50 forest projects across 3 continents
+**Planned Methodology**:
+- Forest projects across multiple biomes (tropical, temperate, boreal)
 - Ground truth measurements using standardized forestry protocols
-- 12-month monitoring period
+- Multi-month monitoring period
 - Independent verification by certified forest assessors
 
-**Results**:
-```python
-validation_results = {
-    "sample_size": 50,
-    "geographical_coverage": {
-        "tropical_forests": 20,
-        "temperate_forests": 18,
-        "boreal_forests": 12
-    },
-    "accuracy_by_forest_type": {
-        "tropical": {"mean_accuracy": 0.921, "std_dev": 0.067},
-        "temperate": {"mean_accuracy": 0.945, "std_dev": 0.052},
-        "boreal": {"mean_accuracy": 0.938, "std_dev": 0.058}
-    },
-    "iot_contribution": {
-        "accuracy_improvement": 0.127,  # 12.7% improvement over satellite-only
-        "confidence_increase": 0.089,   # 8.9% increase in confidence scores
-        "false_positive_reduction": 0.34  # 34% reduction in false positives
-    }
-}
-```
+**Results**: No field validation campaign has been conducted. The IoT integration described here is a design proposal and has not been deployed, so no per-forest-type accuracy figures or IoT-contribution measurements exist yet. This section will be populated once a real validation campaign is run. (Previously shown per-forest-type accuracies such as 0.921/0.945/0.938 and IoT-contribution percentages were not backed by any study and have been removed.)
 
 #### 7.2.2 Continuous Monitoring Performance
+
+> Note: the numeric values in the function below are **illustrative placeholders** showing the shape of the metrics structure. They are **not** measured results — continuous IoT monitoring is not yet deployed.
 
 ```python
 def calculate_system_performance_metrics() -> Dict:
@@ -896,14 +882,16 @@ def calculate_system_performance_metrics() -> Dict:
 
 #### 7.3.1 Traditional vs IoT-Enhanced Verification
 
-| **Aspect** | **Traditional Method** | **IoT-Enhanced Method** | **Improvement** |
-|------------|------------------------|------------------------|-----------------|
-| **Accuracy** | 78% ± 12% | 94% ± 6% | +20.5% |
-| **Cost per Assessment** | $15,000 - $25,000 | $8,000 - $12,000 | -52% |
-| **Processing Time** | 3-6 months | 1-3 weeks | -85% |
-| **Geographic Coverage** | Limited to accessible areas | Global coverage | +100% |
-| **Fraud Detection** | 65% detection rate | 97.8% detection rate | +50% |
-| **Stakeholder Trust** | Medium | High | +35% |
+> The "IoT-Enhanced Method" column describes **projected design goals** for a fully deployed system, not measured results. The IoT integration has not been built or validated, so no specific accuracy, cost, or detection figures can be claimed. Earlier revisions of this table quoted fabricated numbers (e.g. "94% accuracy", "97.8% fraud detection"); those have been removed.
+
+| **Aspect** | **Traditional Method** | **IoT-Enhanced Method (projected direction)** |
+|------------|------------------------|------------------------|
+| **Accuracy** | Baseline | Target: higher via satellite + ground-sensor cross-validation |
+| **Cost per Assessment** | High (manual field work) | Target: lower via automation |
+| **Processing Time** | 3-6 months | Target: weeks |
+| **Geographic Coverage** | Limited to accessible areas | Target: global via satellite + remote sensors |
+| **Fraud Detection** | Baseline | Target: higher via multi-source validation |
+| **Stakeholder Trust** | Medium | Target: higher via transparency |
 
 ---
 
@@ -1199,15 +1187,15 @@ class AdvancedSensorIntegration:
 
 ## Conclusion
 
-The IoT-enhanced Carbon Credit Verification system represents a significant advancement in environmental monitoring and carbon credit verification. By combining satellite-based remote sensing with ground-truth IoT sensor data, the system achieves:
+The IoT-enhanced Carbon Credit Verification system described here is a design proposal for advancing environmental monitoring and carbon credit verification. By combining satellite-based remote sensing with ground-truth IoT sensor data, the system is **designed to** deliver:
 
-- **94.2% accuracy** in carbon credit estimation (vs. 78% for traditional methods)
-- **52% cost reduction** compared to manual verification processes
-- **97.8% fraud detection rate** through multi-source data validation
+- **Higher carbon-estimation accuracy** than satellite-only or traditional manual methods
+- **Lower cost per assessment** than manual verification processes
+- **Stronger fraud detection** through multi-source data cross-validation
 - **Real-time monitoring** capabilities for continuous project oversight
-- **Transparent decision-making** through explainable AI and blockchain integration
+- **Transparent decision-making** through explainable AI and (planned) blockchain integration
 
-The comprehensive integration of IoT sensors not only improves the accuracy and reliability of carbon credit calculations but also enables continuous monitoring, early anomaly detection, and enhanced stakeholder confidence in the verification process. This system sets a new standard for environmental monitoring and carbon credit verification in the fight against climate change.
+These are **design goals, not measured results** — the IoT integration has not yet been implemented, deployed, or validated. Once built, integrating IoT sensors is intended to improve the accuracy and reliability of carbon credit calculations and enable continuous monitoring, early anomaly detection, and enhanced stakeholder confidence in the verification process.
 
 ### Key Takeaways
 

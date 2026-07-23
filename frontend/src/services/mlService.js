@@ -20,25 +20,6 @@ class MLService {
   }
 
   /**
-   * Analyze location coordinates for carbon credit potential
-   */
-  async analyzeLocation(projectId, latitude, longitude, analysisType = 'comprehensive') {
-    try {
-      const response = await apiService.post('/ml/analyze-location', {
-        project_id: projectId,
-        latitude: latitude,
-        longitude: longitude,
-        analysis_type: analysisType
-      });
-      
-      return response.data;
-    } catch (error) {
-      console.error('Location analysis failed:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Analyze forest cover from uploaded satellite image
    */
   async analyzeForestCover(projectId, imageFile) {
@@ -90,17 +71,7 @@ class MLService {
     try {
       const results = {};
 
-      // Step 1: Location analysis if coordinates provided
-      if (analysisData.coordinates) {
-        const { latitude, longitude } = analysisData.coordinates;
-        results.locationAnalysis = await this.analyzeLocation(
-          projectId, 
-          latitude, 
-          longitude
-        );
-      }
-
-      // Step 2: Forest cover analysis if image provided
+      // Forest cover analysis if image provided
       if (analysisData.forestCoverImage) {
         results.forestCoverAnalysis = await this.analyzeForestCover(
           projectId,
@@ -108,7 +79,7 @@ class MLService {
         );
       }
 
-      // Step 3: Change detection if before/after images provided
+      // Change detection if before/after images provided
       if (analysisData.beforeImage && analysisData.afterImage) {
         results.changeDetection = await this.detectChanges(
           projectId,
@@ -143,13 +114,26 @@ class MLService {
       summary: {}
     };
 
-    // Format location analysis results
-    if (results.results?.locationAnalysis) {
-      const location = results.results.locationAnalysis.results;
-      formatted.summary.forestCoverage = location.forest_analysis?.forest_coverage_percent;
-      formatted.summary.forestArea = location.forest_analysis?.forest_area_hectares;
-      formatted.summary.carbonEstimate = location.carbon_estimate?.total_carbon_tons;
-      formatted.summary.confidenceScore = location.forest_analysis?.confidence_score;
+    // Populate summary from the real forest-cover analysis response.
+    // Endpoint envelope: { results: { forest_prediction, carbon_impact, ... } }
+    const forest = results.results?.forestCoverAnalysis?.results;
+    if (forest) {
+      const carbon = forest.carbon_impact || {};
+      formatted.summary.forestCoverage = carbon.forest_coverage_percent;
+      formatted.summary.forestArea = carbon.forest_area_hectares;
+      formatted.summary.carbonEstimate = carbon.total_carbon_tons;
+      formatted.summary.confidenceScore = forest.forest_prediction?.mean_probability;
+    }
+
+    // Fall back to change-detection "after" state when no forest-cover image was run.
+    // Envelope: { results: { after_analysis: { forest_prediction, carbon_impact }, ... } }
+    const change = results.results?.changeDetection?.results;
+    if (change && !forest) {
+      const carbon = change.after_analysis?.carbon_impact || {};
+      formatted.summary.forestCoverage = carbon.forest_coverage_percent;
+      formatted.summary.forestArea = carbon.forest_area_hectares;
+      formatted.summary.carbonEstimate = carbon.total_carbon_tons;
+      formatted.summary.confidenceScore = change.after_analysis?.forest_prediction;
     }
 
     // Format individual analysis results

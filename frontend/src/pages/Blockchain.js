@@ -29,11 +29,15 @@ const Blockchain = () => {
   const [searchResult, setSearchResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [networkInfo, setNetworkInfo] = useState(null);
+  const [blockchainEnabled, setBlockchainEnabled] = useState(null); // null = unknown until fetched
   const location = useLocation();
 
   useEffect(() => {
     // Load network info on component mount
     loadNetworkInfo();
+    apiService.get(API_ENDPOINTS.blockchain.enabled)
+      .then(res => setBlockchainEnabled(Boolean((res.data ?? res).enabled)))
+      .catch(() => setBlockchainEnabled(false));
   }, []);
 
   // Auto-verify if token_id_or_hash is provided in URL
@@ -112,15 +116,23 @@ const Blockchain = () => {
         </Typography>
       </Box>
 
-      <Alert severity={networkInfo?.connected ? "success" : "warning"} sx={{ mb: 3 }}>
-        <Typography variant="body1">
-          <strong>Blockchain Status:</strong> {
-            networkInfo?.connected 
-              ? `Connected to ${networkInfo.network}. Real-time certificate verification is active.`
-              : 'Blockchain service is offline. Using demo mode for verification.'
-          }
-        </Typography>
-      </Alert>
+      {blockchainEnabled === false ? (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="body1">
+            On-chain certification is not configured in this environment.
+          </Typography>
+        </Alert>
+      ) : (
+        <Alert severity={networkInfo?.connected ? "success" : "warning"} sx={{ mb: 3 }}>
+          <Typography variant="body1">
+            <strong>Blockchain Status:</strong> {
+              networkInfo?.connected
+                ? `Connected to ${networkInfo.network}. Real-time certificate verification is active.`
+                : 'Blockchain service is currently unavailable.'
+            }
+          </Typography>
+        </Alert>
+      )}
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
@@ -135,12 +147,13 @@ const Blockchain = () => {
                 onChange={(e) => setTokenId(e.target.value)}
                 placeholder="Enter token ID to verify certificate"
                 fullWidth
+                disabled={blockchainEnabled === false}
               />
-              <Button 
-                variant="contained" 
+              <Button
+                variant="contained"
                 onClick={handleVerifyToken}
                 startIcon={loading ? <CircularProgress size={16} color="inherit" /> : <SearchIcon />}
-                disabled={loading || !tokenId.trim()}
+                disabled={loading || !tokenId.trim() || blockchainEnabled === false}
                 sx={{ minWidth: 120 }}
               >
                 {loading ? 'Verifying...' : 'Verify'}

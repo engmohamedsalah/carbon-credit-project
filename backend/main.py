@@ -28,15 +28,19 @@ from typing import Tuple
 
 # Import role utilities
 from utils.role_utils import (
-    is_admin, 
-    can_manage_projects, 
-    can_verify_projects, 
+    is_admin,
+    can_manage_projects,
+    can_verify_projects,
     can_access_analytics,
     can_manage_users,
     can_access_blockchain,
     normalize_role,
-    RolePermissions
+    RolePermissions,
+    Roles,
 )
+
+# Runtime configuration (env-driven; no secrets in the repo)
+from config import settings
 
 # Configure logging
 logging.basicConfig(
@@ -49,8 +53,8 @@ logger = logging.getLogger(__name__)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
 
-# Database configuration
-DATABASE_PATH = os.path.join("..", "database", "carbon_credits.db")
+# Database configuration (absolute path from env-driven config)
+DATABASE_PATH = settings.DATABASE_PATH
 
 
 # Database Manager
@@ -470,13 +474,19 @@ def get_user_by_email(email: str) -> Optional[dict]:
 
 
 def get_user_by_token(token: str) -> Optional[dict]:
-    """Get user by auth token"""
+    """Get user by auth token, rejecting expired tokens.
+
+    Strict expiry: a token with a NULL or past ``expires_at`` is not honored, so
+    leaked/legacy tokens (e.g. from an old database) can never authenticate.
+    """
     try:
         with db.get_connection() as conn:
             cursor = conn.execute("""
-                SELECT u.* FROM users u 
-                JOIN auth_tokens t ON u.id = t.user_id 
+                SELECT u.* FROM users u
+                JOIN auth_tokens t ON u.id = t.user_id
                 WHERE t.token = ?
+                  AND t.expires_at IS NOT NULL
+                  AND t.expires_at > datetime('now')
             """, (token,))
             row = cursor.fetchone()
             return dict(row) if row else None
@@ -510,13 +520,45 @@ def create_user(user_data: UserCreate) -> dict:
         raise
 
 
-def store_token(token: str, user_id: int):
-    """Store auth token in database"""
+def seed_admin() -> None:
+    """Create a single admin from env vars if (and only if) no users exist.
+
+    Keeps credentials out of the repository: the database is created fresh at
+    runtime and the first admin comes from ADMIN_EMAIL / ADMIN_PASSWORD.
+    """
+    if not settings.ADMIN_EMAIL or not settings.ADMIN_PASSWORD:
+        return
+    try:
+        with db.get_connection() as conn:
+            count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+            if count:
+                return
+            conn.execute(
+                "INSERT INTO users (email, hashed_password, full_name, role) "
+                "VALUES (?, ?, ?, ?)",
+                (
+                    settings.ADMIN_EMAIL.lower(),
+                    hash_password(settings.ADMIN_PASSWORD),
+                    settings.ADMIN_NAME,
+                    Roles.ADMINISTRATOR.value,
+                ),
+            )
+            conn.commit()
+            logger.info(f"Seeded initial admin user: {settings.ADMIN_EMAIL.lower()}")
+    except Exception as e:
+        logger.error(f"Admin seed failed: {e}")
+
+
+def store_token(token: str, user_id: int, ttl_minutes: Optional[int] = None):
+    """Store auth token in database with an expiry timestamp."""
+    if ttl_minutes is None:
+        ttl_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES
     try:
         with db.get_connection() as conn:
             conn.execute(
-                "INSERT INTO auth_tokens (token, user_id) VALUES (?, ?)",
-                (token, user_id)
+                "INSERT INTO auth_tokens (token, user_id, expires_at) "
+                "VALUES (?, ?, datetime('now', ?))",
+                (token, user_id, f"+{int(ttl_minutes)} minutes")
             )
             conn.commit()
     except Exception as e:
@@ -569,11 +611,16 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def _seed_admin_on_startup() -> None:
+    seed_admin()
 
 
 # Exception handlers
@@ -641,19 +688,25 @@ async def get_blockchain_status(current_user: UserResponse = Depends(get_current
     
     return blockchain_service.get_network_info()
 
+@app.get("/api/v1/blockchain/enabled")
+async def blockchain_enabled(current_user: UserResponse = Depends(get_current_user)):
+    """Report whether on-chain certification is configured (used by the UI to gate features)."""
+    return {"enabled": bool(blockchain_service and getattr(blockchain_service, "enabled", False))}
+
+
 @app.get("/api/v1/blockchain/verify")
 async def verify_certificate(
     token_id_or_hash: str = Query(..., description="Token ID or transaction hash to verify"),
     current_user: UserResponse = Depends(get_current_user)
 ):
     """Verify a carbon credit certificate"""
-    if not blockchain_service:
-        raise HTTPException(status_code=503, detail="Blockchain service not available")
-    
+    if not blockchain_service or not getattr(blockchain_service, "enabled", False):
+        raise HTTPException(status_code=503, detail="Blockchain certification is not configured")
+
     result = blockchain_service.verify_certificate(token_id_or_hash)
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
-    
+
     return result
 
 @app.post("/api/v1/blockchain/mint")
@@ -666,10 +719,10 @@ async def mint_carbon_credit(
     """Mint a carbon credit NFT (Admin only)"""
     if not is_admin(current_user.role):
         raise HTTPException(status_code=403, detail="Admin access required")
-    
-    if not blockchain_service:
-        raise HTTPException(status_code=503, detail="Blockchain service not available")
-    
+
+    if not blockchain_service or not getattr(blockchain_service, "enabled", False):
+        raise HTTPException(status_code=503, detail="Blockchain certification is not configured")
+
     # Validate project and verification state
     with db.get_connection() as conn:
         # Ensure project exists
@@ -692,10 +745,10 @@ async def mint_carbon_credit(
         if str(verification.get("status", "")).lower() not in ["approved", "verified"]:
             raise HTTPException(status_code=400, detail="Verification must be approved before minting")
     
-    # Default recipient is current user's wallet (would need to be configured)
+    # A real recipient wallet is required — never mint to a placeholder address.
     if not recipient_address:
-        recipient_address = "0x742d35Cc6634C0532925a3b8D7b9C67B2fc4Db13"  # Default for demo
-    
+        raise HTTPException(status_code=400, detail="recipient_address is required")
+
     # Generate verification hash
     import hashlib
     verification_data = f"{project_id}-{carbon_amount}-{current_user.id}"
@@ -795,11 +848,16 @@ async def register(user_data: UserCreate):
     
     # Normalize email
     user_data.email = user_data.email.lower()
-    
+
+    # Security: never trust a client-supplied role at open registration.
+    # All self-registered users get the lowest-privilege role; elevated roles
+    # are assigned only out-of-band (e.g. the seeded admin).
+    user_data.role = Roles.PROJECT_DEVELOPER.value
+
     # Check if user already exists
     if get_user_by_email(user_data.email):
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+
     # Create user
     user = create_user(user_data)
     
@@ -1240,62 +1298,6 @@ async def get_ml_status(current_user: UserResponse = Depends(get_current_user)):
     }
 
 
-@app.post("/api/v1/ml/analyze-location", response_model=MLAnalysisResponse)
-@limiter.limit("10/minute")
-async def analyze_location(
-    http_request: Request,
-    request: LocationAnalysisRequest,
-    current_user: UserResponse = Depends(get_current_user)
-):
-    """Analyze a location for carbon credit potential"""
-    if ml_service is None or not ml_service.is_initialized:
-        raise HTTPException(status_code=503, detail="ML service not available")
-    
-    try:
-        # Verify project exists and user has access (users can only access their own projects, admins can access all)
-        with db.get_connection() as conn:
-            if is_admin(current_user.role):
-                # Admins can access all projects
-                cursor = conn.execute(
-                    "SELECT * FROM projects WHERE id = ?",
-                    (request.project_id,)
-                )
-            else:
-                # Regular users can only access their own projects
-                cursor = conn.execute(
-                    "SELECT * FROM projects WHERE id = ? AND user_id = ?",
-                    (request.project_id, current_user.id)
-                )
-            project = cursor.fetchone()
-            
-            if not project:
-                raise HTTPException(status_code=404, detail="Project not found or not authorized")
-        
-        # Run ML analysis
-        coordinates = (request.latitude, request.longitude)
-        results = await ml_service.analyze_location(
-            coordinates=coordinates,
-            project_id=request.project_id,
-            analysis_type=request.analysis_type
-        )
-        
-        logger.info(f"Location analysis completed for project {request.project_id}")
-        
-        return MLAnalysisResponse(
-            project_id=request.project_id,
-            analysis_type=request.analysis_type,
-            status="completed",
-            results=results,
-            timestamp=results.get("timestamp", datetime.now().isoformat())
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"ML analysis failed: {e}")
-        raise HTTPException(status_code=500, detail="Analysis failed")
-
-
 @app.post("/api/v1/ml/forest-cover")
 async def analyze_forest_cover(
     project_id: int,
@@ -1489,19 +1491,14 @@ async def create_verification(
             
             # Create verification record
             timestamp = datetime.now().isoformat()
-            
-            # Generate AI confidence score based on project data
-            ai_confidence = 0.85 + (hash(str(verification_data.project_id)) % 100) / 1000.0
-            ai_confidence = min(ai_confidence, 0.95)  # Cap at 95%
-            
-            # Estimate carbon impact based on project type and area (mock calculation)
+
+            # Honest human-in-the-loop record. No AI score is fabricated: ai_confidence
+            # is populated only by a real ML analysis of the project's imagery (not wired
+            # into this endpoint), so it stays null here. carbon_impact is the applicant's
+            # own estimate if supplied, never a synthetic value.
+            ai_confidence = None
             carbon_impact = verification_data.carbon_impact
-            if not carbon_impact:
-                # Mock calculation: assume 10-20 tons CO2/hectare/year
-                project_dict = dict(project)
-                area = project_dict.get('area_hectares') or 100  # Handle None values
-                carbon_impact = area * (12 + (hash(str(verification_data.project_id)) % 8))
-            
+
             # Generate certificate ID
             project_dict = dict(project)
             location_code = project_dict['location_name'][:2].upper()
@@ -1711,9 +1708,11 @@ async def generate_enhanced_explanation(
             include_uncertainty=request.include_uncertainty
         )
         
+        if explanation.get("disabled"):
+            raise HTTPException(status_code=503, detail=explanation["error"])
         if "error" in explanation:
             raise HTTPException(status_code=500, detail=explanation["error"])
-        
+
         # Save explanation to database for persistence
         try:
             with db.get_connection() as conn:
@@ -1753,47 +1752,10 @@ async def generate_explanation_legacy(
     request: ExplanationRequest,
     current_user: UserResponse = Depends(get_current_user)
 ):
-    """Legacy endpoint for backward compatibility"""
-    if ml_service is None or not ml_service.is_initialized:
-        raise HTTPException(status_code=503, detail="ML service not available")
-    
-    try:
-        # Verify project belongs to user
-        with db.get_connection() as conn:
-            cursor = conn.execute(
-                "SELECT * FROM projects WHERE id = ? AND user_id = ?",
-                (request.project_id, current_user.id)
-            )
-            project = cursor.fetchone()
-            
-            if not project:
-                raise HTTPException(status_code=404, detail="Project not found or not authorized")
-        
-        # Generate explanation using ML service
-        results = await ml_service.generate_explanation(
-            project_id=request.project_id,
-            method=request.explanation_method,
-            prediction_id=request.prediction_id,
-            image_path=request.image_path
-        )
-        
-        logger.info(f"XAI explanation generated for project {request.project_id} using {request.explanation_method}")
-        
-        return ExplanationResponse(
-            explanation_id=results["explanation_id"],
-            project_id=request.project_id,
-            method=request.explanation_method,
-            status="completed",
-            results=results["analysis"],
-            visualization_paths=results["visualizations"],
-            timestamp=datetime.now().isoformat()
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"XAI explanation generation failed: {e}")
-        raise HTTPException(status_code=500, detail="Explanation generation failed")
+    """Legacy explanation endpoint — disabled (no fabricated explanations are served)."""
+    raise HTTPException(
+        status_code=503, detail="Explainability is not available in this build"
+    )
 
 
 @app.get("/api/v1/xai/explanation/{explanation_id}")
@@ -1829,34 +1791,10 @@ async def get_explanation_legacy(
     explanation_id: str,
     current_user: UserResponse = Depends(get_current_user)
 ):
-    """Legacy endpoint - Retrieve generated explanation by ID"""
-    if ml_service is None or not ml_service.is_initialized:
-        raise HTTPException(status_code=503, detail="ML service not available")
-    
-    try:
-        explanation = await ml_service.get_explanation(explanation_id)
-        
-        if not explanation:
-            raise HTTPException(status_code=404, detail="Explanation not found")
-        
-        # Verify user has access to this explanation's project
-        with db.get_connection() as conn:
-            cursor = conn.execute(
-                "SELECT * FROM projects WHERE id = ? AND user_id = ?",
-                (explanation["project_id"], current_user.id)
-            )
-            project = cursor.fetchone()
-            
-            if not project:
-                raise HTTPException(status_code=403, detail="Not authorized to access this explanation")
-        
-        return explanation
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error retrieving explanation: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve explanation")
+    """Legacy endpoint — disabled (its generator no longer serves fabricated explanations)."""
+    raise HTTPException(
+        status_code=503, detail="Explainability is not available in this build"
+    )
 
 
 @app.post("/api/v1/xai/compare-explanations")
@@ -1971,50 +1909,10 @@ async def compare_explanations_legacy(
     request: CompareExplanationsRequest,
     current_user: UserResponse = Depends(get_current_user)
 ):
-    """Legacy endpoint - Compare multiple explanations side-by-side"""
-    if ml_service is None or not ml_service.is_initialized:
-        raise HTTPException(status_code=503, detail="ML service not available")
-    
-    try:
-        # Verify all explanations belong to user's projects
-        for explanation_id in request.explanation_ids:
-            explanation = await ml_service.get_explanation(explanation_id)
-            if not explanation:
-                raise HTTPException(status_code=404, detail=f"Explanation {explanation_id} not found")
-            
-            with db.get_connection() as conn:
-                cursor = conn.execute(
-                    "SELECT * FROM projects WHERE id = ? AND user_id = ?",
-                    (explanation["project_id"], current_user.id)
-                )
-                project = cursor.fetchone()
-                
-                if not project:
-                    raise HTTPException(status_code=403, detail="Not authorized to access explanations")
-        
-        # Generate comparison visualization
-        comparison_results = await ml_service.compare_explanations(
-            explanation_ids=request.explanation_ids,
-            comparison_type=request.comparison_type
-        )
-        
-        logger.info(f"XAI explanation comparison generated for {len(request.explanation_ids)} explanations")
-        
-        return {
-            "comparison_id": comparison_results["comparison_id"],
-            "explanation_ids": request.explanation_ids,
-            "comparison_type": request.comparison_type,
-            "status": "completed",
-            "results": comparison_results["analysis"],
-            "visualization_path": comparison_results["visualization_path"],
-            "timestamp": datetime.now().isoformat()
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"XAI explanation comparison failed: {e}")
-        raise HTTPException(status_code=500, detail="Explanation comparison failed")
+    """Legacy explanation-comparison endpoint — disabled (no fabricated explanations)."""
+    raise HTTPException(
+        status_code=503, detail="Explainability is not available in this build"
+    )
 
 
 @app.get("/api/v1/xai/methods")
@@ -2158,8 +2056,9 @@ async def download_analytics_report(current_user: UserResponse = Depends(get_cur
                 'total_verifications': total_verifications,
                 'total_carbon_impact': total_carbon_impact,
                 'ml_performance': {
-                    'forest_cover_accuracy': 0.8912,
-                    'overall_confidence': 0.8534
+                    'source': 'offline_evaluation',
+                    'forest_cover_f1': 0.4911,
+                    'change_detection_f1': 0.6006
                 }
             }
             
@@ -2278,12 +2177,12 @@ async def get_dashboard_analytics(current_user: UserResponse = Depends(get_curre
             verification_status = dict(cursor.fetchall())
             analytics['verification_status'] = verification_status
             
-            # ML Model Performance (simulated metrics)
+            # ML Model Performance — real recorded offline-evaluation metrics.
+            # Source: ml/inference/production_inference.py / ml/evaluation_results/postprocessing_evaluation_results.csv
             analytics['ml_performance'] = {
-                'forest_cover_accuracy': 0.8912,
-                'change_detection_accuracy': 0.9156,
-                'overall_confidence': 0.8534,
-                'models_processed': 247
+                'source': 'offline_evaluation',
+                'forest_cover_f1': 0.4911,
+                'change_detection_f1': 0.6006
             }
             
             # Carbon Impact Analytics
@@ -2326,38 +2225,35 @@ async def get_performance_analytics(current_user: UserResponse = Depends(get_cur
     try:
         with db.get_connection() as conn:
             performance = {}
-            
-            # Model accuracy trends (simulated with real project data)
+
+            # Model performance — real recorded offline-evaluation metrics (single measured
+            # run, no per-day trend exists). Source: ml/inference/production_inference.py /
+            # ml/evaluation_results/postprocessing_evaluation_results.csv
+            performance['model_metrics'] = {
+                'source': 'offline_evaluation',
+                'forest_cover_f1': 0.4911,
+                'change_detection_f1': 0.6006
+            }
+
+            # Real DB-derived activity: projects and verifications created over the last 90 days.
             cursor = conn.execute("""
                 SELECT DATE(created_at) as date, COUNT(*) as projects
-                FROM projects 
+                FROM projects
                 WHERE created_at >= date('now', '-90 days')
                 GROUP BY DATE(created_at)
                 ORDER BY date
             """)
-            daily_projects = cursor.fetchall()
-            
-            # Simulate model performance based on project volume
-            performance['accuracy_trends'] = []
-            for date, count in daily_projects:
-                base_accuracy = 0.85
-                variance = (count % 10) * 0.01  # Simulate performance variation
-                performance['accuracy_trends'].append({
-                    'date': date,
-                    'forest_cover': min(0.95, base_accuracy + variance),
-                    'change_detection': min(0.95, base_accuracy + variance + 0.02),
-                    'ensemble': min(0.95, base_accuracy + variance + 0.04)
-                })
-            
-            # Processing times (simulated realistic metrics)
-            performance['processing_metrics'] = {
-                'avg_processing_time': 2.34,
-                'median_processing_time': 1.89,
-                'fastest_processing': 0.67,
-                'slowest_processing': 8.23,
-                'total_processed': 247
-            }
-            
+            performance['daily_projects'] = dict(cursor.fetchall())
+
+            cursor = conn.execute("""
+                SELECT DATE(created_at) as date, COUNT(*) as verifications
+                FROM verifications
+                WHERE created_at >= date('now', '-90 days')
+                GROUP BY DATE(created_at)
+                ORDER BY date
+            """)
+            performance['daily_verifications'] = dict(cursor.fetchall())
+
             # Model confidence distribution
             cursor = conn.execute("SELECT ai_confidence FROM verifications WHERE ai_confidence IS NOT NULL")
             confidences = [row[0] for row in cursor.fetchall()]

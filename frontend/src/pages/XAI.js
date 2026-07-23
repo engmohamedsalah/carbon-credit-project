@@ -82,7 +82,8 @@ const XAI = () => {
     loading: false,
     error: null,
     success: null,
-    
+    disabled: false, // true when the backend reports explainability is off (503)
+
     // Generation state
     selectedProject: '',
     selectedMethod: 'lime',
@@ -161,7 +162,7 @@ const XAI = () => {
     } catch (error) {
       console.error('Failed to load explanation history:', error);
       // Keep empty on error - no fallback mock data
-      updateState({ explanationHistory: [] });
+      updateState({ explanationHistory: [], ...(error.disabled ? { disabled: true } : {}) });
     }
   }, [updateState]);
 
@@ -174,7 +175,11 @@ const XAI = () => {
         console.log('📋 Available methods loaded:', methods);
       } catch (error) {
         console.error('Failed to load XAI methods:', error);
-        updateState({ error: 'Failed to load XAI methods' });
+        if (error.disabled) {
+          updateState({ disabled: true });
+        } else {
+          updateState({ error: 'Failed to load XAI methods' });
+        }
       }
     };
     loadMethods();
@@ -302,7 +307,11 @@ const XAI = () => {
       
     } catch (error) {
       console.error('❌ Failed to generate explanation:', error);
-      updateState({ error: error.message || 'Failed to generate explanation' });
+      if (error.disabled) {
+        updateState({ disabled: true });
+      } else {
+        updateState({ error: error.message || 'Failed to generate explanation' });
+      }
     } finally {
       updateState({ loading: false });
     }
@@ -669,6 +678,33 @@ const XAI = () => {
         <Alert severity="warning">
           You don't have permission to access the XAI features. Please contact your administrator.
         </Alert>
+      </Container>
+    );
+  }
+
+  // Honest empty state: the backend reports explainability is off in this build
+  // (503). We never render fabricated charts/tables in this case.
+  if (state.disabled) {
+    return (
+      <Container maxWidth="xl" sx={{ py: 4, px: { xs: 2, sm: 3, md: 4 } }}>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <PsychologyIcon sx={{ fontSize: '2rem', color: 'primary.main' }} />
+            Explainable AI (XAI)
+          </Typography>
+        </Box>
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 6, px: 3 }}>
+            <InfoIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+            <Typography variant="h6" gutterBottom>
+              Model explainability is not available in this build
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 620, mx: 'auto' }}>
+              Explanations require running attribution methods on real per-prediction
+              imagery, which is planned but not yet wired.
+            </Typography>
+          </CardContent>
+        </Card>
       </Container>
     );
   }

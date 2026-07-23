@@ -142,9 +142,9 @@ graph TD
 
 ## 📈 **Performance Monitoring**
 
-### **Real-time Metrics**
+### **Target Metrics (design goals, not benchmarked)**
 - **Throughput**: 1000+ hectares processed per minute
-- **Accuracy**: 99.1% carbon calculation precision
+- **Carbon calculation**: deterministic area-based CO₂ estimate (no validated accuracy figure)
 - **Latency**: <30 seconds end-to-end processing
 - **Availability**: 99.9% uptime SLA
 
@@ -173,11 +173,11 @@ graph TD
 
 | Metric | Target | Current Status |
 |--------|--------|----------------|
-| **Model Accuracy** | F1 > 0.6 | ✅ Achieved (0.6006) |
-| **Processing Speed** | <1 min/1000 ha | ✅ Achieved |
-| **Carbon Precision** | >99% accuracy | ✅ Achieved (99.1%) |
-| **System Uptime** | >99.5% | ✅ Production ready |
+| **Model Accuracy** | F1 > 0.6 | Forest-cover F1 = 0.49, change-detection F1 = 0.60; ensemble not yet benchmarked |
+| **Processing Speed** | <1 min/1000 ha | Not benchmarked |
+| **Carbon Precision** | >99% accuracy | No validated accuracy figure (deterministic area-based estimate) |
+| **System Uptime** | >99.5% | Not measured (not deployed) |
 
 ---
 
-**🌟 Result**: A complete, automated pipeline that transforms satellite images into verified carbon credits with industry-leading accuracy and speed! 🛰️ → 🌳 → 💰 
+**Result**: An automated pipeline that transforms satellite images into carbon-credit estimates. 🛰️ → 🌳 → 💰 

@@ -11,6 +11,19 @@ class XAIService {
   }
 
   /**
+   * Normalize an axios error into an Error that preserves the HTTP status and
+   * a `disabled` flag, so callers can render an honest "not available" state
+   * for a 503 instead of treating it as a generic failure.
+   */
+  _toError(error, fallbackMessage) {
+    const status = error.response?.status;
+    const err = new Error(error.response?.data?.detail || fallbackMessage);
+    err.status = status;
+    err.disabled = status === 503;
+    return err;
+  }
+
+  /**
    * Generate enhanced AI explanation with business context
    */
   async generateExplanation(explanationData) {
@@ -26,7 +39,7 @@ class XAIService {
       return response.data;
     } catch (error) {
       console.error('Failed to generate explanation:', error);
-      throw new Error(error.response?.data?.detail || 'Failed to generate explanation');
+      throw this._toError(error, 'Failed to generate explanation');
     }
   }
 
@@ -39,7 +52,7 @@ class XAIService {
       return response.data;
     } catch (error) {
       console.error('Failed to retrieve explanation:', error);
-      throw new Error(error.response?.data?.detail || 'Failed to retrieve explanation');
+      throw this._toError(error, 'Failed to retrieve explanation');
     }
   }
 
@@ -56,7 +69,7 @@ class XAIService {
       return response.data;
     } catch (error) {
       console.error('Failed to compare explanations:', error);
-      throw new Error(error.response?.data?.detail || 'Failed to compare explanations');
+      throw this._toError(error, 'Failed to compare explanations');
     }
   }
 
@@ -74,7 +87,7 @@ class XAIService {
       return response.data;
     } catch (error) {
       console.error('Failed to generate report:', error);
-      throw new Error(error.response?.data?.detail || 'Failed to generate report');
+      throw this._toError(error, 'Failed to generate report');
     }
   }
 
@@ -87,7 +100,7 @@ class XAIService {
       return response.data;
     } catch (error) {
       console.error('Failed to retrieve explanation history:', error);
-      throw new Error(error.response?.data?.detail || 'Failed to retrieve explanation history');
+      throw this._toError(error, 'Failed to retrieve explanation history');
     }
   }
 
@@ -100,7 +113,7 @@ class XAIService {
       return response.data;
     } catch (error) {
       console.error('Failed to retrieve XAI methods:', error);
-      throw new Error(error.response?.data?.detail || 'Failed to retrieve XAI methods');
+      throw this._toError(error, 'Failed to retrieve XAI methods');
     }
   }
 

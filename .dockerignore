@@ -1,0 +1,21 @@
+# Keep the image small — but DO NOT exclude ml/models (the .pth weights must ship).
+.git
+.gitignore
+**/__pycache__
+**/*.py[cod]
+**/.venv
+venv/
+frontend/
+docs/
+tests/
+playwright-report/
+uploads/*
+*.db
+*.sqlite*
+*token*.txt
+ml/data/
+ml/diagrams/
+ml/evaluation_results/
+ml/docs/
+scripts/
+*.md
