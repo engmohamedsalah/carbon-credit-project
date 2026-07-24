@@ -37,9 +37,11 @@ class BlockchainService:
             if self.private_key:
                 self.account = Account.from_key(self.private_key)
             if self.contract_address and self.contract_abi:
+                # ABI may already be a parsed list (from blockchain_config.json) or a JSON string.
+                abi = self.contract_abi if isinstance(self.contract_abi, (list, dict)) else json.loads(self.contract_abi)
                 self.contract = self.w3.eth.contract(
-                    address=self.contract_address,
-                    abi=json.loads(self.contract_abi)
+                    address=Web3.to_checksum_address(self.contract_address),
+                    abi=abi,
                 )
 
         # Feature is enabled only when fully configured for real on-chain operations.
@@ -126,8 +128,9 @@ class BlockchainService:
             # Sign transaction
             signed_txn = self.account.sign_transaction(transaction)
             
-            # Send transaction
-            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+            # Send transaction (attribute renamed rawTransaction -> raw_transaction in web3 7.x)
+            raw_tx = getattr(signed_txn, "raw_transaction", None) or getattr(signed_txn, "rawTransaction")
+            tx_hash = self.w3.eth.send_raw_transaction(raw_tx)
             
             # Wait for receipt
             tx_receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)

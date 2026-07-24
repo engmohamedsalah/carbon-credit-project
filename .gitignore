@@ -161,3 +161,7 @@ debug_patches/ .claude/settings.local.json
 
 # Test results
 test-results/
+
+# Hardhat build output
+blockchain/artifacts/
+blockchain/cache/

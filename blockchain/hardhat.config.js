@@ -4,10 +4,10 @@ require('dotenv').config();
 module.exports = {
   solidity: "0.8.19",
   networks: {
-    mumbai: {
-      url: process.env.POLYGON_MUMBAI_RPC || "https://rpc-mumbai.maticvigil.com",
+    amoy: {
+      url: process.env.POLYGON_AMOY_RPC || "https://rpc-amoy.polygon.technology",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      chainId: 80001
+      chainId: 80002
     },
     polygon: {
       url: process.env.POLYGON_MAINNET_RPC || "https://polygon-rpc.com",

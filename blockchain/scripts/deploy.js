@@ -10,14 +10,15 @@ async function main() {
   
   const contractAddress = await carbonCreditNFT.getAddress();
   console.log("CarbonCreditNFT deployed to:", contractAddress);
-  
-  // Save deployment info
+
+  // Save deployment info with the full JSON ABI (array of objects) that web3 needs.
   const fs = require('fs');
+  const artifact = await hre.artifacts.readArtifact("CarbonCreditNFT");
   const deploymentInfo = {
     contractAddress: contractAddress,
     network: hre.network.name,
     deploymentTime: new Date().toISOString(),
-    abi: carbonCreditNFT.interface.format('json')
+    abi: artifact.abi
   };
   
   fs.writeFileSync(
