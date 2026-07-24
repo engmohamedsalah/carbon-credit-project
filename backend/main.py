@@ -7,6 +7,7 @@ import hashlib
 import secrets
 import logging
 import json
+import time
 from datetime import datetime
 from typing import Optional, List
 from contextlib import contextmanager
@@ -479,21 +480,32 @@ def get_user_by_token(token: str) -> Optional[dict]:
 
     Strict expiry: a token with a NULL or past ``expires_at`` is not honored, so
     leaked/legacy tokens (e.g. from an old database) can never authenticate.
+
+    On serverless + a remote DB, a just-issued token can momentarily be invisible
+    to a read served by a different instance (read-after-write lag), so we retry a
+    few times before rejecting — otherwise a user gets a spurious 401 right after
+    logging in.
     """
-    try:
-        with db.get_connection() as conn:
-            cursor = conn.execute("""
-                SELECT u.* FROM users u
-                JOIN auth_tokens t ON u.id = t.user_id
-                WHERE t.token = ?
-                  AND t.expires_at IS NOT NULL
-                  AND t.expires_at > datetime('now')
-            """, (token,))
-            row = cursor.fetchone()
-            return dict(row) if row else None
-    except Exception as e:
-        logger.error(f"Error getting user by token: {e}")
-        return None
+    query = """
+        SELECT u.* FROM users u
+        JOIN auth_tokens t ON u.id = t.user_id
+        WHERE t.token = ?
+          AND t.expires_at IS NOT NULL
+          AND t.expires_at > datetime('now')
+    """
+    attempts = 4 if dbdriver.TURSO_URL else 1  # only the remote DB has the lag window
+    for attempt in range(attempts):
+        try:
+            with db.get_connection() as conn:
+                row = conn.execute(query, (token,)).fetchone()
+                if row:
+                    return dict(row)
+        except Exception as e:
+            logger.error(f"Error getting user by token: {e}")
+            return None
+        if attempt < attempts - 1:
+            time.sleep(0.25)
+    return None
 
 
 def create_user(user_data: UserCreate) -> dict:
