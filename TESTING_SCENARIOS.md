@@ -283,9 +283,8 @@ This document provides specific testing scenarios for each user role to ensure s
 - [ ] Role-based access control enforced
 
 ### **Data Integrity:**
-- [ ] Project 16: 2,156.8 tons CO2/year, 88.1% confidence
-- [ ] Project 17: 15,750.0 tons CO2/year, 92.5% confidence
-- [ ] Project 18: 3,192.4 tons CO2/year, 84.6% confidence
+- [ ] Each project's displayed carbon estimate matches its stored value
+- [ ] Verification records display the value entered by the human verifier (no auto-generated confidence scores)
 
 ### **Geographic Accuracy:**
 - [ ] Costa Rica map centers on Monteverde

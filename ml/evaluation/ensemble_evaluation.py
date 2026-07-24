@@ -219,18 +219,16 @@ class EnsembleEvaluator:
             'change_detection_reliability': self._score_model_reliability('change_detection'),
             'temporal_analysis_contribution': self._score_temporal_contribution(),
             'ensemble_effectiveness': self._score_ensemble_effectiveness(),
-            'carbon_calculation_accuracy': self._score_carbon_accuracy(),
-            'production_readiness': self._score_production_readiness()
+            'carbon_calculation_accuracy': self._score_carbon_accuracy()
         }
-        
+
         # Overall score calculation
         weights = {
-            'forest_cover_reliability': 0.2,
-            'change_detection_reliability': 0.25,
-            'temporal_analysis_contribution': 0.15,
-            'ensemble_effectiveness': 0.25,
-            'carbon_calculation_accuracy': 0.1,
-            'production_readiness': 0.05
+            'forest_cover_reliability': 0.21,
+            'change_detection_reliability': 0.26,
+            'temporal_analysis_contribution': 0.16,
+            'ensemble_effectiveness': 0.26,
+            'carbon_calculation_accuracy': 0.11
         }
         
         overall_score = sum(score * weights[metric] for metric, score in performance_scores.items())
@@ -404,11 +402,6 @@ class EnsembleEvaluator:
         
         return self.results['carbon_calculations']['calculation_accuracy']['calculation_accuracy']
     
-    def _score_production_readiness(self) -> float:
-        """Score production readiness"""
-        # Based on successful loading and functionality
-        return 0.95  # High score since all models loaded successfully
-    
     def _get_performance_grade(self, score: float) -> str:
         """Get performance grade"""
         if score >= 0.9:
@@ -434,9 +427,9 @@ class EnsembleEvaluator:
             change_f1 = self.results['individual_models']['change_detection']['model_info']['f1_score']
             
             if forest_f1 > 0.45:
-                strengths.append("Strong forest cover classification (F1=0.49)")
+                strengths.append("Forest cover classification (F1=0.49)")
             if change_f1 > 0.55:
-                strengths.append("Excellent change detection capability (F1=0.60)")
+                strengths.append("Change detection capability (F1=0.60, high recall)")
         
         # Check ensemble effectiveness
         if self.results['ensemble_methods']:
@@ -446,10 +439,9 @@ class EnsembleEvaluator:
         if self.results['carbon_calculations']:
             accuracy = self.results['carbon_calculations']['calculation_accuracy']['calculation_accuracy']
             if accuracy > 0.9:
-                strengths.append("Highly accurate carbon impact calculations")
-        
-        strengths.append("Production-ready deployment capability")
-        strengths.append("Comprehensive temporal analysis integration")
+                strengths.append("Carbon impact calculation arithmetic validated by self-check")
+
+        strengths.append("Temporal analysis integration")
         
         return strengths
     

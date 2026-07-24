@@ -27,7 +27,7 @@ This document provides an in-depth understanding of the complete Carbon Credit V
 
 ### 1.1 Multi-Layer Architecture
 
-The Carbon Credit Verification system employs a sophisticated multi-layer architecture that ensures accuracy, transparency, and scalability:
+The Carbon Credit Verification system uses a multi-layer architecture:
 
 ```mermaid
 graph TB
@@ -475,7 +475,7 @@ The XAI dashboard (`frontend/src/pages/XAI.js`) provides interactive explanation
 
 ### 6.4 Business-Friendly Explanations
 
-XAI outputs are translated into actionable business insights:
+XAI outputs are translated into actionable business insights. The values in the example below are **illustrative placeholders** showing the response shape, not measured results:
 
 ```python
 def generate_business_summary(explanation_data):
@@ -1091,26 +1091,20 @@ cd tests/e2e
 
 ## 14. Conclusion
 
-The Carbon Credit Verification system represents a comprehensive, end-to-end solution that integrates cutting-edge technologies to create a transparent, accurate, and scalable platform for carbon credit verification. Through the seamless integration of satellite imagery analysis, machine learning models, IoT sensor networks, blockchain technology, and explainable AI, the system provides:
+The Carbon Credit Verification system is a prototype that combines satellite imagery analysis, machine learning models, a human-in-the-loop verification workflow, and planned IoT/blockchain integration. What exists today:
 
-**Key Achievements:**
-- **Scientific Rigor**: Ensemble ML models with validated performance metrics
-- **Ground Truth Validation**: Real-time IoT sensor integration for verification
-- **Transparency**: Comprehensive XAI explanations for all decisions
-- **Immutability**: Blockchain-based certification and NFT minting
-- **Usability**: Intuitive React frontend with comprehensive user management
-- **Scalability**: Professional FastAPI backend with proper authentication
-- **Compliance**: Detailed reporting and audit trails for regulatory requirements
+**Implemented:**
+- **ML inference**: Forest-cover U-Net (F1 ≈ 0.49) and change-detection Siamese U-Net (F1 ≈ 0.60) run on uploaded imagery; the ensemble that combines them is not yet benchmarked on a held-out set
+- **Verification workflow**: Human-in-the-loop review (no auto-generated AI confidence scores)
+- **Frontend**: React UI with user management and role-based access
+- **Backend**: FastAPI with token authentication
 
-**System Impact:**
-- Reduces carbon credit verification time from months to days
-- Increases verification accuracy through multi-source validation
-- Provides transparent, explainable AI decision-making
-- Creates immutable audit trails for compliance and trust
-- Enables automated processing at scale
-- Supports multiple project types and geographic regions
+**Planned / not yet real (see STATUS.md):**
+- IoT sensor integration is a design proposal, not built or validated
+- Blockchain certification / NFT minting is disabled until a contract is deployed
+- Explainable-AI features are disabled in the current app build
 
-This documentation serves as a complete guide for understanding, deploying, and extending the Carbon Credit Verification system, ensuring that all stakeholders can effectively utilize and contribute to this innovative platform for environmental sustainability.
+This documentation describes both the implemented prototype and its intended direction; refer to STATUS.md for an authoritative account of what is real versus disabled.
 
 ---
 

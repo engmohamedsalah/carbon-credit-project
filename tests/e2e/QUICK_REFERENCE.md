@@ -26,7 +26,7 @@ pytest --html=reports/test_report.html --self-contained-html
 
 ## 📊 **Current Status (At a Glance)**
 
-- ✅ **27 PASSING** (58.7%) - Production ready
+- ✅ **27 PASSING** (58.7%)
 - ❌ **19 FAILING** (41.3%) - Expected for MVP
 - ⏱️ **~2m 47s** execution time
 

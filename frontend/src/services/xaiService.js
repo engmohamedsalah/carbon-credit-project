@@ -225,30 +225,6 @@ class XAIService {
       errors
     };
   }
-
-  /**
-   * Create sample explanation data for testing
-   */
-  createSampleExplanationData(projectId, imageData = null) {
-    return {
-      modelId: 'forest_cover_ensemble',
-      instanceData: {
-        project_id: projectId,
-        image_data: imageData,
-        features: {
-          ndvi: 0.7,
-          temperature: 25.5,
-          precipitation: 1200,
-          elevation: 500,
-          slope: 15,
-          aspect: 180
-        }
-      },
-      method: 'shap',
-      businessFriendly: true,
-      includeUncertainty: true
-    };
-  }
 }
 
 // Create and export singleton instance

@@ -163,10 +163,10 @@ python tests/e2e/run_xai_tests.py
 - **UI Tests**: May require specific test data or user interactions
 
 ### Performance Metrics
-- **Explanation Generation**: ~0.5-2.0 seconds
-- **Report Generation**: ~0.01-0.1 seconds
-- **API Response Time**: <200ms for standard operations
-- **Confidence Scores**: Typically 0.7-0.9 range
+
+No performance figures have been measured: the XAI service is disabled in the
+current build (see Conclusion), so generation latency, response time, and
+confidence-score ranges are not yet available.
 
 ## Business Intelligence Features
 

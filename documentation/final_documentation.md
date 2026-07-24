@@ -222,14 +222,12 @@ graph LR
 
 ### Model Performance Comparison
 
-The following chart shows the F1 scores of our production models compared to baseline performance:
+The following chart shows the measured F1 scores of the two trained models (the ensemble is a design target and has not been benchmarked):
 
 ```mermaid
-pie title ML Model Performance Distribution (F1 Scores)
+pie title Measured Model F1 Scores
     "Forest Cover U-Net" : 49
     "Change Detection Siamese" : 60
-    "Ensemble Expected" : 65
-    "Production Baseline" : 50
 ```
 
 ### Role-Based Access Control Matrix
@@ -657,10 +655,10 @@ cd tests/e2e && python -m pytest
 - **Carbon Calculation**: deterministic area-based estimate (no validated accuracy figure)
 
 ### System Performance
-- **API Response Time**: < 200ms for standard operations
-- **ML Analysis**: 2-5 seconds per image analysis
-- **Database Queries**: Optimized with proper indexing
-- **Frontend Loading**: < 3 seconds initial load
+
+System-level performance (API response time, ML analysis time, database query
+time, frontend load time) has not been formally benchmarked. Database queries
+use standard SQLite indexing.
 
 ## User Accounts and Access
 

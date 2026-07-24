@@ -289,8 +289,7 @@ variance_patches = extract_patches_from_mask(high_variance_mask, patch_size=64)
             'pros': [
                 'Leverages all existing work',
                 'Likely best overall performance',
-                'Reduces individual model weaknesses',
-                'Production-ready approach'
+                'Reduces individual model weaknesses'
             ],
             'cons': [
                 'More complex inference pipeline',

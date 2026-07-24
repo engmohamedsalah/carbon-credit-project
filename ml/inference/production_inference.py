@@ -313,7 +313,6 @@ Generated: {timestamp}
 ANALYSIS SUMMARY:
 - Analysis Type: {analysis_results.get('model_info', {}).get('model_type', 'Ensemble Analysis')}
 - Processing Status: ✅ COMPLETED
-- Verification Level: PRODUCTION GRADE
 
 FOREST COVERAGE ANALYSIS:
 """
@@ -338,11 +337,8 @@ CHANGE DETECTION RESULTS:
             
             report += f"""
 MODEL PERFORMANCE:
-- Model Accuracy: PRODUCTION VALIDATED
 - F1 Score: {analysis_results.get('model_info', {}).get('f1_score', 'N/A')}
-- Confidence Level: HIGH
 
-VERIFICATION STATUS: ✅ VERIFIED
 Report ID: {hash(str(analysis_results)) % 1000000}
 """
         

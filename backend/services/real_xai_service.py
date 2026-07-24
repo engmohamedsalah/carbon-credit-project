@@ -5,9 +5,9 @@ This module is not currently wired into any served endpoint — the live XAI
 routes use the disabled no-op service in ``xai_service.py``. It is retained
 because it contains genuine document/image processing (PDF text extraction,
 vegetation-index calculation) and attribution scaffolding intended for a future
-pass that wires it to real per-prediction inputs. Some visualization helpers
-here still synthesize data with ``np.random`` and MUST NOT be re-connected to a
-served path without first replacing those with real model output.
+pass that wires it to real per-prediction inputs. The previous ``np.random``-based
+SHAP/importance/stability synthesis helpers have been removed; any explanation
+output must come from real model attribution before this is served.
 """
 
 import os
@@ -92,16 +92,8 @@ class RealDataXAIService:
             # STEP 5: Create real visualizations
             visualizations = await self._generate_real_visualizations(project_data, file_analysis, ml_analysis)
             
-            # STEP 6: Generate project-specific confidence score
-            project_id = instance_data.get('project_id')
-            real_confidence = self._calculate_project_confidence(project_id, model_id, explanation_method, project_data, file_analysis)
-            
-            # STEP 7: Generate advanced visualization data
-            global_analysis = self._generate_global_analysis(project_data, ml_analysis, explanation_method)
-            interactions_data = self._generate_interactions_data(project_data, ml_analysis)
-            method_stability = self._generate_method_stability(project_data, ml_analysis, explanation_method)
-            
-            # STEP 8: Compile comprehensive real explanation with enhanced visualizations
+            # STEP 6: Compile comprehensive explanation. Confidence comes only from
+            # the real ML analysis (may be absent); no fabricated score is derived.
             real_explanation = {
                 "explanation_id": explanation_id,
                 "timestamp": timestamp,
@@ -113,23 +105,17 @@ class RealDataXAIService:
                 "business_insights": business_insights,
                 "visualizations": visualizations,
                 "business_summary": self._generate_real_summary(project_data, business_insights),
-                "confidence_score": real_confidence,
+                "confidence_score": ml_analysis.get("confidence"),
                 "risk_assessment": self._assess_real_risks(project_data, business_insights),
                 "regulatory_notes": self._generate_compliance_notes(business_insights),
                 "data_sources": self._list_data_sources(project_data, file_analysis),
-                
-                # Enhanced XAI Visualization Data
-                "global_analysis": global_analysis,
-                "interactions": interactions_data,
-                "method_stability": method_stability,
-                
+
                 "processing_metadata": {
                     "processing_type": "real_data_analysis",
                     "files_processed": len(file_analysis.get("processed_files", [])),
                     "ml_models_used": ml_analysis.get("models_used", []),
-                    "analysis_confidence": real_confidence,
+                    "analysis_confidence": ml_analysis.get("confidence"),
                     "real_data_verified": True,
-                    "visualization_version": "2025.01.01"
                 }
             }
             
@@ -835,39 +821,6 @@ This analysis draws on:
             "transparency": "Complete audit trail available - no mock or demo data used"
         }
     
-    def _calculate_project_confidence(self, project_id: int, model_id: str, method: str, project_data: Dict[str, Any], file_analysis: Dict[str, Any]) -> float:
-        """Calculate realistic project-specific confidence score"""
-        import hashlib
-        
-        # Base confidence from project characteristics
-        seed_str = f"{project_id}_{model_id}_{method}"
-        hash_val = int(hashlib.md5(seed_str.encode()).hexdigest()[:8], 16)
-        base_confidence = 0.75 + (hash_val % 20) / 100.0  # Range: 0.75 to 0.94
-        
-        # Adjust based on project data quality
-        confidence_adjustments = 0.0
-        
-        # Boost confidence if we have good project data
-        if project_data.get("area_hectares", 0) > 0:
-            confidence_adjustments += 0.02
-        
-        if project_data.get("geometry"):
-            confidence_adjustments += 0.03
-        
-        if project_data.get("project_type") in ["Reforestation", "Afforestation"]:
-            confidence_adjustments += 0.02
-        
-        # Boost confidence if we have processed files
-        if file_analysis.get("processed_files"):
-            confidence_adjustments += 0.05 * len(file_analysis["processed_files"])
-        
-        # Final confidence (capped at 0.95)
-        final_confidence = min(0.95, base_confidence + confidence_adjustments)
-        
-        print(f"🎯 Project {project_id} confidence: base={base_confidence:.3f}, adjustments={confidence_adjustments:.3f}, final={final_confidence:.3f}")
-        
-        return final_confidence
-
     def _list_data_sources(self, project_data: Dict[str, Any], file_analysis: Dict[str, Any]) -> List[str]:
         """List all real data sources used"""
         sources = []
@@ -957,240 +910,6 @@ This analysis draws on:
             "high_risk_count": risks.count("high") + risks.count("very_high")
         }
     
-    def _generate_global_analysis(self, project_data: Dict[str, Any], ml_analysis: Dict[str, Any], method: str) -> Dict[str, Any]:
-        """Generate global feature importance analysis for beeswarm plots"""
-        try:
-            # Core features for carbon credit analysis
-            features = [
-                "forest_area", "canopy_density", "species_diversity", "soil_quality",
-                "elevation", "slope", "annual_rainfall", "temperature_range",
-                "human_activity", "deforestation_risk", "carbon_stock", "growth_rate",
-                "satellite_quality", "temporal_consistency", "verification_confidence"
-            ]
-            
-            # Generate realistic SHAP values for beeswarm (per-sample feature contributions)
-            sample_count = min(2900, 500)  # Limit for performance
-            global_data = []
-            
-            for feature in features:
-                # Generate realistic values based on project characteristics
-                base_importance = self._calculate_feature_importance(feature, project_data)
-                
-                # Generate sample distribution around the base importance
-                values = np.random.normal(base_importance, abs(base_importance) * 0.3, sample_count)
-                values = np.clip(values, -1.0, 1.0)  # Clip to reasonable range
-                
-                global_data.append({
-                    "name": feature,
-                    "display_name": feature.replace("_", " ").title(),
-                    "mean_abs": abs(base_importance),
-                    "values": values.tolist(),
-                    "importance_rank": 0  # Will be set later
-                })
-            
-            # Sort by mean absolute importance and set ranks
-            global_data.sort(key=lambda x: x["mean_abs"], reverse=True)
-            for i, feature in enumerate(global_data):
-                feature["importance_rank"] = i + 1
-            
-            return {
-                "features": global_data,
-                "sample_count": sample_count,
-                "method": method,
-                "total_features": len(features),
-                "top_features": global_data[:10]  # Top 10 for focused analysis
-            }
-            
-        except Exception as e:
-            print(f"Error generating global analysis: {e}")
-            return {"error": str(e), "features": []}
-    
-    def _generate_interactions_data(self, project_data: Dict[str, Any], ml_analysis: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate feature interaction data for dependence plots"""
-        try:
-            # Primary features for interaction analysis
-            primary_features = [
-                {"name": "forest_area", "display_name": "Forest Area", "type": "continuous"},
-                {"name": "canopy_density", "display_name": "Canopy Density", "type": "continuous"},
-                {"name": "carbon_stock", "display_name": "Carbon Stock", "type": "continuous"},
-                {"name": "elevation", "display_name": "Elevation", "type": "continuous"},
-                {"name": "human_activity", "display_name": "Human Activity", "type": "categorical"}
-            ]
-            
-            # Secondary features for interaction coloring
-            interaction_features = [
-                {"name": "soil_quality", "display_name": "Soil Quality"},
-                {"name": "annual_rainfall", "display_name": "Annual Rainfall"},
-                {"name": "temperature_range", "display_name": "Temperature Range"},
-                {"name": "deforestation_risk", "display_name": "Deforestation Risk"}
-            ]
-            
-            # Generate interaction plots data
-            dependence_plots = []
-            sample_count = 200  # Smaller sample for interaction plots
-            
-            for primary in primary_features:
-                for interaction in interaction_features:
-                    # Generate realistic data points
-                    if primary["type"] == "continuous":
-                        x_values = np.random.beta(2, 2, sample_count)  # 0-1 range with realistic distribution
-                    else:
-                        x_values = np.random.choice([0, 1, 2], sample_count)  # Categorical values
-                    
-                    # SHAP values influenced by interaction feature
-                    interaction_values = np.random.beta(2, 2, sample_count)
-                    shap_values = x_values * 0.6 + interaction_values * 0.4 + np.random.normal(0, 0.1, sample_count)
-                    shap_values = np.clip(shap_values, -0.8, 0.8)
-                    
-                    dependence_plots.append({
-                        "primary_feature": primary["name"],
-                        "primary_display": primary["display_name"],
-                        "interaction_feature": interaction["name"],
-                        "interaction_display": interaction["display_name"],
-                        "data_points": [
-                            {
-                                "x": float(x_values[i]),
-                                "shap": float(shap_values[i]),
-                                "interaction": float(interaction_values[i])
-                            }
-                            for i in range(sample_count)
-                        ]
-                    })
-            
-            return {
-                "primary_features": primary_features,
-                "interaction_features": interaction_features,
-                "dependence_plots": dependence_plots,
-                "sample_count": sample_count
-            }
-            
-        except Exception as e:
-            print(f"Error generating interactions data: {e}")
-            return {"error": str(e), "primary_features": [], "dependence_plots": []}
-    
-    def _generate_method_stability(self, project_data: Dict[str, Any], ml_analysis: Dict[str, Any], current_method: str) -> Dict[str, Any]:
-        """Generate method stability analysis and Kendall-tau correlations"""
-        try:
-            methods = ["shap", "lime", "integrated_gradients"]
-            features = [
-                "forest_area", "canopy_density", "species_diversity", "soil_quality",
-                "elevation", "carbon_stock", "growth_rate", "human_activity",
-                "deforestation_risk", "satellite_quality", "verification_confidence"
-            ]
-            
-            # Generate feature rankings for each method
-            method_rankings = {}
-            for method in methods:
-                # Generate realistic rankings with some variation between methods
-                base_ranks = list(range(1, len(features) + 1))
-                if method != "shap":  # Add some variation for non-SHAP methods
-                    variation = np.random.normal(0, 1.5, len(features))
-                    adjusted_ranks = [rank + var for rank, var in zip(base_ranks, variation)]
-                    sorted_indices = np.argsort(adjusted_ranks)
-                    method_ranks = [sorted_indices.tolist().index(i) + 1 for i in range(len(features))]
-                else:
-                    method_ranks = base_ranks
-                
-                method_rankings[method] = [
-                    {"feature": features[i], "rank": method_ranks[i], "importance": 1.0 / method_ranks[i]}
-                    for i in range(len(features))
-                ]
-            
-            # Calculate Kendall-tau correlations between methods
-            correlations = {}
-            for i, method1 in enumerate(methods):
-                for method2 in methods[i+1:]:
-                    ranks1 = [item["rank"] for item in method_rankings[method1]]
-                    ranks2 = [item["rank"] for item in method_rankings[method2]]
-                    
-                    # Calculate Kendall-tau
-                    tau = self._calculate_kendall_tau(ranks1, ranks2)
-                    correlations[f"{method1}_vs_{method2}"] = {
-                        "tau": tau,
-                        "interpretation": "Strong" if abs(tau) > 0.7 else "Moderate" if abs(tau) > 0.4 else "Weak"
-                    }
-            
-            # Identify most stable features (consistent ranking across methods)
-            feature_stability = []
-            for i, feature in enumerate(features):
-                ranks = [method_rankings[method][i]["rank"] for method in methods]
-                stability_score = 1.0 / (1.0 + np.std(ranks))  # Higher score = more stable
-                
-                feature_stability.append({
-                    "feature": feature,
-                    "display_name": feature.replace("_", " ").title(),
-                    "ranks": {method: method_rankings[method][i]["rank"] for method in methods},
-                    "stability_score": stability_score,
-                    "rank_variance": np.var(ranks)
-                })
-            
-            # Sort by stability score
-            feature_stability.sort(key=lambda x: x["stability_score"], reverse=True)
-            
-            return {
-                "method_rankings": method_rankings,
-                "correlations": correlations,
-                "feature_stability": feature_stability,
-                "current_method": current_method,
-                "stability_summary": {
-                    "most_stable_features": feature_stability[:5],
-                    "average_correlation": np.mean([corr["tau"] for corr in correlations.values()]),
-                    "methods_compared": methods
-                }
-            }
-            
-        except Exception as e:
-            print(f"Error generating method stability: {e}")
-            return {"error": str(e), "correlations": {}}
-    
-    def _calculate_feature_importance(self, feature: str, project_data: Dict[str, Any]) -> float:
-        """Calculate realistic feature importance based on project characteristics"""
-        # Base importance values for different features
-        base_importance = {
-            "forest_area": 0.25, "canopy_density": 0.22, "carbon_stock": 0.20,
-            "species_diversity": 0.15, "soil_quality": 0.12, "growth_rate": 0.18,
-            "elevation": 0.08, "slope": 0.06, "annual_rainfall": 0.10,
-            "temperature_range": 0.07, "human_activity": -0.15, "deforestation_risk": -0.20,
-            "satellite_quality": 0.12, "temporal_consistency": 0.14, "verification_confidence": 0.16
-        }
-        
-        # Adjust based on project characteristics
-        importance = base_importance.get(feature, 0.05)
-        
-        # Project-specific adjustments
-        if project_data.get("project_type") == "reforestation":
-            if feature in ["growth_rate", "species_diversity"]:
-                importance *= 1.3
-        elif project_data.get("project_type") == "conservation":
-            if feature in ["forest_area", "canopy_density"]:
-                importance *= 1.2
-        
-        # Add some realistic variation
-        variation = np.random.normal(0, 0.05)
-        return np.clip(importance + variation, -0.5, 0.5)
-    
-    def _calculate_kendall_tau(self, ranks1: List[int], ranks2: List[int]) -> float:
-        """Calculate Kendall-tau correlation coefficient"""
-        if len(ranks1) != len(ranks2):
-            return 0.0
-        
-        n = len(ranks1)
-        concordant = 0
-        discordant = 0
-        
-        for i in range(n):
-            for j in range(i + 1, n):
-                sign1 = np.sign(ranks1[i] - ranks1[j])
-                sign2 = np.sign(ranks2[i] - ranks2[j])
-                
-                if sign1 * sign2 > 0:
-                    concordant += 1
-                elif sign1 * sign2 < 0:
-                    discordant += 1
-        
-        tau = (concordant - discordant) / (n * (n - 1) / 2)
-        return tau
-
 # Create singleton instance
 try:
     real_data_xai_service = RealDataXAIService()

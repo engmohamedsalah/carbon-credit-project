@@ -52,22 +52,22 @@ The generated Word document includes:
 ### 2. ML Processing Pipeline
 - **Size**: 1400x800px
 - **Content**: End-to-end ML workflow from input to verification
-- **Highlights**: 4 production models, XAI integration, human-in-the-loop
+- **Highlights**: trained models, XAI integration, human-in-the-loop
 
 ### 3. Model Performance Comparison
 - **Size**: 800x600px
-- **Content**: F1 score distribution across production models
-- **Highlights**: Performance metrics for ensemble system
+- **Content**: F1 score distribution across trained models
+- **Highlights**: Measured F1 scores (ensemble unbenchmarked)
 
 ### 4. Role-Based Access Control Matrix
 - **Size**: 1200x900px
 - **Content**: 5-tier role hierarchy with permissions matrix
-- **Highlights**: Enterprise-grade security implementation
+- **Highlights**: Role-based security implementation
 
 ### 5. Development Timeline
 - **Size**: 1200x800px
 - **Content**: 12-week structured development phases
-- **Highlights**: Production-ready achievement timeline
+- **Highlights**: Development phase timeline
 
 ### 6. Complete Data Flow Architecture
 - **Size**: 1400x1000px

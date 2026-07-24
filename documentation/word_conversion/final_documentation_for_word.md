@@ -65,7 +65,7 @@ The technology stack was carefully selected to balance performance, scalability,
 **Justification:**
 - **Research-to-Production**: PyTorch's dynamic computation graph facilitates both research and production deployment
 - **Computer Vision Strength**: Excellent support for U-Net, Siamese networks, and ConvLSTM architectures
-- **XAI Integration**: SHAP and LIME provide state-of-the-art explainable AI capabilities
+- **XAI Integration**: SHAP and LIME provide explainable AI capabilities
 - **Ecosystem Compatibility**: Strong integration with geospatial libraries (GDAL, rasterio) for satellite imagery
 - **Model Flexibility**: Easy ensemble model implementation and custom architecture development
 
@@ -90,7 +90,7 @@ The technology stack was carefully selected to balance performance, scalability,
 - **Energy Efficiency**: Proof-of-Stake consensus aligns with environmental goals of carbon credit verification
 - **Low Transaction Costs**: Sub-cent transaction fees enable micro-transactions for small carbon credits
 - **Ethereum Compatibility**: Access to mature DeFi ecosystem and established carbon credit protocols
-- **Scalability**: Layer 2 solution provides high throughput for enterprise-scale verification
+- **Scalability**: Layer 2 solution provides higher throughput and lower cost than Ethereum L1
 - **Developer Experience**: Mature tooling (Hardhat, Truffle) and extensive documentation
 
 **Tradeoffs Considered:**
@@ -214,7 +214,7 @@ The system architecture diagram illustrates the complete system architecture sho
 - **Frontend Layer**: React 18 with Redux Toolkit, Material-UI v5, Leaflet Maps, and XAI Visualizations
 - **API Layer**: FastAPI Backend with JWT Authentication, RBAC Authorization, and OpenAPI Documentation
 - **Business Logic**: Project Management, Verification Workflow, ML Analysis Service, and XAI Service
-- **ML Pipeline**: Four production models working together in an ensemble approach
+- **ML Pipeline**: Trained models combined in an ensemble approach
 - **Data Layer**: SQLite Database, File Storage, and Model Storage (96MB total)
 
 ### ML Processing Pipeline
@@ -233,7 +233,7 @@ The ML processing pipeline demonstrates how data flows from satellite imagery in
 
 ![Model Performance](images/model_performance.png)
 
-The pie chart shows the F1 score distribution across our production models, demonstrating the performance characteristics of each component in our ensemble system.
+The pie chart shows the measured F1 scores of the trained models (forest-cover ≈ 0.49, change-detection ≈ 0.60). The ensemble is a design target and has not been benchmarked.
 
 ### Role-Based Access Control Matrix
 
@@ -483,10 +483,10 @@ cd tests/e2e && python -m pytest
 - **Carbon Calculation**: deterministic area-based estimate (no validated accuracy figure)
 
 ### System Performance
-- **API Response Time**: < 200ms for standard operations
-- **ML Analysis**: 2-5 seconds per image analysis
-- **Database Queries**: Optimized with proper indexing
-- **Frontend Loading**: < 3 seconds initial load
+
+System-level performance (API response time, ML analysis time, database query
+time, frontend load time) has not been formally benchmarked. Database queries
+use standard SQLite indexing.
 
 ## User Accounts and Access
 

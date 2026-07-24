@@ -73,7 +73,7 @@ Each model processes the data independently:
 - **Input**: Predictions from all 3 models + Hansen reference data
 - **Process**: Weighted fusion using multiple ensemble methods
 - **Output**: Unified predictions with confidence scores
-- **Performance**: Expected F1 > 0.6 (Best overall accuracy)
+- **Performance**: Expected F1 > 0.6 (design target, not benchmarked)
 
 ### **Stage 4: Carbon Impact Calculation** 💰
 - **Input**: Ensemble predictions + biomass conversion factors

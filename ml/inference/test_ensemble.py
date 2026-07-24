@@ -248,7 +248,6 @@ def run_comprehensive_test():
     logger.info("✅ All individual models working")
     logger.info("✅ All ensemble methods working")
     logger.info("✅ Carbon calculation working")
-    logger.info("✅ Ready for production use!")
     
     return True
 
@@ -259,10 +258,10 @@ def main():
     if success:
         print("\n🎯 ENSEMBLE MODEL SUMMARY:")
         print("=" * 40)
-        print("✅ Forest Cover U-Net: F1=0.49 (Production Ready)")
-        print("✅ Change Detection Siamese U-Net: F1=0.60 (Production Ready)")
+        print("✅ Forest Cover U-Net: F1=0.49")
+        print("✅ Change Detection Siamese U-Net: F1=0.60")
         print("✅ ConvLSTM: Temporal Analysis (Functional)")
-        print("✅ Ensemble: Expected F1 > 0.6 (Best Performance)")
+        print("✅ Ensemble: Expected F1 > 0.6")
         print("\n💡 Next Steps:")
         print("1. Deploy ensemble for production inference")
         print("2. Integrate with blockchain verification")

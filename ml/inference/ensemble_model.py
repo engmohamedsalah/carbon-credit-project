@@ -423,7 +423,6 @@ def main():
         print("   2. Change Detection Siamese U-Net (F1=0.60)")
         print("   3. ConvLSTM (Temporal Analysis)")
         print("\n🎯 Expected Ensemble Performance: F1 > 0.6")
-        print("💡 Ready for production inference!")
         
     except Exception as e:
         print(f"❌ Error loading ensemble: {e}")

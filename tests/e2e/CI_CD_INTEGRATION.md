@@ -182,7 +182,7 @@ The CI pipeline automatically collects and uploads:
 
 The E2E test suite provides comprehensive coverage:
 
-#### Authentication Testing (50+ tests)
+#### Authentication Testing (25+ tests)
 - ✅ User registration flow
 - ✅ Login/logout functionality
 - ✅ Form validation
@@ -224,7 +224,7 @@ The test suite includes comprehensive security testing:
 
 1. **Parallel Execution**
    - Tests run in parallel using pytest-xdist
-   - Reduces total execution time by ~60%
+   - Reduces total execution time (speedup not benchmarked)
 
 2. **Browser Optimization**
    - Headless mode for faster execution
@@ -241,7 +241,7 @@ The test suite includes comprehensive security testing:
 | Test Category | Approximate Time | Tests Count |
 |---------------|------------------|-------------|
 | Authentication | 3-5 minutes | 25+ tests |
-| Auth Failures | 5-8 minutes | 25+ tests |
+| Auth Failures | 5-8 minutes | 5+ tests |
 | Dashboard | 2-4 minutes | 15+ tests |
 | Complete Suite | 8-12 minutes | 65+ tests |
 

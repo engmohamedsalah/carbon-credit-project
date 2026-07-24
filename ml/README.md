@@ -2,9 +2,9 @@
 
 This directory contains the machine learning components of the Carbon Credit Verification project, including data, models, and processing scripts.
 
-## 🎯 **Production-Ready Models**
+## 🎯 **Trained Models**
 
-Two key models have been successfully trained and are ready for deployment:
+Two key models have been trained and evaluated:
 
 ### ✅ **Forest Cover Classification Model**
 - **Path**: `ml/models/forest_cover_unet_focal_alpha_0.75_threshold_0.53.pth`
@@ -18,17 +18,17 @@ Two key models have been successfully trained and are ready for deployment:
 - **Purpose**: Detecting forest changes between time periods
 - **Documentation**: `ml/models/2. Change Detection (Siamese U-Net).md`
 
-### ✅ **Ensemble Model (Strategy 2 Implementation)**
+### **Ensemble Model (Strategy 2 Implementation)**
 - **Components**: Forest Cover U-Net + Change Detection Siamese U-Net + ConvLSTM
-- **Expected Performance**: F1 > 0.6 (combining best of all models)
+- **Expected Performance**: F1 > 0.6 (design target; the ensemble has not been benchmarked on a held-out test set)
 - **Features**: 
   - Multiple ensemble methods (weighted average, conditional, stacked)
-  - Automatic carbon impact calculation
-  - Production-ready inference pipeline
+  - Area-based carbon impact calculation (deterministic formula)
+  - Inference pipeline with CLI
 - **Usage**: `ml/inference/ensemble_model.py` and `ml/inference/production_inference.py`
-- **Status**: ✅ **FULLY FUNCTIONAL** - Ready for deployment
+- **Status**: Research prototype — runs end-to-end; not production-validated
 
-All models include comprehensive documentation, training pipelines, and evaluation scripts.
+All models include documentation, training pipelines, and evaluation scripts.
 
 ## Directory Structure
 
@@ -278,17 +278,17 @@ The recommended order for training and development is from the easiest to the mo
 | 1    | Forest Cover Mapping    | U-Net (Segmentation)   | Classification   | Sentinel-2, Hansen     | ✅ **COMPLETED** | **Path:** `ml/models/forest_cover_unet_focal_alpha_0.75_threshold_0.53.pth`<br/>**Performance:** F1=0.4911, Precision=0.4147, Recall=0.6022<br/>**Configuration:** Focal Loss (α=0.75), Threshold=0.53<br/>**Documentation:** `ml/models/1. Forest Cover Classification (U-Net).md` |
 | 2    | Change Detection        | Siamese U-Net / Segmentation | Classification   | Sentinel-2, Hansen     | ✅ **COMPLETED** | **Path:** `ml/models/change_detection_siamese_unet.pth`<br/>**Performance:** F1=0.6006, Precision=0.4349, Recall=0.9706<br/>**Configuration:** Focal Loss (α=0.5, γ=3), Threshold=0.4<br/>**Documentation:** `ml/models/2. Change Detection (Siamese U-Net).md` |
 | 3    | Time-Series Analysis    | ConvLSTM (Temporal Segmentation) | Classification   | Sentinel-2, Sentinel-1 | ✅ **COMPLETED** | **Path:** `ml/models/convlstm_fast_final.pth`<br/>**Performance:** Functional (part of ensemble)<br/>**Configuration:** 3-step sequences, 2-layer ConvLSTM<br/>**Integration:** Combined in ensemble model |
-| 4    | Ensemble Integration    | Multi-Model Ensemble   | Classification   | All Models Combined | ✅ **COMPLETED** | **Path:** `ml/inference/ensemble_model.py`<br/>**Performance:** Expected F1 > 0.6<br/>**Features:** 3 ensemble methods, carbon calculation<br/>**Status:** Production-ready deployment |
+| 4    | Ensemble Integration    | Multi-Model Ensemble   | Classification   | All Models Combined | ✅ **COMPLETED** | **Path:** `ml/inference/ensemble_model.py`<br/>**Performance:** Expected F1 > 0.6 (design target, not benchmarked)<br/>**Features:** 3 ensemble methods, carbon calculation<br/>**Status:** Research prototype |
 
 ### **Training Progress and Recommendations:**
 
-- ✅ **Step 1 (Forest Cover Mapping)**: **COMPLETED** - Production-ready U-Net model with comprehensive data augmentation and morphological post-processing. Optimized threshold and enhanced training pipeline. Ready for deployment.
+- ✅ **Step 1 (Forest Cover Mapping)**: **COMPLETED** - U-Net model with data augmentation and morphological post-processing. Tuned threshold and enhanced training pipeline (F1 ≈ 0.49).
 
-- ✅ **Step 2 (Change Detection)**: **COMPLETED** - Robust Siamese U-Net model with excellent recall for detecting forest changes. Balanced dataset and optimized loss function. Ready for production use.
+- ✅ **Step 2 (Change Detection)**: **COMPLETED** - Siamese U-Net model with high recall for detecting forest changes. Balanced dataset and tuned loss function (F1 ≈ 0.60).
 
 - ✅ **Step 3 (Time-Series Analysis)**: **COMPLETED** - ConvLSTM successfully trained and integrated into ensemble. 3-step sequences, 2-layer ConvLSTM architecture. Functional for temporal pattern analysis.
 
-- ✅ **Step 4 (Ensemble Integration)**: **COMPLETED** - Full ensemble model combining all three components with multiple ensemble methods and carbon impact calculation. Ready for production deployment.
+- ✅ **Step 4 (Ensemble Integration)**: **COMPLETED** - Ensemble model combining all three components with multiple ensemble methods and carbon impact calculation. Research prototype; not yet benchmarked on a held-out test set.
 
 ### **Completed Models Summary:**
 
@@ -297,7 +297,7 @@ The recommended order for training and development is from the easiest to the mo
 | **Forest Cover U-Net** | 0.4911 | 0.4147 | 0.6022 | Balanced performance with enhanced augmentation | Baseline forest mapping |
 | **Change Detection Siamese U-Net** | 0.6006 | 0.4349 | 0.9706 | High change detection recall | Detecting forest loss events |
 | **ConvLSTM** | Functional | N/A | N/A | Temporal pattern analysis | Seasonal change filtering |
-| **Ensemble Model** | >0.6 (Expected) | N/A | N/A | Combines all models optimally | Production carbon verification |
+| **Ensemble Model** | >0.6 (Expected, not benchmarked) | N/A | N/A | Combines all models | Carbon verification pipeline |
 
 ### **Next Steps:**
 1. ✅ **Deploy ensemble model** for comprehensive carbon credit verification

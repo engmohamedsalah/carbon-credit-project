@@ -22,7 +22,7 @@ Think of it like having **4 different experts** looking at satellite photos of f
 - **Output:** Binary prediction (Forest = 1, Non-forest = 0)
 - **Performance:** F1=0.4911, Precision=0.4147, Recall=0.6022
 
-**Real Example:**
+**Illustrative Example (hypothetical, not a measured model output):**
 ```
 Input: Satellite image of Amazon rainforest region
 Prediction: 
@@ -53,7 +53,7 @@ A company claims they have 1000 hectares of forest for carbon credits. This mode
 - **Output:** Binary change prediction (Changed = 1, No change = 0)
 - **Performance:** F1=0.6006, Precision=0.4349, Recall=0.9706
 
-**Real Example:**
+**Illustrative Example (hypothetical, not a measured model output):**
 ```
 Input: 
 - Image 1 (January 2023): Dense forest area
@@ -87,7 +87,7 @@ A carbon credit project claims no deforestation occurred in their protected area
 - **Output:** Temporal change probability with seasonal context
 - **Performance:** Functional (provides temporal context to ensemble)
 
-**Real Example:**
+**Illustrative Example (hypothetical, not a measured model output):**
 ```
 Input: Time series of forest area
 - March 2023: Dense green forest
@@ -115,7 +115,7 @@ The Change Detection model flags an area as "deforested" because trees lost leav
 - Takes advice from all 3 experts above
 - Combines their opinions to make the best decision
 - Calculates exactly how much carbon was gained or lost
-- **Goal:** Give the final, most accurate answer for carbon credits
+- **Goal:** Give the final combined answer for carbon credits
 
 **Technical Details:**
 - **Input:** Combines predictions from all 3 models
@@ -123,7 +123,7 @@ The Change Detection model flags an area as "deforested" because trees lost leav
 - **Performance:** Expected F1 > 0.6 (design target; the ensemble has not yet been benchmarked)
 - **Methods:** Weighted average, conditional, stacked ensemble
 
-**Real Example:**
+**Illustrative Example (hypothetical, not a measured model output):**
 ```
 Input Predictions:
 - Forest Cover: "75% forest coverage"
@@ -178,7 +178,7 @@ Ensemble Model combines all predictions:
 |-----------|----------|
 | **One model might make mistakes** | Four models cross-check each other |
 | **Seasonal changes confuse detection** | ConvLSTM filters out seasonal effects |
-| **Need precise carbon calculations** | Ensemble provides most accurate results |
+| **Need combined carbon calculations** | Ensemble combines all model outputs |
 | **Different expertise needed** | Each model specializes in different aspects |
 
 ## 🚀 **Real-World Applications**

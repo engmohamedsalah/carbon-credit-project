@@ -114,8 +114,7 @@ def main():
         print("✅ All three models successfully combined")
         print("✅ Multiple ensemble methods available")
         print("✅ Carbon impact calculation working")
-        print("✅ Production-ready inference pipeline")
-        print("\n🚀 READY FOR DEPLOYMENT!")
+        print("✅ Inference pipeline functional")
     else:
         print("\n❌ Ensemble test failed - check logs for details")
 

@@ -45,7 +45,7 @@ def evaluate_current_model():
                 'precision': 0.4147,
                 'recall': 0.6022,
                 'input_channels': 12,
-                'status': 'Production Ready'
+                'status': 'Trained'
             },
             'change_detection': {
                 'type': 'Siamese U-Net',
@@ -53,7 +53,7 @@ def evaluate_current_model():
                 'precision': 0.4349,
                 'recall': 0.9706,
                 'input_channels': 4,
-                'status': 'Production Ready'
+                'status': 'Trained'
             },
             'convlstm': {
                 'type': 'ConvLSTM',
@@ -108,9 +108,8 @@ def evaluate_current_model():
             "Balanced forest cover classification (F1=0.49)",
             "Functional temporal analysis with ConvLSTM",
             "Multiple ensemble methods for different scenarios",
-            "Accurate carbon impact calculations",
-            "Production-ready deployment capability",
-            "Comprehensive error handling and channel management"
+            "Carbon impact calculation arithmetic validated by self-check",
+            "Error handling and channel management"
         ]
         
         for strength in strengths:
@@ -149,8 +148,6 @@ def evaluate_current_model():
         logger.info("  ConvLSTM: Functional (temporal analysis)")
         logger.info("\nEnsemble Model:")
         logger.info("  Expected F1 Score: > 0.6 (improvement over individual models)")
-        logger.info("  Confidence Level: High")
-        logger.info("  Production Readiness: ✅ READY")
         
         # Deployment Status
         logger.info("\n🚀 DEPLOYMENT STATUS:")
@@ -169,9 +166,9 @@ def evaluate_current_model():
         for item, status in deployment_checklist:
             logger.info(f"  {item}: {status}")
         
-        logger.info(f"\n🎉 EVALUATION COMPLETED SUCCESSFULLY!")
+        logger.info(f"\n🎉 EVALUATION COMPLETED!")
         logger.info("=" * 60)
-        logger.info("The ensemble model is fully functional and ready for production deployment!")
+        logger.info("The ensemble model loaded and ran end-to-end on the smoke tests above.")
         
         return {
             'overall_score': overall_score,
@@ -391,23 +388,21 @@ def calculate_overall_score(forest_results, change_results, convlstm_results,
     
     # Weighted overall score
     weights = {
-        'forest': 0.2,
-        'change': 0.25,
-        'convlstm': 0.15,
-        'ensemble': 0.25,
-        'carbon': 0.1,
-        'production_ready': 0.05
+        'forest': 0.21,
+        'change': 0.26,
+        'convlstm': 0.16,
+        'ensemble': 0.26,
+        'carbon': 0.11
     }
-    
+
     overall_score = (
         weights['forest'] * forest_score +
         weights['change'] * change_score +
         weights['convlstm'] * convlstm_score +
         weights['ensemble'] * ensemble_score +
-        weights['carbon'] * carbon_score +
-        weights['production_ready'] * 0.95  # High score for successful deployment
+        weights['carbon'] * carbon_score
     )
-    
+
     return overall_score
 
 def get_performance_grade(score):

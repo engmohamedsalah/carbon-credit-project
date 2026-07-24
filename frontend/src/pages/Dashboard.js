@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Container, Grid, Button, CircularProgress, Chip, IconButton } from '@mui/material';
+import { Box, Typography, Container, Grid, Button, CircularProgress, IconButton } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchProjects } from '../store/projectSlice';
@@ -41,15 +41,6 @@ const Dashboard = () => {
     pending: projectsArray.filter(p => p.status === 'Pending').length,
     verified: projectsArray.filter(p => p.status === 'Verified').length,
     inProgress: projectsArray.filter(p => p.status === 'In Progress').length,
-  };
-
-  // Enhanced stats for mission control
-  const missionStats = {
-    carbonCreditsIssued: 15420,
-    satelliteImages: 1847,
-    aiAnalyses: 892,
-    iotSensors: 234,
-    systemStatus: 'operational'
   };
 
   const handleRefresh = () => {
@@ -115,18 +106,7 @@ const Dashboard = () => {
           </Box>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
-            <Chip 
-              label={missionStats.systemStatus.toUpperCase()}
-              size="small"
-              sx={{
-                backgroundColor: colors.accent.primary,
-                color: colors.background.primary,
-                fontWeight: 600,
-                fontSize: '0.75rem',
-                animation: 'pulse 2s infinite'
-              }}
-            />
-            <Typography variant="caption" sx={{ 
+            <Typography variant="caption" sx={{
               color: colors.text.tertiary,
               fontFamily: 'JetBrains Mono'
             }}>
@@ -279,15 +259,7 @@ const Dashboard = () => {
                 mb: spacing.md,
                 filter: `drop-shadow(0 0 15px ${colors.accent.secondary}40)`
               }} />
-              <Typography variant="h4" sx={{ 
-                color: colors.text.primary,
-                fontWeight: 700,
-                mb: spacing.xs,
-                fontFamily: 'JetBrains Mono'
-              }}>
-                {missionStats.satelliteImages.toLocaleString()}
-              </Typography>
-              <Typography variant="h6" sx={{ 
+              <Typography variant="h6" sx={{
                 color: colors.accent.secondary,
                 fontWeight: 600,
                 mb: spacing.md,
@@ -341,15 +313,7 @@ const Dashboard = () => {
                 mb: spacing.md,
                 filter: `drop-shadow(0 0 15px ${colors.accent.info}40)`
               }} />
-              <Typography variant="h4" sx={{ 
-                color: colors.text.primary,
-                fontWeight: 700,
-                mb: spacing.xs,
-                fontFamily: 'JetBrains Mono'
-              }}>
-                {missionStats.aiAnalyses.toLocaleString()}
-              </Typography>
-              <Typography variant="h6" sx={{ 
+              <Typography variant="h6" sx={{
                 color: colors.accent.info,
                 fontWeight: 600,
                 mb: spacing.md,
@@ -403,15 +367,7 @@ const Dashboard = () => {
                 mb: spacing.md,
                 filter: `drop-shadow(0 0 15px ${colors.accent.success}40)`
               }} />
-              <Typography variant="h4" sx={{ 
-                color: colors.text.primary,
-                fontWeight: 700,
-                mb: spacing.xs,
-                fontFamily: 'JetBrains Mono'
-              }}>
-                {missionStats.carbonCreditsIssued.toLocaleString()}
-              </Typography>
-              <Typography variant="h6" sx={{ 
+              <Typography variant="h6" sx={{
                 color: colors.accent.success,
                 fontWeight: 600,
                 mb: spacing.md,

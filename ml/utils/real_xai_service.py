@@ -1,6 +1,12 @@
 """
-Real XAI Service for Carbon Credit Verification
-Integrates with actual trained ML models to generate real explanations
+XAI Service scaffolding for Carbon Credit Verification (DORMANT).
+
+Not wired into any served endpoint: the live XAI routes use the disabled no-op
+service in ``backend/services/xai_service.py``. The attribution methods below
+(SHAP / LIME / Integrated Gradients) run genuine captum/shap/lime computation,
+but the model inputs are synthesised placeholders (see ``_prepare_input_data``)
+rather than real per-project satellite tensors. Any output is therefore not a
+measured result and must not be presented as one until real inputs are wired in.
 """
 
 import os
@@ -243,7 +249,7 @@ class RealXAIService:
             project_id = instance_data.get('project_id', 1)
             area_hectares = instance_data.get('features', {}).get('area_hectares', 100.0)
             
-            # Generate realistic satellite-like data
+            # Synthetic placeholder input (not real satellite imagery)
             if 'forest_cover' in model_id:
                 # 12-channel Sentinel-2 data (64x64 patch)
                 channels = 12
@@ -350,7 +356,6 @@ class RealXAIService:
                 "waterfall_data": [
                     {
                         "feature": feature,
-                        "value": float(np.random.rand()),  # Feature value
                         "contribution": importance,
                         "formattedContribution": f"{importance:+.3f}"
                     }
@@ -364,16 +369,9 @@ class RealXAIService:
             
         except Exception as e:
             logger.error(f"SHAP explanation failed: {e}")
-            # Return realistic fallback
             return {
                 "method": "shap",
-                "feature_importance": {
-                    "vegetation_index": 0.35,
-                    "spectral_bands": 0.28,
-                    "texture_features": 0.22,
-                    "temporal_changes": 0.15
-                },
-                "confidence": 0.87,
+                "feature_importance": {},
                 "error": f"SHAP computation failed: {str(e)}"
             }
     
@@ -473,7 +471,6 @@ class RealXAIService:
                 "total_segments": int(segments.max() + 1),
                 "positive_segments": len([s for s in segment_importance if s["importance"] > 0]),
                 "negative_segments": len([s for s in segment_importance if s["importance"] < 0]),
-                "confidence": 0.87,
                 "prediction_time": prediction_time,
                 "local_explanation": "Analysis shows vegetation patterns in key image regions support forest classification",
                 "summary": {
@@ -488,15 +485,9 @@ class RealXAIService:
             
         except Exception as e:
             logger.error(f"LIME explanation failed: {e}")
-            # Return realistic fallback
             return {
                 "method": "lime",
-                "segments": [
-                    {"segment_id": 1, "importance": 0.45, "area_percentage": 12.3, "type": "positive"},
-                    {"segment_id": 7, "importance": 0.38, "area_percentage": 8.7, "type": "positive"},
-                    {"segment_id": 23, "importance": -0.28, "area_percentage": 15.2, "type": "negative"}
-                ],
-                "confidence": 0.85,
+                "segments": [],
                 "error": f"LIME computation failed: {str(e)}"
             }
     
@@ -540,9 +531,7 @@ class RealXAIService:
                 "attribution_stats": attribution_stats,
                 "channel_attributions": channel_attributions,
                 "baseline": baseline.squeeze(0).numpy().tolist(),
-                "confidence": 0.89,
                 "prediction_time": prediction_time,
-                "convergence_score": 0.95,  # Mock convergence score
                 "path_integration": {
                     "steps": 50,
                     "baseline_type": "zero_baseline",
@@ -555,16 +544,9 @@ class RealXAIService:
             
         except Exception as e:
             logger.error(f"Integrated Gradients explanation failed: {e}")
-            # Return realistic fallback
             return {
                 "method": "integrated_gradients",
-                "attribution_stats": {
-                    "min_attribution": -0.23,
-                    "max_attribution": 0.67,
-                    "mean_attribution": 0.12,
-                    "std_attribution": 0.18
-                },
-                "confidence": 0.86,
+                "attribution_stats": {},
                 "error": f"IG computation failed: {str(e)}"
             }
     
@@ -579,24 +561,13 @@ class RealXAIService:
                 f"{explanation.get('confidence', 0.85)*100:.1f}% confidence. Key factors include "
                 f"vegetation indices, spectral signatures, and spatial patterns."
             )
-            enhanced["carbon_impact"] = f"{np.random.randint(150, 450)} tonnes CO₂e/year"
-            
         elif 'change_detection' in model_id:
             enhanced["business_explanation"] = (
                 f"Temporal analysis detected forest changes with "
                 f"{explanation.get('confidence', 0.85)*100:.1f}% confidence. This indicates "
                 f"potential carbon credit impact requiring verification."
             )
-            enhanced["carbon_impact"] = f"{np.random.randint(50, 200)} tonnes CO₂e change"
-        
-        # Add financial metrics
-        enhanced["business_metrics"] = {
-            "carbon_impact": enhanced.get("carbon_impact", "250 tonnes CO₂e"),
-            "financial_impact": f"${np.random.randint(2500, 12000):,}",
-            "risk_level": np.random.choice(["Low", "Medium"], p=[0.7, 0.3]),
-            "compliance_status": "EU AI Act Compliant"
-        }
-        
+
         return enhanced
     
     def _calculate_real_uncertainty(self, model: nn.Module, input_tensor: torch.Tensor) -> Dict[str, Any]:
@@ -716,12 +687,13 @@ class RealXAIService:
                 # Create LIME segment visualization
                 fig, ax = plt.subplots(figsize=(10, 6))
                 
-                # Simulate segment importance data
-                segments = explanation.get("segments", list(range(20)))[:10]
-                importance = [np.random.uniform(-0.3, 0.5) for _ in segments]
-                
+                # Use real per-segment importance from the LIME explanation
+                segments = explanation.get("segments", [])[:10]
+                labels = [f"Segment {s['segment_id']}" for s in segments]
+                importance = [s["importance"] for s in segments]
+
                 colors = ['red' if imp < 0 else 'green' for imp in importance]
-                bars = ax.barh([f'Segment {s}' for s in segments], importance, color=colors, alpha=0.7)
+                bars = ax.barh(labels, importance, color=colors, alpha=0.7)
                 
                 ax.set_xlabel('Segment Importance')
                 ax.set_title('LIME Segment Analysis (Real Model)')
@@ -743,9 +715,10 @@ class RealXAIService:
                 # Create IG attribution heatmap
                 fig, ax = plt.subplots(figsize=(8, 6))
                 
-                # Create synthetic attribution data
-                attributions = np.random.rand(8, 8) * 0.5 - 0.25
-                
+                # Use the real attribution map, reduced to 2D for display
+                attr = np.array(explanation["attributions"])
+                attributions = attr.mean(axis=0) if attr.ndim == 3 else attr
+
                 im = ax.imshow(attributions, cmap='RdBu_r', aspect='auto')
                 ax.set_title('Integrated Gradients Attribution Map')
                 ax.set_xlabel('Spatial Dimension')
@@ -813,15 +786,12 @@ class RealXAIService:
         if 'forest_cover' in model_id:
             return (
                 f"Forest cover analysis using {method.upper()} shows {confidence*100:.1f}% confidence in classification. "
-                f"Key vegetation indicators and spectral signatures support the prediction. "
-                f"Estimated carbon sequestration: {explanation.get('carbon_impact', '250 tonnes CO₂e')}. "
-                f"Risk assessment: {explanation.get('business_metrics', {}).get('risk_level', 'Low')}."
+                f"Key vegetation indicators and spectral signatures support the prediction."
             )
         else:
             return (
                 f"{method.upper()} analysis completed with {confidence*100:.1f}% confidence. "
-                f"Model identifies key environmental factors supporting the prediction. "
-                f"Business impact assessment indicates {explanation.get('business_metrics', {}).get('risk_level', 'Low')} risk level."
+                f"Model identifies key environmental factors supporting the prediction."
             )
     
     def _assess_risk(self, explanation: Dict[str, Any]) -> Dict[str, Any]:
@@ -852,11 +822,11 @@ class RealXAIService:
     def _generate_regulatory_notes(self) -> Dict[str, str]:
         """Generate regulatory compliance notes"""
         return {
-            "eu_ai_act_compliance": "Compliant - Provides transparent AI explanations for high-risk environmental applications",
-            "carbon_standards_compliance": "Meets VCS and Gold Standard requirements for AI-based forest monitoring",
-            "explainability_level": "Full - Technical and business explanations provided",
-            "audit_trail": "Complete methodology documentation available for regulatory review",
-            "model_version": "Production v2.1 - Validated on satellite imagery datasets"
+            "eu_ai_act_compliance": "Not assessed",
+            "carbon_standards_compliance": "Not assessed - VCS/Gold Standard certification not performed",
+            "explainability_level": "Technical and business explanations provided",
+            "audit_trail": "Methodology documentation available for review",
+            "model_version": "Research prototype - not independently validated"
         }
     
     def _get_model_size(self, model: nn.Module) -> str:
@@ -884,15 +854,8 @@ class RealXAIService:
     
     def _create_fallback_explanation(self, explanation_id: str, model_id: str, method: str, project_id: int = None) -> Dict[str, Any]:
         """Create fallback explanation when real models are unavailable"""
-        # Generate realistic varying confidence based on project_id or explanation_id
-        import hashlib
-        seed_str = f"{project_id}_{model_id}_{method}" if project_id else explanation_id
-        hash_val = int(hashlib.md5(seed_str.encode()).hexdigest()[:8], 16)
-        confidence = 0.75 + (hash_val % 20) / 100.0  # Range: 0.75 to 0.94
-        
-        # Debug logging
-        logger.info(f"🎯 Fallback explanation: project_id={project_id}, seed={seed_str}, confidence={confidence:.2f}")
-        
+        logger.info(f"🎯 Fallback explanation (no model loaded): project_id={project_id}, model_id={model_id}, method={method}")
+
         return {
             "explanation_id": explanation_id,
             "timestamp": datetime.now().isoformat(),
@@ -900,14 +863,14 @@ class RealXAIService:
             "method": method,
             "explanation": {
                 "method": method,
-                "confidence": confidence,
+                "confidence": None,
                 "fallback": True,
-                "message": "Using enhanced simulation - real model integration available but fallback mode active"
+                "message": "Real model unavailable - no explanation computed. Confidence not measured."
             },
-            "business_summary": f"Enhanced {method.upper()} analysis provides reliable insights for carbon credit verification",
-            "confidence_score": confidence,
-            "risk_assessment": {"level": "Medium", "description": "Fallback mode active"},
-            "regulatory_notes": {"status": "Simulation mode - production models available"}
+            "business_summary": f"{method.upper()} explanation could not be computed: the underlying model was not available.",
+            "confidence_score": None,
+            "risk_assessment": {"level": "Unknown", "description": "Fallback mode - model unavailable"},
+            "regulatory_notes": {"status": "Fallback mode - no model output available"}
         }
 
 # Global instance
