@@ -52,10 +52,10 @@ def main():
             print(f"  pixel size ~ {px_x:.1f} x {px_y:.1f} m  -> pixel area {px_area:.0f} m2")
             print(f"  REAL scene ground area (from geotransform): {real_ha:,.1f} ha")
             if abs(px_x - 10) > 1:
-                print(f"  ⚠️  pixel size is not ~10 m — the pipeline hardcodes 100 m2/pixel, "
+                print(f"  [WARN] pixel size is not ~10 m — the pipeline hardcodes 100 m2/pixel, "
                       f"so its area will be off by ~{(px_x/10)**2:.2f}x. Fix pixel_area_m2.")
         else:
-            print("  ⚠️  CRS is geographic (degrees) — cannot compute ground area directly; "
+            print("  [WARN] CRS is geographic (degrees) — cannot compute ground area directly; "
                   "reproject to UTM for a meaningful check.")
     except Exception as e:
         print(f"Could not read raster geometry: {e}")
@@ -88,10 +88,10 @@ def main():
     # --- sanity checks ---
     ok = True
     if abs(ci["total_area_hectares"] - 40.96) < 0.5 and (H, W) != (64, 64):
-        print("❌ area is stuck at ~41 ha but the scene is larger — the crop bug is NOT fixed here.")
+        print("[FAIL] area is stuck at ~41 ha but the scene is larger — the crop bug is NOT fixed here.")
         ok = False
     else:
-        print("✅ area scales with the real scene (not capped at ~41 ha).")
+        print("[PASS] area scales with the real scene (not capped at ~41 ha).")
     print("\nNow eyeball it: does 'reported total area' match the scene's real hectares above,\n"
           "and is the forest mask plausible? If the mask looks wrong, that's the F1~0.49 limit —\n"
           "route it through human review before any report is issued.")
