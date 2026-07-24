@@ -295,7 +295,7 @@ The recommended order for training and development is from the easiest to the mo
 | Model | F1 Score | Precision | Recall | Key Strengths | Use Case |
 |-------|----------|-----------|---------|---------------|----------|
 | **Forest Cover U-Net** | 0.4911 | 0.4147 | 0.6022 | Balanced performance with enhanced augmentation | Baseline forest mapping |
-| **Change Detection Siamese U-Net** | 0.6006 | 0.4349 | 0.9706 | Excellent change detection recall | Detecting forest loss events |
+| **Change Detection Siamese U-Net** | 0.6006 | 0.4349 | 0.9706 | High change detection recall | Detecting forest loss events |
 | **ConvLSTM** | Functional | N/A | N/A | Temporal pattern analysis | Seasonal change filtering |
 | **Ensemble Model** | >0.6 (Expected) | N/A | N/A | Combines all models optimally | Production carbon verification |
 

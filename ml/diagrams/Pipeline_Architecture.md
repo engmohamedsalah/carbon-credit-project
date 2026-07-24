@@ -61,7 +61,7 @@ Each model processes the data independently:
 - **Input**: Paired Sentinel-2 images (before/after, 128×128 pixels)
 - **Process**: Siamese network compares temporal pairs
 - **Output**: Binary change/no-change predictions
-- **Performance**: F1=0.6006 (Excellent change detection)
+- **Performance**: F1=0.6006 (high-recall change detection)
 
 #### **📅 Model 3: ConvLSTM**
 - **Input**: 3-step temporal sequences (Sentinel-1 + Sentinel-2)
@@ -146,7 +146,7 @@ graph TD
 - **Throughput**: 1000+ hectares processed per minute
 - **Carbon calculation**: deterministic area-based CO₂ estimate (no validated accuracy figure)
 - **Latency**: <30 seconds end-to-end processing
-- **Availability**: 99.9% uptime SLA
+- **Availability**: no uptime SLA — prototype
 
 ### **Quality Assurance**
 - **Cross-validation** between models

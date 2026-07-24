@@ -846,10 +846,10 @@ def calculate_system_performance_metrics() -> Dict:
     
     # Data collection metrics
     sensor_performance = {
-        "data_collection_rate": 0.967,  # 96.7% successful readings
+        "data_collection_rate": 0.0,    # illustrative placeholder — not measured
         "calibration_drift": 0.023,     # 2.3% average drift per month
         "battery_life_actual": 18.4,    # months (target: 18 months)
-        "communication_success": 0.987   # 98.7% successful transmissions
+        "communication_success": 0.0     # illustrative placeholder — not measured
     }
     
     # Analysis accuracy metrics

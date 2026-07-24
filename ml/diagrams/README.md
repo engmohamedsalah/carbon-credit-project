@@ -63,7 +63,7 @@ The pipeline architecture diagram shows:
 - **Throughput**: 1000+ hectares/minute
 - **Latency**: <30 seconds end-to-end
 - **Carbon calculation**: deterministic area-based CO₂ estimate (no validated accuracy figure)
-- **Uptime**: 99.9% availability
+- **Uptime**: no uptime SLA — prototype
 
 ### **🔗 Data Flow**
 - **Input**: Sentinel-1 SAR, Sentinel-2 Optical, Hansen Forest Data
