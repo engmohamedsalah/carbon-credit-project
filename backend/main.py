@@ -747,7 +747,7 @@ async def health_check():
         "status": "healthy",
         "service": "Carbon Credit Verification API",
         "version": "2.0.0",
-        "database": "SQLite",
+        "database": "Turso (libSQL)" if dbdriver.TURSO_URL else "SQLite",
         "architecture": "Simplified Professional",
         "blockchain": blockchain_status
     }
