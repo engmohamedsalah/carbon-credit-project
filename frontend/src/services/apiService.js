@@ -78,6 +78,9 @@ class ApiService {
     }),
     getCurrentUser: () => this.client.get(API_ENDPOINTS.auth.me),
     logout: () => this.client.post(API_ENDPOINTS.auth.logout),
+    forgotPassword: (email) => this.client.post('/auth/forgot-password', { email }),
+    resetPassword: (token, newPassword) =>
+      this.client.post('/auth/reset-password', { token, new_password: newPassword }),
   };
 
   /**

@@ -115,7 +115,19 @@ class DatabaseManager:
                         FOREIGN KEY (user_id) REFERENCES users (id)
                     )
                 """)
-                
+
+                # Password reset tokens table
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                        token TEXT PRIMARY KEY,
+                        user_id INTEGER NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        expires_at TIMESTAMP NOT NULL,
+                        used INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY (user_id) REFERENCES users (id)
+                    )
+                """)
+
                 # Projects table
                 conn.execute("""
                     CREATE TABLE IF NOT EXISTS projects (
@@ -291,6 +303,22 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+    @field_validator('new_password')
+    @classmethod
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        return v
+
+
 class ProjectCreate(BaseModel):
     name: str
     description: Optional[str] = None
@@ -459,6 +487,38 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_token() -> str:
     """Create secure random token"""
     return secrets.token_urlsafe(32)
+
+
+def send_password_reset_email(to_email: str, reset_link: str) -> bool:
+    """Send a password-reset email via SMTP. Returns True if sent.
+
+    If SMTP is not configured (no SMTP_HOST), returns False without raising — the
+    caller then falls back to logging the link (and optionally returning it in the
+    response when PASSWORD_RESET_EXPOSE_LINK is enabled for demo use).
+    """
+    if not settings.SMTP_HOST:
+        return False
+    import smtplib
+    from email.message import EmailMessage
+    try:
+        msg = EmailMessage()
+        msg["Subject"] = "Reset your Carbon Credit Verification password"
+        msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
+        msg["To"] = to_email
+        msg.set_content(
+            "We received a request to reset your password.\n\n"
+            f"Reset it here (valid for {settings.PASSWORD_RESET_TTL_MINUTES} minutes):\n{reset_link}\n\n"
+            "If you didn't request this, you can ignore this email."
+        )
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as smtp:
+            smtp.starttls()
+            if settings.SMTP_USER:
+                smtp.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            smtp.send_message(msg)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send reset email: {e}")
+        return False
 
 
 def get_user_by_email(email: str) -> Optional[dict]:
@@ -911,6 +971,81 @@ async def logout(token: str = Depends(oauth2_scheme)):
     # oauth2_scheme returns the raw token string
     delete_token(token)
     return {"message": "Logged out"}
+
+
+@app.post("/api/v1/auth/forgot-password")
+@limiter.limit("5/minute")
+async def forgot_password(request: Request, data: ForgotPasswordRequest):
+    """Start a password reset: issue a single-use, time-limited token and email it.
+
+    Always returns the same generic message (no account enumeration). When SMTP is
+    not configured, the link is logged server-side (and returned in the response only
+    if PASSWORD_RESET_EXPOSE_LINK is enabled — for local/demo use, never production).
+    """
+    generic = {"message": "If an account with that email exists, a reset link has been sent."}
+    email = data.email.strip().lower()
+    user = get_user_by_email(email)
+    if not user:
+        return generic  # do not reveal whether the email exists
+
+    reset_token = create_token()
+    try:
+        with db.get_connection() as conn:
+            # Invalidate any prior unused tokens for this user, then store the new one.
+            conn.execute("DELETE FROM password_reset_tokens WHERE user_id = ?", (user["id"],))
+            conn.execute(
+                "INSERT INTO password_reset_tokens (token, user_id, expires_at) "
+                "VALUES (?, ?, datetime('now', ?))",
+                (reset_token, user["id"], f"+{settings.PASSWORD_RESET_TTL_MINUTES} minutes"),
+            )
+            conn.commit()
+    except Exception as e:
+        logger.error(f"Error creating reset token: {e}")
+        raise HTTPException(status_code=500, detail="Failed to start password reset")
+
+    reset_link = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?token={reset_token}"
+    sent = send_password_reset_email(email, reset_link)
+    if not sent:
+        logger.info(f"Password reset link for {email} (email not sent): {reset_link}")
+
+    response = dict(generic)
+    if not sent and settings.PASSWORD_RESET_EXPOSE_LINK:
+        # Demo convenience only — insecure, off by default.
+        response["reset_link"] = reset_link
+    return response
+
+
+@app.post("/api/v1/auth/reset-password")
+@limiter.limit("5/minute")
+async def reset_password(request: Request, data: ResetPasswordRequest):
+    """Complete a password reset with a valid, unused, unexpired token."""
+    try:
+        with db.get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT user_id FROM password_reset_tokens "
+                "WHERE token = ? AND used = 0 AND expires_at > datetime('now')",
+                (data.token,),
+            )
+            row = cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+            user_id = row["user_id"]
+
+            conn.execute(
+                "UPDATE users SET hashed_password = ? WHERE id = ?",
+                (hash_password(data.new_password), user_id),
+            )
+            conn.execute("UPDATE password_reset_tokens SET used = 1 WHERE token = ?", (data.token,))
+            # Invalidate existing sessions so the account is fully re-secured.
+            conn.execute("DELETE FROM auth_tokens WHERE user_id = ?", (user_id,))
+            conn.commit()
+
+        return {"message": "Password has been reset. You can now log in with your new password."}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resetting password: {e}")
+        raise HTTPException(status_code=500, detail="Failed to reset password")
 
 
 # Project endpoints
@@ -1694,7 +1829,7 @@ class UserSettingsResponse(BaseModel):
 class PasswordChangeRequest(BaseModel):
     current_password: str
     new_password: str
-    
+
     @field_validator('new_password')
     @classmethod
     def validate_password(cls, v):

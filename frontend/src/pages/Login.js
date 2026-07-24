@@ -344,10 +344,25 @@ const Login = () => {
                 {loading ? <CircularProgress size={24} sx={{ color: 'rgba(0, 0, 0, 0.9)' }} /> : 'Sign In'}
               </Button>
 
-              <Grid container justifyContent="flex-end">
+              <Grid container justifyContent="space-between" spacing={1}>
                 <Grid item>
                   <Link
                     component="button"
+                    type="button"
+                    variant="body2"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigate('/forgot-password');
+                    }}
+                    sx={{ color: 'rgba(255,255,255,0.9)' }}
+                  >
+                    Forgot password?
+                  </Link>
+                </Grid>
+                <Grid item>
+                  <Link
+                    component="button"
+                    type="button"
                     variant="body2"
                     onClick={(e) => {
                       e.preventDefault();

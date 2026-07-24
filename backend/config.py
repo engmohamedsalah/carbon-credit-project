@@ -58,5 +58,19 @@ class Settings:
     BLOCKCHAIN_PRIVATE_KEY: str = os.getenv("BLOCKCHAIN_PRIVATE_KEY", "")
     CONTRACT_ADDRESS: str = os.getenv("CONTRACT_ADDRESS", "")
 
+    # --- Password reset ---
+    # Public URL of the frontend, used to build the reset link in the email.
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    PASSWORD_RESET_TTL_MINUTES: int = int(os.getenv("PASSWORD_RESET_TTL_MINUTES", "60"))
+    # SMTP for sending the reset email. If SMTP_HOST is unset, email is not sent —
+    # the reset link is logged server-side instead (and returned in the API response
+    # only when PASSWORD_RESET_EXPOSE_LINK is explicitly enabled — insecure, demo only).
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER: str = os.getenv("SMTP_USER", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_FROM: str = os.getenv("SMTP_FROM", os.getenv("SMTP_USER", ""))
+    PASSWORD_RESET_EXPOSE_LINK: bool = os.getenv("PASSWORD_RESET_EXPOSE_LINK", "").lower() in ("1", "true", "yes")
+
 
 settings = Settings()
