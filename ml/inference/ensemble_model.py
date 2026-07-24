@@ -26,11 +26,25 @@ from ml.models.convlstm_model import ConvLSTM
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# IPCC tropical forest above-ground biomass carbon density (tonnes of CARBON per hectare).
-# Source: IPCC 2006/2019 GL, tropical moist forest AGB ~300 t/ha dry biomass * 0.5 carbon fraction ≈ 150 tC/ha.
-CARBON_DENSITY_TC_PER_HA = 150
 # Molecular weight ratio CO2:C (44/12). Converts tonnes of carbon to tonnes of CO2-equivalent.
 CO2_PER_C = 3.67
+
+# Above-ground biomass CARBON density (tonnes C per hectare) by broad forest biome.
+# IPCC 2006/2019 GL default AGB (t d.m./ha) * 0.47 carbon fraction, rounded. These are
+# coarse defaults — a real MRV report should use project-specific / ecozone values, but
+# using one global number (the old behaviour) is indefensible outside the Amazon.
+BIOME_CARBON_DENSITY_TC_PER_HA = {
+    "tropical_moist_forest": 150,   # Amazon / Congo basin (models are trained here)
+    "tropical_dry_forest": 55,
+    "tropical_mountain_forest": 70,
+    "subtropical_humid_forest": 100,
+    "temperate_forest": 75,
+    "boreal_forest": 45,
+}
+# Default biome matches where the models are actually valid (tropical Brazil).
+DEFAULT_BIOME = "tropical_moist_forest"
+# Backwards-compatible alias.
+CARBON_DENSITY_TC_PER_HA = BIOME_CARBON_DENSITY_TC_PER_HA[DEFAULT_BIOME]
 
 class CarbonCreditEnsemble(nn.Module):
     """
@@ -321,7 +335,8 @@ class CarbonCreditEnsemble(nn.Module):
     def calculate_carbon_impact(self,
                                ensemble_prediction: torch.Tensor,
                                pixel_area_m2: float = 100,  # 10m x 10m Sentinel-2 pixels
-                               carbon_per_hectare: float = CARBON_DENSITY_TC_PER_HA) -> Dict[str, float]:
+                               biome: str = DEFAULT_BIOME,
+                               carbon_per_hectare: float = None) -> Dict[str, float]:
         """
         Calculate carbon impact from ensemble predictions, in tonnes of CO2-equivalent (tCO2e).
 
@@ -329,15 +344,21 @@ class CarbonCreditEnsemble(nn.Module):
         (tC/ha) is therefore converted to CO2e via the molecular weight ratio CO2:C (3.67).
 
         Args:
-            ensemble_prediction: Binary prediction map [1, H, W]
-            pixel_area_m2: Area per pixel in square meters
-            carbon_per_hectare: Biomass carbon density in tonnes of CARBON per hectare (tC/ha)
+            ensemble_prediction: Binary prediction map [H, W] (full project resolution)
+            pixel_area_m2: Area per pixel in square meters (Sentinel-2 native = 100)
+            biome: forest biome key into BIOME_CARBON_DENSITY_TC_PER_HA (do not use the
+                default tropical value for a dry/temperate project — pass the right biome).
+            carbon_per_hectare: explicit tC/ha override; if None, resolved from ``biome``.
 
         Returns:
             Dictionary with carbon impact metrics. All carbon figures are tCO2e:
             - total_co2e_tonnes: forest CO2e stored (tCO2e)
             - carbon_density_tco2e_per_ha: CO2e density used (tCO2e/ha)
+            - biome: the biome used for the density
         """
+        if carbon_per_hectare is None:
+            carbon_per_hectare = BIOME_CARBON_DENSITY_TC_PER_HA.get(
+                biome, BIOME_CARBON_DENSITY_TC_PER_HA[DEFAULT_BIOME])
         # Convert to binary prediction
         binary_pred = (ensemble_prediction > 0.5).float()
 
@@ -359,9 +380,10 @@ class CarbonCreditEnsemble(nn.Module):
         return {
             'total_area_hectares': total_area_ha,
             'forest_area_hectares': forest_area_ha,
-            'forest_coverage_percent': (forest_area_ha / total_area_ha) * 100,
+            'forest_coverage_percent': (forest_area_ha / total_area_ha * 100) if total_area_ha else 0.0,
             'total_co2e_tonnes': total_co2e_tonnes,
             'carbon_density_tco2e_per_ha': carbon_density_tco2e_per_ha,
+            'biome': biome,
             # Backward-compat aliases, now carrying the corrected tCO2e values.
             # ponytail: keep until every consumer migrates to the *_co2e_* keys, then delete.
             'total_carbon_tons': total_co2e_tonnes,

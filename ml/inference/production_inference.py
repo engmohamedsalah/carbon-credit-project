@@ -20,7 +20,7 @@ import argparse
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from ml.inference.ensemble_model import load_ensemble_model
-from ml.utils.data_preprocessing import load_and_preprocess_image
+from ml.utils.data_preprocessing import load_and_preprocess_image, load_full_image, tile_image
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -58,7 +58,36 @@ class CarbonCreditVerificationPipeline:
         
         logger.info("✅ Pipeline initialized successfully!")
     
-    def process_single_image(self, 
+    def _tiled_forest_prediction(self, image_path: str) -> torch.Tensor:
+        """Forest-cover probability at full native resolution, via 64x64 tiling.
+
+        The model was trained on 64x64 native (10m) patches, so we tile the real image
+        into 64x64 patches, predict each, and stitch back — preserving the real spatial
+        extent. A fixed 64x64 crop would cap every project at the central ~41 ha and make
+        the carbon numbers wrong by a factor of (real_area / 41 ha).
+        """
+        full = load_full_image(image_path, target_channels=12)  # [12, H, W]
+        _, H, W = full.shape
+        patches, masks = tile_image(full, tile=64)              # [N,12,64,64], [N,64,64]
+
+        tile_preds = []
+        batch = 64
+        for k in range(0, patches.shape[0], batch):
+            p = self.ensemble.predict_forest_cover(patches[k:k + batch])  # [b,1,64,64]
+            tile_preds.append(p.squeeze(1))                              # [b,64,64]
+        tile_preds = torch.cat(tile_preds, dim=0) * masks.float()        # drop padded pixels
+
+        n_cols = (W + 63) // 64
+        n_rows = (H + 63) // 64
+        stitched = torch.zeros((n_rows * 64, n_cols * 64))
+        idx = 0
+        for i in range(0, n_rows * 64, 64):
+            for j in range(0, n_cols * 64, 64):
+                stitched[i:i + 64, j:j + 64] = tile_preds[idx]
+                idx += 1
+        return stitched[:H, :W]  # full-resolution [H, W] prediction
+
+    def process_single_image(self,
                            image_path: str,
                            output_name: str = None) -> Dict:
         """
@@ -77,13 +106,10 @@ class CarbonCreditVerificationPipeline:
             output_name = Path(image_path).stem
         
         try:
-            # Load and preprocess image
-            image_tensor = load_and_preprocess_image(image_path, target_size=(64, 64))
-            
-            # Forest cover prediction
-            forest_pred = self.ensemble.predict_forest_cover(image_tensor)
-            
-            # Calculate carbon impact
+            # Full-resolution forest prediction via native tiling (correct area for any size).
+            forest_pred = self._tiled_forest_prediction(image_path)
+
+            # Calculate carbon impact (correct now: total_pixels = H*W at native 10m each)
             carbon_impact = self.ensemble.calculate_carbon_impact(forest_pred)
             
             # Save results
@@ -147,10 +173,11 @@ class CarbonCreditVerificationPipeline:
             # Change detection prediction
             change_pred = self.ensemble.predict_change_detection(before_tensor, after_tensor)
             
-            # Forest cover for both images
-            before_forest = self.ensemble.predict_forest_cover(before_tensor)
-            after_forest = self.ensemble.predict_forest_cover(after_tensor)
-            
+            # Forest cover for both images at full native resolution (correct area/carbon,
+            # not the central ~41 ha the 64x64 change-detection crop above would give).
+            before_forest = self._tiled_forest_prediction(before_image_path)
+            after_forest = self._tiled_forest_prediction(after_image_path)
+
             # Calculate carbon impact change
             before_carbon = self.ensemble.calculate_carbon_impact(before_forest)
             after_carbon = self.ensemble.calculate_carbon_impact(after_forest)

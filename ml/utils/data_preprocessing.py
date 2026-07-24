@@ -77,11 +77,10 @@ def load_and_preprocess_image(image_path: str,
             return tensor
             
     except Exception as e:
-        # If loading fails, create a dummy tensor
-        print(f"Warning: Could not load {image_path}, creating dummy tensor: {e}")
-        return torch.randn(4, target_size[0], target_size[1])
+        # Fail loudly — never fabricate an analysis from random data.
+        raise RuntimeError(f"Failed to load/preprocess image {image_path}: {e}") from e
 
-def load_and_preprocess_image_for_model(image_path: str, 
+def load_and_preprocess_image_for_model(image_path: str,
                                        model_type: str = 'forest',
                                        target_size: Tuple[int, int] = (64, 64),
                                        normalize: bool = True) -> torch.Tensor:
@@ -153,11 +152,56 @@ def load_and_preprocess_image_for_model(image_path: str,
             return tensor
             
     except Exception as e:
-        # If loading fails, create a dummy tensor
-        print(f"Warning: Could not load {image_path}, creating dummy tensor: {e}")
-        return torch.randn(target_channels, target_size[0], target_size[1])
+        # Fail loudly — never fabricate an analysis from random data.
+        raise RuntimeError(f"Failed to load/preprocess image {image_path}: {e}") from e
 
-def create_dummy_image_tensor(channels: int = 4, 
+def load_full_image(image_path: str,
+                    target_channels: int = 12,
+                    normalize: bool = True) -> torch.Tensor:
+    """Load a satellite image at NATIVE resolution (no crop/resize).
+
+    Unlike load_and_preprocess_image (which center-crops to a fixed 64x64 and so
+    only ever sees ~41 ha), this preserves the real spatial extent so area/carbon
+    can be computed correctly for a project of any size (see tile_image).
+    """
+    with rasterio.open(image_path) as src:
+        image = src.read().astype(np.float32)  # [C, H, W]
+    if image.shape[0] > target_channels:
+        image = image[:target_channels]
+    elif image.shape[0] < target_channels:
+        pad = np.zeros((target_channels - image.shape[0], image.shape[1], image.shape[2]), dtype=np.float32)
+        image = np.concatenate([image, pad], axis=0)
+    if normalize:
+        image = np.clip(image, 0, 10000) / 10000.0
+    return torch.from_numpy(image)
+
+
+def tile_image(tensor: torch.Tensor, tile: int = 64) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Split [C, H, W] into non-overlapping tile x tile patches at native resolution.
+
+    Edge patches are zero-padded to full size; a boolean mask marks the real
+    (non-padded) pixels so padding is excluded from area counts.
+
+    Returns:
+        patches:   [N, C, tile, tile]
+        valid_mask:[N, tile, tile]  (True = real pixel, False = padding)
+    """
+    C, H, W = tensor.shape
+    pad_h = (tile - H % tile) % tile
+    pad_w = (tile - W % tile) % tile
+    padded = torch.nn.functional.pad(tensor, (0, pad_w, 0, pad_h))
+    Hp, Wp = H + pad_h, W + pad_w
+    valid = torch.zeros((Hp, Wp), dtype=torch.bool)
+    valid[:H, :W] = True
+    patches, masks = [], []
+    for i in range(0, Hp, tile):
+        for j in range(0, Wp, tile):
+            patches.append(padded[:, i:i + tile, j:j + tile])
+            masks.append(valid[i:i + tile, j:j + tile])
+    return torch.stack(patches), torch.stack(masks)
+
+
+def create_dummy_image_tensor(channels: int = 4,
                             size: Tuple[int, int] = (64, 64)) -> torch.Tensor:
     """Create a dummy image tensor for testing"""
-    return torch.randn(channels, size[0], size[1]) 
+    return torch.randn(channels, size[0], size[1])
