@@ -65,8 +65,19 @@ class CarbonCreditVerificationPipeline:
         into 64x64 patches, predict each, and stitch back — preserving the real spatial
         extent. A fixed 64x64 crop would cap every project at the central ~41 ha and make
         the carbon numbers wrong by a factor of (real_area / 41 ha).
+
+        Input contract (both verified against the checkpoint on a real Sentinel-2 scene):
+          1. RAW DN, not [0,1]. The U-Net's first BatchNorm running stats were accumulated
+             on raw reflectance (running_mean~2086, running_var~2.6M). Feeding it the
+             clip/1e4-normalized [0,1] tensor makes that BN output a constant, so the model
+             emits a fixed ~0.5 field for EVERY image (forest coverage stuck ~51%). Hence
+             normalize=False here — the model's internal BN does the scaling.
+          2. 12 bands in TRAINING order [B01,B02,B03,B04,B05,B06,B07,B08,B8A,B09,B11,B12]
+             (ml/scripts/extract_sentinel2_patches.py). load_full_image preserves file band
+             order, so the input GeoTIFF must already be stacked in this order (the imagery
+             acquisition step is responsible for that).
         """
-        full = load_full_image(image_path, target_channels=12)  # [12, H, W]
+        full = load_full_image(image_path, target_channels=12, normalize=False)  # raw DN [12,H,W]
         _, H, W = full.shape
         patches, masks = tile_image(full, tile=64)              # [N,12,64,64], [N,64,64]
 

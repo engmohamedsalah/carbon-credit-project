@@ -163,6 +163,11 @@ def load_full_image(image_path: str,
     Unlike load_and_preprocess_image (which center-crops to a fixed 64x64 and so
     only ever sees ~41 ha), this preserves the real spatial extent so area/carbon
     can be computed correctly for a project of any size (see tile_image).
+
+    NOTE: pass normalize=False for the forest-cover U-Net. That checkpoint's
+    BatchNorm was trained on RAW reflectance DN, so the [0,1] normalization here
+    flatlines it to a constant ~0.5 output (see _tiled_forest_prediction). normalize
+    is kept for callers whose models expect [0,1].
     """
     with rasterio.open(image_path) as src:
         image = src.read().astype(np.float32)  # [C, H, W]
