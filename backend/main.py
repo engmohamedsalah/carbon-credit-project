@@ -371,6 +371,8 @@ class CarbonAnalysisData(BaseModel):
     torch/rasterio cannot run on the serverless backend, so the ML runs off-platform
     and posts its result here; the app then stores, displays, and reports it.
     """
+    model_config = {"protected_namespaces": ()}  # allow the model_version field name
+
     scene_id: Optional[str] = None
     scene_date: Optional[str] = None
     cloud_cover: Optional[float] = None
