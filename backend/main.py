@@ -266,7 +266,11 @@ class DatabaseManager:
                     # Add geometry column if missing
                     if 'geometry' not in columns:
                         conn.execute("ALTER TABLE projects ADD COLUMN geometry TEXT")
-                        
+
+                    # Store offline-computed carbon analysis (JSON) per project
+                    if 'carbon_analysis' not in columns:
+                        conn.execute("ALTER TABLE projects ADD COLUMN carbon_analysis TEXT")
+
                 except Exception as migration_error:
                     logger.warning(f"Migration warning: {migration_error}")
                     # Continue if migration fails - table might already be correct
@@ -359,6 +363,25 @@ class ProjectResponse(BaseModel):
     end_date: Optional[str] = None
     estimated_carbon_credits: Optional[float] = None
     geometry: Optional[dict] = None
+
+
+class CarbonAnalysisData(BaseModel):
+    """An offline-computed carbon analysis (ml/analyze) stored on a project.
+
+    torch/rasterio cannot run on the serverless backend, so the ML runs off-platform
+    and posts its result here; the app then stores, displays, and reports it.
+    """
+    scene_id: Optional[str] = None
+    scene_date: Optional[str] = None
+    cloud_cover: Optional[float] = None
+    total_area_hectares: Optional[float] = None
+    forest_coverage_percent: Optional[float] = None
+    forest_area_hectares: Optional[float] = None
+    total_co2e_tonnes: Optional[float] = None
+    carbon_density_tco2e_per_ha: Optional[float] = None
+    biome: Optional[str] = None
+    mean_probability: Optional[float] = None
+    model_version: Optional[str] = None
 
 
 # Verification Models
@@ -2227,6 +2250,57 @@ async def download_analytics_report(current_user: UserResponse = Depends(get_cur
         raise HTTPException(status_code=500, detail="Failed to generate analytics report")
 
 
+@app.put("/api/v1/projects/{project_id}/carbon-analysis")
+async def set_carbon_analysis(
+    project_id: int,
+    analysis: CarbonAnalysisData,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Store an offline-computed carbon analysis for a project (owner or admin).
+
+    The heavy ML (torch/rasterio) runs off-platform via ml/analyze and posts its
+    result here so the serverless app can display and report it.
+    """
+    with db.get_connection() as conn:
+        if is_admin(current_user.role):
+            cursor = conn.execute("SELECT id FROM projects WHERE id = ?", (project_id,))
+        else:
+            cursor = conn.execute(
+                "SELECT id FROM projects WHERE id = ? AND user_id = ?",
+                (project_id, current_user.id)
+            )
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Project not found or not authorized")
+        conn.execute(
+            "UPDATE projects SET carbon_analysis = ? WHERE id = ?",
+            (json.dumps(analysis.model_dump()), project_id)
+        )
+        conn.commit()
+    logger.info(f"Carbon analysis stored for project {project_id} by {current_user.email}")
+    return {"message": "Carbon analysis stored", "project_id": project_id}
+
+
+@app.get("/api/v1/projects/{project_id}/carbon-analysis")
+async def get_carbon_analysis(
+    project_id: int,
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """Return the stored carbon analysis for a project (owner or admin), or null."""
+    with db.get_connection() as conn:
+        if is_admin(current_user.role):
+            cursor = conn.execute("SELECT carbon_analysis FROM projects WHERE id = ?", (project_id,))
+        else:
+            cursor = conn.execute(
+                "SELECT carbon_analysis FROM projects WHERE id = ? AND user_id = ?",
+                (project_id, current_user.id)
+            )
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Project not found or not authorized")
+        raw = row["carbon_analysis"]
+    return {"project_id": project_id, "carbon_analysis": json.loads(raw) if raw else None}
+
+
 @app.get("/api/v1/reports/project/{project_id}")
 async def download_project_report(
     project_id: int,
@@ -2283,6 +2357,30 @@ async def download_project_report(
             story.append(Paragraph(f"Verifications: {len(verifications)}", styles['Heading2']))
             for v in verifications:
                 story.append(Paragraph(f"• Status: {v[2]}, Carbon Impact: {v[3] or 'N/A'} tonnes", styles['Normal']))
+
+            # Carbon analysis section (offline ML result stored on the project)
+            ca_raw = dict(project).get('carbon_analysis')
+            if ca_raw:
+                ca = json.loads(ca_raw)
+                story.append(Spacer(1, 20))
+                story.append(Paragraph("Carbon Analysis (experimental)", styles['Heading2']))
+                for label, value in [
+                    ("Imagery", ca.get('scene_id')),
+                    ("Acquired", ca.get('scene_date')),
+                    ("Analyzed area (ha)", ca.get('total_area_hectares')),
+                    ("Forest coverage (%)", ca.get('forest_coverage_percent')),
+                    ("Forest area (ha)", ca.get('forest_area_hectares')),
+                    ("Carbon stock (tCO2e)", ca.get('total_co2e_tonnes')),
+                    ("Biome", ca.get('biome')),
+                ]:
+                    if value is not None:
+                        story.append(Paragraph(f"• {label}: {value}", styles['Normal']))
+                story.append(Spacer(1, 8))
+                story.append(Paragraph(
+                    "Experimental estimate — the forest model is a research prototype "
+                    "(F1~0.49, conservative/under-estimating out-of-region). Requires human "
+                    "verification; not for compliance-grade crediting.",
+                    styles['Italic']))
             
             doc.build(story)
             buffer.seek(0)

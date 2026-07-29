@@ -10,6 +10,7 @@ The report states its own limitations honestly: the forest model is a research p
 docs/ml-forest-model-investigation.md), so every figure needs human verification.
 """
 import io
+import json
 import os
 from datetime import datetime
 
@@ -50,6 +51,33 @@ def analyze_boundary(geometry, out_pdf, project_name="Untitled Project",
                 result["carbon_impact"], result["forest_prediction"], work_tif)
     return {"pdf": out_pdf, "scene": scene,
             "carbon": result["carbon_impact"], "forest_prediction": result["forest_prediction"]}
+
+
+def upload_analysis(result, api_base, token, project_id, model_version="forest_cover_unet_focal_a0.75_thr0.53"):
+    """PUT an ``analyze_boundary`` result to the app's carbon-analysis endpoint.
+
+    Lets an offline analysis populate the deployed (serverless) app, which cannot run
+    the ML itself. Returns the endpoint's JSON response.
+    """
+    import urllib.request
+    scene, ci, fp = result["scene"], result["carbon"], result["forest_prediction"]
+    payload = {
+        "scene_id": scene.get("scene_id"), "scene_date": scene.get("date"),
+        "cloud_cover": scene.get("cloud"),
+        "total_area_hectares": ci.get("total_area_hectares"),
+        "forest_coverage_percent": ci.get("forest_coverage_percent"),
+        "forest_area_hectares": ci.get("forest_area_hectares"),
+        "total_co2e_tonnes": ci.get("total_co2e_tonnes"),
+        "carbon_density_tco2e_per_ha": ci.get("carbon_density_tco2e_per_ha"),
+        "biome": ci.get("biome"), "mean_probability": fp.get("mean_probability"),
+        "model_version": model_version,
+    }
+    url = f"{api_base.rstrip('/')}/api/v1/projects/{project_id}/carbon-analysis"
+    req = urllib.request.Request(url, data=json.dumps(payload).encode(), method="PUT",
+                                 headers={"Content-Type": "application/json",
+                                          "Authorization": f"Bearer {token}"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.loads(r.read())
 
 
 def _rgb_thumbnail(scene_path, max_px=520):
@@ -141,12 +169,52 @@ def _render_pdf(out_pdf, project_name, geometry, scene, ci, fp, scene_path):
     doc.build(story)
 
 
-if __name__ == "__main__":
+def _read_geojson(path):
+    """Load a boundary from a GeoJSON file (bare geometry, Feature, or FeatureCollection)."""
+    with open(path) as f:
+        gj = json.load(f)
+    if gj.get("type") == "FeatureCollection":
+        gj = gj["features"][0]
+    if gj.get("type") == "Feature":
+        gj = gj["geometry"]
+    return gj
+
+
+def _selfcheck():
     forest_aoi = {"type": "Polygon", "coordinates": [[
         [-59.67, -3.30], [-59.63, -3.30], [-59.63, -3.25], [-59.67, -3.25], [-59.67, -3.30]]]}
-    meta = analyze_boundary(forest_aoi, "carbon_report_selfcheck.pdf",
-                            project_name="Demo Amazon Plot")
+    meta = analyze_boundary(forest_aoi, "carbon_report_selfcheck.pdf", project_name="Demo Amazon Plot")
     assert os.path.exists(meta["pdf"]) and os.path.getsize(meta["pdf"]) > 2000, "PDF not written"
     c = meta["carbon"]
     print(f"OK  pdf={meta['pdf']} ({os.path.getsize(meta['pdf'])} bytes)  "
           f"coverage={c['forest_coverage_percent']:.1f}%  {c['total_co2e_tonnes']:,.0f} tCO2e")
+
+
+def _cli():
+    import argparse
+    ap = argparse.ArgumentParser(description="Project boundary -> carbon-analysis PDF (+ optional upload to the app).")
+    ap.add_argument("--geojson", help="GeoJSON file (Polygon/Feature/FeatureCollection). Omit for the self-check.")
+    ap.add_argument("--out", default="carbon_report.pdf")
+    ap.add_argument("--name", default="Project")
+    ap.add_argument("--start", default="2023-06-01")
+    ap.add_argument("--end", default="2023-09-30")
+    ap.add_argument("--max-cloud", type=float, default=10)
+    ap.add_argument("--upload-url", help="app base URL to POST the result to, e.g. https://<app>.vercel.app")
+    ap.add_argument("--token", help="bearer token for the upload")
+    ap.add_argument("--project-id", type=int)
+    args = ap.parse_args()
+
+    if not args.geojson:
+        _selfcheck()
+        return
+    meta = analyze_boundary(_read_geojson(args.geojson), args.out, project_name=args.name,
+                            start_date=args.start, end_date=args.end, max_cloud=args.max_cloud)
+    c = meta["carbon"]
+    print(f"analyzed: coverage={c['forest_coverage_percent']:.1f}%  "
+          f"{c['total_co2e_tonnes']:,.0f} tCO2e -> {meta['pdf']}")
+    if args.upload_url and args.token and args.project_id:
+        print("uploaded:", upload_analysis(meta, args.upload_url, args.token, args.project_id))
+
+
+if __name__ == "__main__":
+    _cli()
