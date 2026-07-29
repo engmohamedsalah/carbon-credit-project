@@ -165,3 +165,6 @@ test-results/
 # Hardhat build output
 blockchain/artifacts/
 blockchain/cache/
+
+# Generated analysis reports & module self-check demo outputs (ml/analyze.py)
+carbon_report_*.pdf
